@@ -20,7 +20,7 @@
 #include<PReMiuMData.h>
 #include<MCMC/model.h>
 #include<Math/ars2.h>
-
+#include<PReMiuMModel.h>
 //using namespace itpp;
 using namespace std;
 

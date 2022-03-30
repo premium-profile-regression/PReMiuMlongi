@@ -1752,10 +1752,16 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
 	if(includeResponse){
 		// Finally we sample the theta and beta values from uniform distributions
-		  for(unsigned int j=0;j<nFixedEffects;j++){
+		for(unsigned int c=0;c<maxNClusters;c++){
+		  for (unsigned int k=0;k<nCategoriesY;k++){
+		    // Thetas are randomly between -2 and 2
+		    params.theta(c,k,-2.0+4.0*unifRand(rndGenerator));
+		  }
+		}
+		for(unsigned int j=0;j<nFixedEffects;j++){
 		    for (unsigned int k=0;k<nCategoriesY;k++){
 		      // Betas are randomly between -2 and 2
-		      if(outcomeType.compare("Longitudinal")!=0){ //AR
+		      if(outcomeType.compare("Longitudinal")!=0 & outcomeType.compare("LME")!=0){ //AR
 		        params.beta(j,k,-2.0+4.0*unifRand(rndGenerator));
 		      }else{
 		        params.beta(j,k,0);
@@ -1845,7 +1851,6 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 		  }
 		  // Initialise random effects
   		  for(unsigned int i=0;i<nSubjects;i++){
-  		    int zi=params.z(i);
   		    VectorXd mu(nRandomEffects);
   		    VectorXd meanRE(nRandomEffects);
   		    meanRE.setZero();

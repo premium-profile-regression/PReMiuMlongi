@@ -33,6 +33,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
   lowerNu=NULL
   upperNu=NULL
   sampleGPmean=FALSE
+  nFixedEffects_clust=0
 
   for (i in 1:length(riskProfObj)) assign(names(riskProfObj)[i],riskProfObj[[i]])
   for (i in 1:length(riskProfClusObj)) assign(names(riskProfClusObj)[i],riskProfClusObj[[i]])
@@ -90,9 +91,9 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       nDiscreteCovs <- length(discreteCovs)
       continuousCovs <- continuousCovs[whichContinuousCovs-nDiscreteCovsAll]
       nContinuousCovs <- length(continuousCovs)
-      profilePhi<-profilePhi[,,whichDiscreteCovs,]
+      profilePhi<-profilePhi[,,whichDiscreteCovs,, drop=FALSE]
       nCategories<-nCategories[whichDiscreteCovs]
-      profileMu<-profileMu[,,whichContinuousCovs-nDiscreteCovsAll]
+      profileMu<-profileMu[,,whichContinuousCovs-nDiscreteCovsAll, drop=FALSE]
       profileStdDev<-profileStdDev[,,whichContinuousCovs-nDiscreteCovsAll,whichContinuousCovs-nDiscreteCovsAll]
       covNames<-c(discreteCovs,continuousCovs)
       nCovariates<-length(covNames)

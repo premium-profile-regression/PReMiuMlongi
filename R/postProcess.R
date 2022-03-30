@@ -863,11 +863,13 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
               "xMat"=xMat,"yMat"=yMat,"wMat"=wMat,
               "longMat"=longMat,"longMean"=longMean,"tMat"=tMat,"nOutcomes"=nOutcomes)
 
-  if(yModel == 'LME')
-    liste<- c(liste, list("randomEffectsNames"=randomEffectsNames,"nRandomEffects"=nRandomEffects+1, "timevar"=timevar,"wMat_mix"=wMat_mix))
-  if(yModel == 'Longitudinal')
-    liste<- c(liste, list("kernel"=kernel, "sampleGPmean"= sampleGPmean,  "estim_ratio"=estim_ratio,
-                          "nTimes_unique"=length(all_times) , "all_times"=all_times,"times_corr"=times_corr))
+  if (!excludeY) {
+    if(yModel == "LME")
+      liste<- c(liste, list("randomEffectsNames"=randomEffectsNames,"nRandomEffects"=nRandomEffects+1, "timevar"=timevar,"wMat_mix"=wMat_mix))
+    if(yModel == "Longitudinal")
+      liste<- c(liste, list("kernel"=kernel, "sampleGPmean"= sampleGPmean,  "estim_ratio"=estim_ratio,
+                            "nTimes_unique"=length(all_times) , "all_times"=all_times,"times_corr"=times_corr))
+  }
   return(liste)
 }
 

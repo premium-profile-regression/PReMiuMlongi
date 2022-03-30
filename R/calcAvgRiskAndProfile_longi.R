@@ -28,6 +28,7 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
   yMat=NULL
   weibullFixedShape=NULL
   sampleGPmean=FALSE
+  nFixedEffects_clust=0
 
   #library("PReMiuM")
   for (i in 1:length(clusObj)) assign(names(clusObj)[i],clusObj[[i]])

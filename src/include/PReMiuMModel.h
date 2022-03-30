@@ -3488,7 +3488,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     //P(xi|zi,params)
     logLikelihood+=params.workLogPXiGivenZi(i);
   }
-
   // Add in contribution from Y
   vector<double> extraVarPriorVal(nSubjects,0.0);
   vector<double> extraVarPriorMean(nSubjects,0.0);
@@ -3639,9 +3638,10 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }else{
           logPrior+=logPdfMultivarNormal(nCovariates,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
         }
-        logPrior+=logPdfWishart(nCovariates,params.Tau(c),params.workLogDetTau(c),hyperParams.workInverseR0(),hyperParams.workLogDetR0(),(double)hyperParams.kappa0());
+        logPrior+= logPdfWishart(nCovariates, params.Tau(c), params.workLogDetTau(c), hyperParams.workInverseR0(), hyperParams.workLogDetR0(), (double)hyperParams.kappa0());
       }
     }
+
   }else if(covariateType.compare("Mixed")==0){
     // If covariate type is discrete
     for(unsigned int c=0;c<maxNClusters;c++){
@@ -3659,6 +3659,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }else{
           logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
         }
+
         logPrior+=logPdfWishart(nContinuousCov,params.Tau(c),params.workLogDetTau(c),hyperParams.workInverseR0(),hyperParams.workLogDetR0(),(double)hyperParams.kappa0());
       }
     }
@@ -3687,6 +3688,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     }
 
   }
+  std::cout << " logPrior0 "<<logPrior<<std::endl;
 
   if(includeResponse){
 
@@ -3701,10 +3703,18 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
           for (unsigned int k=0;k<nCategoriesY;k++){
             logPrior+=logPdfLocationScaleT(params.theta(c,k),hyperParams.muTheta(),
                                            hyperParams.sigmaTheta(),hyperParams.dofTheta());
+            if(c==0 & k==0)
+              std::cout <<  c<< " k "<< k <<" theta "<<params.theta(c,k)<<std::endl
+                        << " muTheta "<<hyperParams.muTheta()<<std::endl
+                        << " sigmaTheta "<<hyperParams.sigmaTheta()<<std::endl
+                        << " dofTheta "<<hyperParams.dofTheta()<<std::endl;
           }
         }
       }
     }
+    std::cout << " logPriorTheta "<<logPrior<<std::endl;
+
+
 
     // Prior for beta
     // There were no fixed effects in the Molitor paper but to be consistent with
@@ -3722,6 +3732,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
+    std::cout << " logPriorFE "<<logPrior<<std::endl;
 
     for(unsigned int j=0;j<nFixedEffects_mix;j++){
       for(unsigned int c=0;c<maxNClusters;c++){
@@ -3761,6 +3772,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
+    std::cout << " logPriorS "<<logPrior<<std::endl;
 
     //RJ add up prior for L
     if(outcomeType.compare("Longitudinal")==0){
@@ -3841,6 +3853,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
       logPrior+=logPdfIntrinsicCAR(params.uCAR(), dataset.neighbours() , params.TauCAR());
     }
   }
+  std::cout << " logPrior "<<logPrior<<std::endl
+            << " logLikelihood "<<logLikelihood<<std::endl;
 
   vector<double> outVec(3);
   outVec[0]=logLikelihood+logPrior;
@@ -4642,13 +4656,13 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
       EigenSolver<MatrixXd> es(postV, true);
       VectorXd eigenvalues(es.eigenvalues().size()) ;
 
-      bool sdp=true;
+      //bool sdp=true;
       for(int i = 0; i < nTimes_unique; ++i){
         eigenvalues(i) = es.eigenvalues()(i).real() ;
 
         if(es.eigenvalues()(i).real()<0){
           eigenvalues(i) =0;
-          sdp=false;
+          //sdp=false;
         }
 
         if(es.eigenvalues()(i).imag() != 0 || es.eigenvectors()(i).imag()!=0 ){

@@ -2923,8 +2923,6 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
   // Find the number of clusters
   unsigned int nFixedEffects = dataset.nFixedEffects();
   unsigned int nFixedEffects_mix = dataset.nFixedEffects_mix();
-  // Find the number of categories of Y
-  unsigned int nCategoriesY = currentParams.nCategoriesY();
 
   // Define a normal random number generator
   randomNormal normRand(0,1);
@@ -3376,6 +3374,7 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
 
     // Propose from the priors
     double& stdDev = propParams.rhoStdDev(j);
+
     if(unifRand(rndGenerator)>hyperParams.atomRho()){
       // Proposing an omega 0
       if(currentOmega[j]==0){
@@ -3390,19 +3389,26 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
       currentParams.rho(j,proposedRho,covariateType,varSelectType);
       proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
       double logAcceptRatio = proposedLogPost - currentLogPost;
+      double runiftemp = unifRand(rndGenerator);
       logAcceptRatio += logPdfBeta(currentRho[j],hyperParams.aRho(),hyperParams.bRho());
-      if(unifRand(rndGenerator)<exp(logAcceptRatio)){
+
+      if(runiftemp<exp(logAcceptRatio)){
         // Move accepted
         if(varSelectType.compare("Continuous")==0){
           currentLogPost=proposedLogPost;
         }
         nAccept++;
+
+        std::cout << " unifRand(rndGenerator) ++++++++++++++++ "<<endl;
+        std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
+        std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
+
       }else{
         // Move rejected, reset parameters
         currentParams.omega(j,currentOmega[j]);
         currentParams.rho(j,currentRho[j],covariateType,varSelectType);
-      }
 
+      }
     }else{
       if(currentOmega[j]==1){
         proposedRho  = truncNormalRand(rndGenerator,currentRho[j],stdDev,"B",0,1);
@@ -3412,7 +3418,9 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
         logAcceptRatio += logPdfTruncatedNormal(currentRho[j],proposedRho,stdDev,"B",0,1);
         logAcceptRatio -= logPdfTruncatedNormal(proposedRho,currentRho[j],stdDev,"B",0,1);
         propParams.rhoAddTry(j);
-        if(unifRand(rndGenerator)<exp(logAcceptRatio)){
+
+        double runiftemp = unifRand(rndGenerator);
+        if(runiftemp<exp(logAcceptRatio)){
           // Move accepted
           if(varSelectType.compare("Continuous")==0){
             currentLogPost=proposedLogPost;
@@ -3430,6 +3438,12 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
             }
             propParams.rhoLocalReset(j);
           }
+
+
+          std::cout << " unifRand(rndGenerator) ---- " << " currentOmega[j]"<<currentOmega[j]<<endl;
+          std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
+          std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
+
         }else{
           // Move rejected, reset parameters
           currentParams.omega(j,currentOmega[j]);
@@ -3453,12 +3467,19 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
         proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
         double logAcceptRatio = proposedLogPost - currentLogPost;
         logAcceptRatio -= logPdfBeta(proposedRho,hyperParams.aRho(),hyperParams.bRho());
-        if(unifRand(rndGenerator)<exp(logAcceptRatio)){
+
+        double runiftemp = unifRand(rndGenerator);
+        if(runiftemp<exp(logAcceptRatio)){
           // Move accepted
           if(varSelectType.compare("Continuous")==0){
             currentLogPost=proposedLogPost;
           }
           nAccept++;
+
+
+          std::cout << " unifRand(rndGenerator) ---- " << " currentOmega[j]"<<currentOmega[j]<<endl;
+          std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
+          std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
         }else{
           // Move rejected, reset parameters
           currentParams.omega(j,currentOmega[j]);
@@ -3466,10 +3487,7 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
         }
       }
     }
-
-
   }
-
 }
 
 // Gibbs for update of sigmaSqY (Normal response case)
@@ -3856,7 +3874,6 @@ void gibbsForSigmaEpsilonLME_invchi2(mcmcChain<pReMiuMParams>& chain,
   // Find the number of clusters
   unsigned int nFixedEffects = dataset.nFixedEffects();
   unsigned int nFixedEffects_mix = dataset.nFixedEffects_mix();
-  unsigned int nRandomEffects = dataset.nRandomEffects();
   // Find the number of categories of Y
 
   // Define a normal random number generator
@@ -3923,7 +3940,6 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
   // Find the number of clusters
   unsigned int nFixedEffects = dataset.nFixedEffects();
   unsigned int nFixedEffects_mix = dataset.nFixedEffects_mix();
-  unsigned int nRandomEffects = dataset.nRandomEffects();
   double S2= 0.0;
 
   unsigned int  nSubjects = dataset.nSubjects();
@@ -4175,7 +4191,6 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
   const string& predictType = model.options().predictType();
 
 
-  bool prof_X = false;
   nTry++;
   nAccept++;
   std::fstream fout("file_output.txt", std::ios::in | std::ios::out | std::ios::app);
@@ -4467,7 +4482,6 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
   vector<int> tStop = dataset.tStop();
   vector<double> times = dataset.times();
   int Ana=1; // 0 ROB, 1 AR, 2 both
-  int grid_size = 0;
   vector<double> grid;
   //double minui=*std::min_element(std::begin(u), std::end(u) );
 
@@ -4503,7 +4517,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
         origZi = currentParams.z(i);
 
         if(i==0 && outcomeType.compare("Longitudinal")==0 && Ana>0){ //grid construction
-          grid_size = model.dataset().nTimes_unique();
+          //int grid_size = model.dataset().nTimes_unique();
           grid=dataset.times_unique();
 
           // double min_grid=*std::min_element(std::begin(times), std::end(times));
