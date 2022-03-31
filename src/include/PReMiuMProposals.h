@@ -1369,7 +1369,7 @@ void gibbsForMuActive(mcmcChain<pReMiuMParams>& chain,
     gammaMat[c].setZero(nCovariates,nCovariates);
     oneMinusGammaMat[c].setZero(nCovariates,nCovariates);
     for(unsigned int j=0;j<nCovariates;j++){
-      gammaMat[c](j,j)=currentParams.gamma(c,j);
+      gammaMat[c](j,j)=currentParams.gamma(c,currentParams.nDiscreteCovs()+j);//j);
       oneMinusGammaMat[c](j,j)=1-gammaMat[c](j,j);
     }
   }
@@ -1397,7 +1397,6 @@ void gibbsForMuActive(mcmcChain<pReMiuMParams>& chain,
     currentParams.mu(c,mu);
 
   }
-
 }
 
 // Gibbs update for mu in Normal covariate case and use of normal inverse prior
@@ -1454,7 +1453,7 @@ void gibbsForMuActiveNIWP(mcmcChain<pReMiuMParams>& chain,
     gammaMat[c].setZero(nCovariates,nCovariates);
     oneMinusGammaMat[c].setZero(nCovariates,nCovariates);
     for(unsigned int j=0;j<nCovariates;j++){
-      gammaMat[c](j,j)=currentParams.gamma(c,j);
+      gammaMat[c](j,j)=currentParams.gamma(c,currentParams.nDiscreteCovs()+j);
       oneMinusGammaMat[c](j,j)=1-gammaMat[c](j,j);
     }
   }
@@ -3399,9 +3398,9 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
         }
         nAccept++;
 
-        std::cout << " unifRand(rndGenerator) ++++++++++++++++ "<<endl;
-        std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
-        std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
+        //std::cout << " unifRand(rndGenerator) ++++++++++++++++ "<<endl;
+        //std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
+        //std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
 
       }else{
         // Move rejected, reset parameters
@@ -3440,9 +3439,9 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
           }
 
 
-          std::cout << " unifRand(rndGenerator) ---- " << " currentOmega[j]"<<currentOmega[j]<<endl;
-          std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
-          std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
+          //std::cout << " unifRand(rndGenerator) ---- " << " currentOmega[j]"<<currentOmega[j]<<endl;
+          //std::cout << " j "<<j<<"unif "<<runiftemp<< " exp(logAcceptRatio): "<<exp(logAcceptRatio);
+          //std::cout << j << " accept : from "<< currentRho[j]<<  " to "<< currentParams.rho(j)<< " covariateType "<<covariateType<<endl;
 
         }else{
           // Move rejected, reset parameters
