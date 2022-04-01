@@ -1473,7 +1473,7 @@ public:
       VectorXd xi=VectorXd::Zero(nCov);
       VectorXd muStar=VectorXd::Zero(nCov);
       for(unsigned int j=0;j<nCov;j++){
-        muStar(j)=gamma(c,j)*muVec(j)+(1.0-gamma(c,j))*nullMu(j);
+        muStar(j)=gamma(c,nDiscreteCovs()+j)*muVec(j)+(1.0-gamma(c,nDiscreteCovs()+j))*nullMu(j);
       }
       _workMuStar[c] = muStar;
 
@@ -1531,7 +1531,7 @@ public:
       for(unsigned int c=0;c<nClusters;c++){
         muStar[c].setZero(nCov);
         for(unsigned int j=0;j<nCov;j++){
-          muStar[c](j)=gamma(c,j)*mu(c,j)+(1-gamma(c,j))*nullMuVec(j);
+          muStar[c](j)=gamma(c,nDiscreteCovs()+j)*mu(c,j)+(1-gamma(c,nDiscreteCovs()+j))*nullMuVec(j);
         }
         _workMuStar[c]=muStar[c];
       }
@@ -3590,11 +3590,14 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   // Now need to add in the prior (i.e. p(z,params) in above notation)
   // Note we integrate out u and all parameters in Theta with no members
   double logPrior=0.0;
+  double  logPriorTPM=0.0;
   // Prior for z
   for(unsigned int i=0;i<nSubjects;i++){
     int zi = params.z(i);
     logPrior+=params.logPsi(zi);
   }
+  std::cout << " logPriorPsi "<<logPrior-logPriorTPM<<std::endl;
+  logPriorTPM=logPrior;
 
   // Prior for V (we only need to include these up to maxNCluster, but we do need
   // to include all V, whether or not a cluster is empty, as the V themselves
@@ -3602,6 +3605,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   for(unsigned int c=0;c<maxNClusters;c++){
     logPrior+=logPdfBeta(params.v(c),1.0-params.dPitmanYor(),params.alpha()+params.dPitmanYor()*(c+1));
   }
+  std::cout << " logPriorBeta "<<logPrior-logPriorTPM<<std::endl;
+  logPriorTPM=logPrior;
 
   if(isinf(logPrior)){
     //for(unsigned int c=0;c<maxNClusters;c++){
@@ -3612,6 +3617,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   if(fixedAlpha<=-1){
     logPrior+=logPdfGamma(params.alpha(),hyperParams.shapeAlpha(),hyperParams.rateAlpha());
   }
+  std::cout << " logPriorAlpha "<<logPrior-logPriorTPM<<std::endl;
+  logPriorTPM=logPrior;
 
   // Prior for phi
   if(covariateType.compare("Discrete")==0){
@@ -3664,6 +3671,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
       }
     }
   }
+  std::cout << " logPriorX "<<logPrior-logPriorTPM<<std::endl;
+  logPriorTPM=logPrior;
 
   // Prior for variable selection parameters
   if(varSelectType.compare("None")!=0){
@@ -3678,6 +3687,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
+    std::cout << " logPriorvarsel "<<logPrior-logPriorTPM<<std::endl;
+    logPriorTPM=logPrior;
 
     // We can add in the prior for rho and omega
     logPrior+=log(hyperParams.atomRho());
@@ -3688,7 +3699,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     }
 
   }
-  std::cout << " logPrior0 "<<logPrior<<std::endl;
+  std::cout << " logPriorBeta "<<logPrior-logPriorTPM<<std::endl;
+  logPriorTPM=logPrior;
 
   if(includeResponse){
 
@@ -3703,17 +3715,12 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
           for (unsigned int k=0;k<nCategoriesY;k++){
             logPrior+=logPdfLocationScaleT(params.theta(c,k),hyperParams.muTheta(),
                                            hyperParams.sigmaTheta(),hyperParams.dofTheta());
-            if(c==0 & k==0)
-              std::cout <<  c<< " k "<< k <<" theta "<<params.theta(c,k)<<std::endl
-                        << " muTheta "<<hyperParams.muTheta()<<std::endl
-                        << " sigmaTheta "<<hyperParams.sigmaTheta()<<std::endl
-                        << " dofTheta "<<hyperParams.dofTheta()<<std::endl;
           }
         }
       }
     }
-    std::cout << " logPriorTheta "<<logPrior<<std::endl;
-
+    std::cout << " logPriorTheta "<<logPrior-logPriorTPM<<std::endl;
+    logPriorTPM=logPrior;
 
 
     // Prior for beta
@@ -3732,7 +3739,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
-    std::cout << " logPriorFE "<<logPrior<<std::endl;
+    std::cout << " logPriorFE "<<logPrior-logPriorTPM<<std::endl;
+    logPriorTPM=logPrior;
 
     for(unsigned int j=0;j<nFixedEffects_mix;j++){
       for(unsigned int c=0;c<maxNClusters;c++){
@@ -3772,7 +3780,8 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
-    std::cout << " logPriorS "<<logPrior<<std::endl;
+    std::cout << " logPriorS "<<logPrior-logPriorTPM<<std::endl;
+    logPriorTPM=logPrior;
 
     //RJ add up prior for L
     if(outcomeType.compare("Longitudinal")==0){

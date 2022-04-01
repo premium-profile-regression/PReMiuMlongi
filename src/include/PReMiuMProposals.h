@@ -3553,12 +3553,13 @@ void gibbsForNu(mcmcChain<pReMiuMParams>& chain,
   nTry++;
   nAccept++;
   if (weibullFixedShape){
-    double nu = ARSsampleNu(currentParams, model, 0,logNuPostSurvival,rndGenerator);
+    double nu = ARSsampleNu2(currentParams, model, 0,logNuPostSurvival,rndGenerator);
     currentParams.nu(0,nu);
   } else {
     for (unsigned int c=0;c<=maxZ;c++){
-      double nu = ARSsampleNu(currentParams, model, c,logNuPostSurvival,rndGenerator);
+      double nu = ARSsampleNu2(currentParams, model, c,logNuPostSurvival,rndGenerator);
       currentParams.nu(c,nu);
+      std::cout << c<<" nu "<<currentParams.nu(c)<<std::endl;
     }
   }
 }
