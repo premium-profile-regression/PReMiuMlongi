@@ -1876,6 +1876,7 @@ public:
           _workLogPXiGivenZi[i]=logPdfMultivarNormal(nCov,xi,workMuStar(c),workSqrtTau(c),workLogDetTau(c));
         }
       }else if(covariateType.compare("Mixed")==0){
+
         for(unsigned int j=0;j<nDiscreteCov;j++){
           unsigned int zi = z(i);
           int Xij=workDiscreteX(i,j);
@@ -1981,6 +1982,7 @@ public:
           double logPhiStar;
           logPhiStar = workLogPhiStar(c,j,Xij);
           _workLogPXiGivenZi[i]+=(logPhiStarNew[c][Xij]-logPhiStar);
+
         }
         for(unsigned int c=0;c<nClusters;c++){
           _workLogPhiStar[c][j]=logPhiStarNew[c];
@@ -1999,7 +2001,6 @@ public:
               xi(jj)=workContinuousX(i,jj);
             }
             _workLogPXiGivenZi[i]=logPdfMultivarNormal(nContinuousCov,xi,muStar[c],workSqrtTau(c),workLogDetTau(c));
-
           }
           for(unsigned c=0;c<nClusters;c++){
             _workMuStar[c]=muStar[c];
@@ -2010,7 +2011,6 @@ public:
     for(unsigned int c=0;c<nClusters;c++){
       _gamma[c][j]=gammaVal;
     }
-
   }
 
   /// \brief Set the variable selection vector for cluster c (used for
@@ -2068,7 +2068,7 @@ public:
             double logPhiStar;
             logPhiStar = workLogPhiStar(c,j,Xij);
             _workLogPXiGivenZi[i]+=(logPhiStarNew[Xij]-logPhiStar);
-          }
+           }
         }
         _workLogPhiStar[c][j] = logPhiStarNew;
       } else {
@@ -2089,7 +2089,6 @@ public:
       }
     }
     _gamma[c][j]=gammaVal;
-
   }
 
   /// \brief Get the variable selection rho vector - in the continuous
@@ -3298,19 +3297,20 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
   double dmvnorm = 0.0;
   unsigned int ni = 0;
 
-  for(unsigned int i=0; i<dataset.nSubjects(); i++){
-    if((params.z(i) == c &&  ii == dataset.nSubjects()) || ( i == ii ) ){
+   for(unsigned int i=0; i<dataset.nSubjects(); i++){
 
-      ni =  (tStop[i] - tStart[i] + 1);
-      yi.resize(ni);
+     if((params.z(i) == c &&  ii == dataset.nSubjects()) || ( i == ii ) ){
+       ni =  (tStop[i] - tStart[i] + 1);
+       yi.resize(ni);
 
-      for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
-        yi(j) = y[tStart[i]-1+j];
-        //ADD TIMES yi(j)-= times[tStart[i]-1+j];;
+       for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+         yi(j) = y[tStart[i]-1+j];
 
-        for(unsigned int b=0;b<nFixedEffects;b++){
-          yi(j)-=params.beta(b,0)*dataset.W_LME(tStart[i]-1+j,b);
-        }
+         //ADD TIMES yi(j)-= times[tStart[i]-1+j];;
+
+         for(unsigned int b=0;b<nFixedEffects;b++){
+           yi(j)-=params.beta(b,0)*dataset.W_LME(tStart[i]-1+j,b);
+         }
         for(unsigned int b=0;b<nFixedEffects_mix;b++){
           yi(j)-=params.beta_mix(c,b)*dataset.W_LME_mix(tStart[i]-1+j,b);
         }
@@ -3337,18 +3337,19 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         MatrixXd Vi=MatrixXd::Identity(ni, ni) * params.SigmaE();
 
         dmvnorm += -0.5*yi.transpose()*Vi.inverse()*yi - 0.5*ni*log(2.0*pi<double>()) - 0.5*ni*log(params.SigmaE());
-      }
+        }
 
-      // If random effects integrated out:
-      // MatrixXd V = block *params.covRE(c)* block.transpose() + MatrixXd::Identity(ni, ni) * exp(params.SigmaE());
-      // LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
-      // MatrixXd L = lltOfA.matrixL();
-      // double logDetPrecMat=  2*log(L.determinant());
-      // MatrixXd Vinv = L.inverse().transpose()*L.inverse();
-      //
-      // dmvnorm +=  -0.5*yi.transpose()*Vinv*yi - 0.5*ni*log(2.0*pi<double>())
-      //   - 0.5*logDetPrecMat;
-    }
+
+       // If random effects integrated out:
+       // MatrixXd V = block *params.covRE(c)* block.transpose() + MatrixXd::Identity(ni, ni) * exp(params.SigmaE());
+       // LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
+       // MatrixXd L = lltOfA.matrixL();
+       // double logDetPrecMat=  2*log(L.determinant());
+       // MatrixXd Vinv = L.inverse().transpose()*L.inverse();
+       //
+       // dmvnorm +=  -0.5*yi.transpose()*Vinv*yi - 0.5*ni*log(2.0*pi<double>())
+       //   - 0.5*logDetPrecMat;
+     }
   }
   return dmvnorm;
 }
@@ -3451,7 +3452,7 @@ double logPYiGivenZiWiSurvival(const pReMiuMParams& params, const pReMiuMData& d
 vector<double> pReMiuMLogPost(const pReMiuMParams& params,
                               const mcmcModel<pReMiuMParams,
                                               pReMiuMOptions,
-                                              pReMiuMData>& model){
+                                               pReMiuMData>& model){
   const pReMiuMData& dataset = model.dataset();
   const string outcomeType = model.dataset().outcomeType();
   const string kernelType = model.options().kernelType(); //AR
@@ -3488,9 +3489,11 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     //P(xi|zi,params)
     logLikelihood+=params.workLogPXiGivenZi(i);
   }
+
   // Add in contribution from Y
   vector<double> extraVarPriorVal(nSubjects,0.0);
   vector<double> extraVarPriorMean(nSubjects,0.0);
+
   if(includeResponse){
 
     double (*logPYiGivenZiWi)(const pReMiuMParams&,const pReMiuMData&,
@@ -3580,9 +3583,10 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     //RJ logLikelihood is a sum only if Yi are conditionally independent
 
     if(outcomeType.compare("Longitudinal")!=0){
-      for(unsigned int i=0;i<nSubjects;i++){
+      for(unsigned int i=0;i<nSubjects;i++){//
         int zi = params.z(i);
-        logLikelihood+=logPYiGivenZiWi(params,dataset,nFixedEffects,zi,i);
+        double temp = logPYiGivenZiWi(params,dataset,nFixedEffects,zi,i);
+        logLikelihood+=temp;
       }
     }
   }
@@ -3590,14 +3594,13 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   // Now need to add in the prior (i.e. p(z,params) in above notation)
   // Note we integrate out u and all parameters in Theta with no members
   double logPrior=0.0;
-  double  logPriorTPM=0.0;
+
   // Prior for z
   for(unsigned int i=0;i<nSubjects;i++){
     int zi = params.z(i);
     logPrior+=params.logPsi(zi);
   }
-  std::cout << " logPriorPsi "<<logPrior-logPriorTPM<<std::endl;
-  logPriorTPM=logPrior;
+
 
   // Prior for V (we only need to include these up to maxNCluster, but we do need
   // to include all V, whether or not a cluster is empty, as the V themselves
@@ -3605,8 +3608,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   for(unsigned int c=0;c<maxNClusters;c++){
     logPrior+=logPdfBeta(params.v(c),1.0-params.dPitmanYor(),params.alpha()+params.dPitmanYor()*(c+1));
   }
-  std::cout << " logPriorBeta "<<logPrior-logPriorTPM<<std::endl;
-  logPriorTPM=logPrior;
 
   if(isinf(logPrior)){
     //for(unsigned int c=0;c<maxNClusters;c++){
@@ -3617,8 +3618,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   if(fixedAlpha<=-1){
     logPrior+=logPdfGamma(params.alpha(),hyperParams.shapeAlpha(),hyperParams.rateAlpha());
   }
-  std::cout << " logPriorAlpha "<<logPrior-logPriorTPM<<std::endl;
-  logPriorTPM=logPrior;
 
   // Prior for phi
   if(covariateType.compare("Discrete")==0){
@@ -3661,18 +3660,16 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
           }
           logPrior+=logPdfDirichlet(params.logPhi(c,j),dirichParams,true);
         }
+
         if (useNormInvWishPrior){
           logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.nu0()*params.Tau(c),nContinuousCov*hyperParams.nu0()+params.workLogDetTau(c));
         }else{
           logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
         }
-
         logPrior+=logPdfWishart(nContinuousCov,params.Tau(c),params.workLogDetTau(c),hyperParams.workInverseR0(),hyperParams.workLogDetR0(),(double)hyperParams.kappa0());
       }
     }
   }
-  std::cout << " logPriorX "<<logPrior-logPriorTPM<<std::endl;
-  logPriorTPM=logPrior;
 
   // Prior for variable selection parameters
   if(varSelectType.compare("None")!=0){
@@ -3687,8 +3684,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
-    std::cout << " logPriorvarsel "<<logPrior-logPriorTPM<<std::endl;
-    logPriorTPM=logPrior;
 
     // We can add in the prior for rho and omega
     logPrior+=log(hyperParams.atomRho());
@@ -3699,8 +3694,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     }
 
   }
-  std::cout << " logPriorBeta "<<logPrior-logPriorTPM<<std::endl;
-  logPriorTPM=logPrior;
 
   if(includeResponse){
 
@@ -3719,9 +3712,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
-    std::cout << " logPriorTheta "<<logPrior-logPriorTPM<<std::endl;
-    logPriorTPM=logPrior;
-
 
     // Prior for beta
     // There were no fixed effects in the Molitor paper but to be consistent with
@@ -3739,19 +3729,17 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
-    std::cout << " logPriorFE "<<logPrior-logPriorTPM<<std::endl;
-    logPriorTPM=logPrior;
 
     for(unsigned int j=0;j<nFixedEffects_mix;j++){
       for(unsigned int c=0;c<maxNClusters;c++){
         for (unsigned int k=0;k<nCategoriesY;k++){
-          if(outcomeType.compare("LME")!=0){
+          //if(outcomeType.compare("LME")!=0){
             logPrior+=logPdfLocationScaleT(params.beta_mix(c, j+k*nFixedEffects_mix),hyperParams.muBeta(),
                                          hyperParams.sigmaBeta(),hyperParams.dofBeta());
-          }else{
-            logPrior+=logPdfNormal(params.beta_mix(c, j+k*nFixedEffects_mix),hyperParams.muBeta(),
-                                   hyperParams.sigmaBeta());
-          }
+          //}else{
+           // logPrior+=logPdfNormal(params.beta_mix(c, j+k*nFixedEffects_mix),hyperParams.muBeta(),
+           //                        hyperParams.sigmaBeta());
+          //}
         }
       }
     }
@@ -3780,8 +3768,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         }
       }
     }
-    std::cout << " logPriorS "<<logPrior-logPriorTPM<<std::endl;
-    logPriorTPM=logPrior;
 
     //RJ add up prior for L
     if(outcomeType.compare("Longitudinal")==0){
@@ -3862,16 +3848,13 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
       logPrior+=logPdfIntrinsicCAR(params.uCAR(), dataset.neighbours() , params.TauCAR());
     }
   }
-  std::cout << " logPrior "<<logPrior<<std::endl
-            << " logLikelihood "<<logLikelihood<<std::endl;
 
-  vector<double> outVec(3);
-  outVec[0]=logLikelihood+logPrior;
-  outVec[1]=logLikelihood;
-  outVec[2]=logPrior;
+   vector<double> outVec(3);
+   outVec[0]=logLikelihood+logPrior;
+   outVec[1]=logLikelihood;
+   outVec[2]=logPrior;
 
-  return outVec;
-
+   return outVec;
 }
 
 
@@ -4111,8 +4094,8 @@ double logCondPostThetaBeta(const pReMiuMParams& params,
       for (unsigned int k=0;k<nCategoriesY;k++){
         out+=logPdfLocationScaleT(params.beta_mix(c,j+k*nFixedEffects_mix),hyperParams.muBeta(),
                                   hyperParams.sigmaBeta(),hyperParams.dofBeta());
-        //out+= logPdfNormal(params.beta_mix(c,j+k*nFixedEffects_mix),hyperParams.muBeta(),
-        //                   hyperParams.sigmaBeta());
+        out+= logPdfNormal(params.beta_mix(c,j+k*nFixedEffects_mix),hyperParams.muBeta(),
+                           hyperParams.sigmaBeta());
       }
     }
   }
