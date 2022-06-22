@@ -477,11 +477,17 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 	nContinuousCovariatesNotMissing.resize(nSubjects+nPredictSubjects);
 	vector<double> meanX(nCovariates,0);
 	vector<unsigned int> nXNotMissing(nCovariates,0);
+	vector<double> Y0_LME=dataset.continuousY();
+
+	Y0_LME.resize(nSubjects);
+
 	for(unsigned int i=0;i<nSubjects;i++){
 		if(outcomeType.compare("Normal")==0||outcomeType.compare("Survival")==0||outcomeType.compare("MVN")==0){
 			for(unsigned int j=0; j<nOutcomes; j++){//RJ read in MVN data
 				inputFile >> continuousY[i*nOutcomes+j];
 			}
+		}else if(outcomeType.compare("LME")==0){
+		  inputFile >> Y0_LME[i];
 		}else{
 			inputFile >> discreteY[i];
 		}
@@ -554,7 +560,6 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 			inputFile >> censoring[i];
 		}
 	}
-
 	//RJ Read in timepoints and longitudinal data
 	if(outcomeType.compare("Longitudinal")==0 || outcomeType.compare("LME")==0){
 
@@ -562,11 +567,11 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 			inputFile >> tStart[i];
 			inputFile >> tStop[i];
     }
-
 		for(unsigned int i=0; i<nTimes; i++){
 			inputFile >> times[i];
 			inputFile >> continuousY[i];
 		}
+
 		int length = tStop[0] - tStart[0] + 1;
 		equalTimes = length;
 		for(unsigned int i=1; i<nSubjects; i++){
@@ -1561,6 +1566,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 		}
 
 	}else if(covariateType.compare("Mixed")==0){
+
 		// Sample logPhi
 		// Need to count the number of X[i][j]==p for each covariate and category of p
 		vector<vector<unsigned int> > nXpMembers(nDiscreteCovs);
@@ -1697,8 +1703,6 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 			}
 			params.nullMu(nullMu);
 		}
-
-
 	}
 
 	// Initialise the variable selection variables if appropriate
@@ -1738,6 +1742,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
 			params.omega(j,omega[j]);
 			params.rho(j,rho[j],covariateType,varSelectType);
+
 			if(varSelectType.compare("BinaryCluster")==0){
 				for(unsigned int c=0;c<maxNClusters;c++){
 					params.gamma(c,j,gamma[c][j],covariateType);
@@ -1747,7 +1752,6 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 			// gamma is deterministically equal to rho, and so is set in the method
 			// for rho so we do nothing here.
 		}
-
 	}
 
 	if(includeResponse){
@@ -1758,6 +1762,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 		    params.theta(c,k,-2.0+4.0*unifRand(rndGenerator));
 		  }
 		}
+
 		for(unsigned int j=0;j<nFixedEffects;j++){
 		    for (unsigned int k=0;k<nCategoriesY;k++){
 		      // Betas are randomly between -2 and 2

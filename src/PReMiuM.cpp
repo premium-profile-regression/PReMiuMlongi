@@ -67,6 +67,7 @@ using std::cout;
 
 RcppExport SEXP profRegr(SEXP inputString) {
 
+  std::cout << " hello " << std::endl;
   string inputStr = Rcpp::as<string>(inputString);
 
   /* ---------- Start the timer ------------------*/
@@ -174,11 +175,11 @@ RcppExport SEXP profRegr(SEXP inputString) {
 
     // Adaptive MH for beta
     if(dataset.nFixedEffects()>0 || dataset.nFixedEffects_mix()>0){
-      if(options.outcomeType().compare("LME")!=0){
+      //if(options.outcomeType().compare("LME")!=0){
         pReMiuMSampler.addProposal("metropolisHastingsForBeta",1.0,1,1,&metropolisHastingsForBeta);
-      }else{
-        pReMiuMSampler.addProposal("gibbsForBeta",1.0,1,1,&GibbsForBeta);
-      }
+      //}else{
+      //  pReMiuMSampler.addProposal("gibbsForBeta",1.0,1,1,&GibbsForBeta);
+      //}
     }
 
     if(options.responseExtraVar()){
@@ -340,33 +341,32 @@ RcppExport SEXP profRegr(SEXP inputString) {
   pReMiuMSampler.initialiseOutputFiles(options.outFileStem());
   /* ---------- Write the log file ------------- */
   // The standard log file
-  pReMiuMSampler.writeLogFile();
-  /* ---------- Initialise the chain ---- */
-  pReMiuMSampler.initialiseChain();
+   pReMiuMSampler.writeLogFile();
+   /* ---------- Initialise the chain ---- */
+   pReMiuMSampler.initialiseChain();
 
-  pReMiuMHyperParams hyperParams = pReMiuMSampler.chain().currentState().parameters().hyperParams();
-  unsigned int nClusInit = pReMiuMSampler.chain().currentState().parameters().workNClusInit();
+   pReMiuMHyperParams hyperParams = pReMiuMSampler.chain().currentState().parameters().hyperParams();
+   unsigned int nClusInit = pReMiuMSampler.chain().currentState().parameters().workNClusInit();
 
-  // The following is only used if the sampler type is truncated
-  unsigned int maxNClusters = pReMiuMSampler.chain().currentState().parameters().maxNClusters();
+   // The following is only used if the sampler type is truncated
+   unsigned int maxNClusters = pReMiuMSampler.chain().currentState().parameters().maxNClusters();
 
   /* ---------- Run the sampler --------- */
   // Note: in this function the output gets written
+   pReMiuMSampler.run();
 
-  pReMiuMSampler.run();
 
+   /* -- End the clock time and write the full run details to log file --*/
+   currTime = time(NULL);
+   double timeInSecs=(double)currTime-(double)beginTime;
+   string tmpStr = storeLogFileData(options,dataset,hyperParams,nClusInit,maxNClusters,timeInSecs);
+   pReMiuMSampler.appendToLogFile(tmpStr);
 
-  /* -- End the clock time and write the full run details to log file --*/
-  currTime = time(NULL);
-  double timeInSecs=(double)currTime-(double)beginTime;
-  string tmpStr = storeLogFileData(options,dataset,hyperParams,nClusInit,maxNClusters,timeInSecs);
-  pReMiuMSampler.appendToLogFile(tmpStr);
+   /* ---------- Clean Up ---------------- */
+   pReMiuMSampler.closeOutputFiles();
 
-  /* ---------- Clean Up ---------------- */
-  pReMiuMSampler.closeOutputFiles();
-
-  //int err = 0;
-  return Rcpp::wrap(0);
+   //int err = 0;
+   return Rcpp::wrap(0);
   // alternative output
   // return Rcpp::List::create(Rcpp::Named("yModel")=options.outcomeType());
 

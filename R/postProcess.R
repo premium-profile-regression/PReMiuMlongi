@@ -29,7 +29,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
                    output="output", hyper, predict, predictType="RaoBlackwell", nSweeps=1000,
                    nBurn=1000, nProgress=500, nFilter=1, nClusInit, seed, yModel="Bernoulli",
                    xModel="Discrete", sampler="SliceDependent", alpha=-2, dPitmanYor=0, excludeY=FALSE, extraYVar=FALSE,
-                   varSelectType="None", entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs, continuousCovs,
+                   varSelectType="None", entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs= NULL, continuousCovs= NULL,
                    whichLabelSwitch="123", includeCAR=FALSE, neighboursFile="Neighbours.txt",
                    weibullFixedShape=TRUE, useNormInvWishPrior=FALSE,
                    kernel="SQexponential", sampleGPmean= FALSE,  estim_ratio=F, time_grid=NULL, ngrid=0, timevar=NULL){
@@ -78,8 +78,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     longData <- longData[with(longData, order(ID)), ]
   }
 
-  if(yModel == "LME" & missing(formula))
-    stop("The argument formula must be specified in LME ymodel")
+  #if(yModel == "LME" & missing(formula))
+    #stop("The argument formula must be specified in LME ymodel")
   if (missing(longData) & yModel %in% c("Longitudinal", "LME"))
     stop("The argument data should be specified and defined as a data.frame")
   if(yModel == "LME")
@@ -297,7 +297,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         if (length(tmpIndex_RE)==0) stop("ERROR: random effects names should be included in the names in longData.")
         REIndeces<-append(REIndeces,tmpIndex_RE)
       }
-      randomEffects<-longData[,REIndeces]
+      randomEffects<-longData[,REIndeces, drop=FALSE]
       if (sum(is.na(randomEffects))>0) stop("ERROR: covariates with random effects cannot have missing values. Use an imputation method before using profRegr().")
       #longData<-cbind(longData,randomEffects)
       for (i in dim(randomEffects)[2]){
@@ -356,7 +356,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       write(t(fixedEffectsNames_clust), fileName,append=T,ncolumns=1)
     }
   }else{
-
     write(nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames, 1, 0),
           fileName,
           append = T,
@@ -370,12 +369,10 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
             append = T,
             ncolumns = 1)
     }
-
     write(nFixedEffects_mix + ifelse(timevar[1] %in% fixedEffectsNames_clust, 1, 0),
           fileName,
           append = T,
           ncolumns = 1)
-
     if (nFixedEffects_mix > 0) {
       if (timevar[1] %in% fixedEffectsNames_clust)
         fixedEffectsNames_clust <-
@@ -453,7 +450,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if(yModel!="LME"){ #dim(dataMatrix)[2]==(nFixedEffects+nFixedEffects_mix+2)
     write(t(dataMatrix), fileName,append=T,ncolumns=dim(dataMatrix)[2])
   }else{
-    d2 <- as.data.frame(matrix(0,nrow=dim(dataMatrix)[1],ncol=nFixedEffects+nFixedEffects_mix+2+1))
+    d2 <- as.data.frame(matrix(0,nrow=dim(dataMatrix)[1],ncol= length(covNames) + nFixedEffects + ifelse(nFixedEffects>0,1,0) + nFixedEffects_mix + ifelse(nFixedEffects_mix>0,1,0)+1))#1 for outcome, +1 for intercepts
     d2[,1:dim(dataMatrix)[2]]<-dataMatrix
     names(d2)[1:dim(dataMatrix)[2]]<-names(as.data.frame(dataMatrix))
     write(t(d2), fileName,append=T,ncolumns=dim(d2)[2])
@@ -491,6 +488,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         write(t(d1), fileName,append=T, ncolumns=length(fixedEffectsNames))
       write(t(d3), fileName,append=T, ncolumns=length(fixedEffectsNames_clust))
       wMat_RE<-data.frame("intercept"=rep(1,dim(longData)[1]))#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
+
       if(length(randomEffectsNames)>1)
         wMat_RE<-data.frame("intercept"=rep(1,dim(randomEffects)[1]),randomEffects)#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
       write(t(wMat_RE), fileName,append=T, ncolumns=dim(wMat_RE)[2])
@@ -742,6 +740,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (estim_ratio) inputString<-paste(inputString," --estim_ratio=" ,estim_ratio,sep="")
   if (!missing(seed)) inputString<-paste(inputString," --seed=",seed,sep="")
 
+  #browser()
   if (run) .Call('profRegr', inputString, PACKAGE = 'PReMiuMlongi')
 
   # define directory path and fileStem
