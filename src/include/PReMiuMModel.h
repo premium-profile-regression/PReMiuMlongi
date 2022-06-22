@@ -4094,8 +4094,8 @@ double logCondPostThetaBeta(const pReMiuMParams& params,
       for (unsigned int k=0;k<nCategoriesY;k++){
         out+=logPdfLocationScaleT(params.beta_mix(c,j+k*nFixedEffects_mix),hyperParams.muBeta(),
                                   hyperParams.sigmaBeta(),hyperParams.dofBeta());
-        out+= logPdfNormal(params.beta_mix(c,j+k*nFixedEffects_mix),hyperParams.muBeta(),
-                           hyperParams.sigmaBeta());
+        //out+= logPdfNormal(params.beta_mix(c,j+k*nFixedEffects_mix),hyperParams.muBeta(),
+        //                   hyperParams.sigmaBeta());
       }
     }
   }
