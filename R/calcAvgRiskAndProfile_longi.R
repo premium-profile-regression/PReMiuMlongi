@@ -526,6 +526,7 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
       }
     }
   }
+
   # Calculate the empiricals
   empiricals<-rep(0,nClusters)
   if(!is.null(yModel)){

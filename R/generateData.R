@@ -550,7 +550,7 @@ clusSummaryLongitudinalDiscrete<-function(ng=2, N=200){##//RJ summary generation
                                                  c(0.8,0.1,0.1),
                                                  c(0.8,0.1,0.1),
                                                  c(0.8,0.1,0.1))),
-                      list('theta'=list('mu'=c(9,7,6,4,2,1,0),
+                      list('theta'=list('mu'=c(9,7,6,5,6,4,3),
 			  	        			    'L'=c(-0.5,-0.1,-0.5)),
                            'covariateProbs'=list(c(0.1,0.8,0.1),
                                                  c(0.1,0.8,0.1),

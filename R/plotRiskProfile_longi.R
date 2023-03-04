@@ -47,7 +47,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
   }
 
   if(is.null(profile_X) && yModel == "LME" && length(which(!c(fixedEffectsNames,fixedEffectsNames_clust)%in%c("intercept",timevar)))>0){
-    stop("Error: profile_X should be defined as a list of covariates values such list(cov=1)")
+    stop("Error: profile_X should be defined as a dataframe with the same name as fixedEffectsNames (and/or fixedEffectsNames_clust) if yModel = LME.")
   }
 
   if (nClusters==1) stop("Cannot produce plots because only one cluster has been found.")
@@ -864,18 +864,20 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     }
 
     for(c in whichClusters){
-      betamix_mean <- colMeans(betamixArray[,c,])
+      if(nFixedEffects_clust>0)
+        betamix_mean <- colMeans(betamixArray[,c,])
       jj=1
       if(all(timevar %in% fixedEffectsNames_clust)){
         ind_time <- which(fixedEffectsNames_clust %in% c("intercept",timevar))
         mat_times <- rep(1,length(tTimes))
         for(jjj in 1:length(timevar))
           mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jjj))
-        mu <- mu + mat_times %*%betamix_mean[ind_time]
+        if(nFixedEffects_clust>0)
+          mu <- mu + mat_times %*%betamix_mean[ind_time]
         jj = jj + length(ind_time)
       }
 
-      if(length(fixedEffectsNames_clust)>=jj){
+      if(length(fixedEffectsNames_clust)>=jj & nFixedEffects_clust>0){
         for(other_spec_cov in jj:length(fixedEffectsNames_clust))
           mu <- mu + rep(betamix_mean[other_spec_cov] * profile_X[[fixedEffectsNames_clust[jj]]],length(tTimes))
       }
