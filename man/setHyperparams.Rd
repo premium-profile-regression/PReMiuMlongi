@@ -36,9 +36,9 @@ setHyperparams(shapeAlpha = NULL, rateAlpha = NULL, aPhi = NULL, mu0
 \item{muTheta}{The location parameter for the t-Distribution for theta_c (only used if response included in model, default=0)}
 \item{sigmaTheta}{The scale parameter for the t-Distribution for theta_c (only used if response included in model, default=2.5)}
 \item{dofTheta}{The degrees of freedom parameter for the t-Distribution for theta_c (only used if response included in model, default=7)}
-\item{muBeta}{The location parameter for the t-Distribution for beta (only used when fixed effects present, default=0)}
-\item{sigmaBeta}{The scale parameter for the t-Distribution for beta (only used when fixed effects present, default=2.5)}
-\item{dofBeta}{The dof parameter for the t-Distribution for beta (only used when fixed effects present, default=7)}
+\item{muBeta}{The location parameter for the t-Distribution for beta (only used when fixed effects present, default=0) when yModel != LME. Else, mean parameter for the Normal distribution for common and cluster-specific beta parameters).}
+\item{sigmaBeta}{The scale parameter for the t-Distribution for beta (only used when fixed effects present, default=2.5) when yModel != LME. Else, variance parameter for the Normal distribution for common and cluster-specific beta parameters.}
+\item{dofBeta}{The dof parameter for the t-Distribution for beta (only used when fixed effects present, default=7) when yModel != LME. Else, not used.}
 \item{shapeTauEpsilon}{Shape parameter for gamma distribution for prior for precision tau of extra variation errors epsilon (only used if extra variation is used i.e. extraYVar argument is included, default=5.0)}
 \item{rateTauEpsilon}{Inverse-scale (rate) parameter for gamma distribution for prior for precision tau of extra variation errors epsilon (only used if extra variation is used i.e. extraYVar argument is used, default=0.5)}
 \item{aRho}{Parameter for beta distribution for prior on rho in variable selection (default=0.5)}
