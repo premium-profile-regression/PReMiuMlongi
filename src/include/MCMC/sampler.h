@@ -244,9 +244,10 @@ template<class modelParamType,class optionType,class propParamType,class dataTyp
 		/// \brief Member function to initialise the MCMC chain
 		void initialiseChain(){
 
-			modelParamType tmpModelParams;
-			_model.initialiseParams(_rndGenerator,tmpModelParams);
+			 modelParamType tmpModelParams;
+			 _model.initialiseParams(_rndGenerator,tmpModelParams);
 			vector<double> logPostVec;
+
 			logPostVec = _model.logPosterior(tmpModelParams);
 
 			mcmcState<modelParamType> tmpState(tmpModelParams,logPostVec);
@@ -542,6 +543,7 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 		updateMissingData();
 		// At each sweep we loop over the proposals
 		typename vector<mcmcProposal<modelParamType,optionType,propParamType,dataType> >::iterator it;
+
 		for(it=_proposalVec.begin(); it<_proposalVec.end(); it++){
 
 			// Only use this proposal if it is due to be tried at this sweep
@@ -549,7 +551,7 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 				// Only try this proposal with probability as defined
 				if(unifRand(_rndGenerator)<it->proposalWeight()){
 					// Update the chain state
-					//cout << "prop " << it->proposalName().c_str()<<endl;
+					std::cout<<endl << "prop " << it->proposalName().c_str();
 					it->updateParameters(_chain,_model,_rndGenerator);
 				}
 			}
