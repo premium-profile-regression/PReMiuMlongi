@@ -327,17 +327,17 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 		}
 	}
 	unsigned int& nSubjects=dataset.nSubjects();
+	unsigned int& nOutcomes=dataset.nOutcomes();
 	unsigned int& nTimes=dataset.nTimes();
 	unsigned int& nTimes_unique=dataset.nTimes_unique(); //AR
 	unsigned int& nCovariates=dataset.nCovariates();
 	unsigned int& nDiscreteCovs=dataset.nDiscreteCovs();
 	unsigned int& nContinuousCovs=dataset.nContinuousCovs();
-	unsigned int& nFixedEffects=dataset.nFixedEffects();
-	unsigned int& nFixedEffects_mix=dataset.nFixedEffects_mix();
 	unsigned int& nCategoriesY=dataset.nCategoriesY();
 	unsigned int& nPredictSubjects=dataset.nPredictSubjects();
 	//RJ initialise pointer to equalTimes
 	unsigned int& equalTimes=dataset.equalTimes();
+	vector<unsigned int>& nTimes_m=dataset.nTimes_m();
 	vector<unsigned int>& nCategories=dataset.nCategories();
 	vector<unsigned int>& discreteY=dataset.discreteY();
 	vector<double>& continuousY=dataset.continuousY();
@@ -347,15 +347,18 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 	vector<vector<bool> >& missingX=dataset.missingX();
 	vector<unsigned int>& nContinuousCovariatesNotMissing=dataset.nContinuousCovariatesNotMissing();
 	vector<vector<double> >& W=dataset.W();
-	vector<vector<double> >& W_mix=dataset.W_mix();
-	MatrixXd& W_RE=dataset.W_RE();
-	MatrixXd& W_LME=dataset.W_LME();
-	MatrixXd& W_LME_mix=dataset.W_LME_mix();
-	vector<string>& confNames=dataset.fixedEffectNames();
-	vector<string>& confNames_mix=dataset.fixedEffectNames_mix();
+	vector<vector<double> >& W_mix=dataset.W_mix(); // Cluster-specific fixed efects if yModel != LME
+	vector<MatrixXd>& W_RE=dataset.W_RE();
+	vector<MatrixXd>& W_LME=dataset.W_LME();
+	vector<MatrixXd>& W_LME_mix=dataset.W_LME_mix(); // Cluster-specific fixed efects if yModel == LME
 
-	unsigned int& nRandomEffects=dataset.nRandomEffects();
-	vector<string>& confNames_RE=dataset.randomEffectNames();
+
+	vector<unsigned int>& nFixedEffects=dataset.nFixedEffects();
+	vector<unsigned int>& nFixedEffects_mix=dataset.nFixedEffects_mix();
+	vector<vector<string>>& confNames=dataset.fixedEffectNames();
+	vector<vector<string>>& confNames_mix=dataset.fixedEffectNames_mix();
+	vector<unsigned int>& nRandomEffects=dataset.nRandomEffects();
+	vector<vector<string>>& confNames_RE=dataset.randomEffectNames();
 
 	string outcomeType = dataset.outcomeType();
 	string covariateType = dataset.covariateType();
@@ -375,10 +378,20 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 
 	// Get the number of subjects
 	inputFile >> nSubjects;
+	// Get the number of outcomes
+	inputFile >> nOutcomes;
 	// Get the number of covariates
 	inputFile >> nCovariates;
-	//RJ get nTimes from inputFile
+	if(outcomeType.compare("LME")!=0){
+	  //RJ get nTimes from inputFile
 	inputFile >> nTimes;
+	}else{
+	  nTimes_m.resize(nOutcomes);
+	  for(unsigned int i=0;i<nOutcomes;i++){
+	    inputFile >> nTimes_m[i];
+	    nTimes = nTimes + nTimes_m[i];
+	  }
+	}
 	covNames.resize(nCovariates);
 	if(covariateType.compare("Mixed")==0){
 		inputFile >> nDiscreteCovs;
@@ -402,23 +415,43 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 	}
 
 	// Get the number of fixed effects
-	inputFile >> nFixedEffects;
-	confNames.resize(nFixedEffects);
-	for(unsigned int i=0;i<nFixedEffects;i++){
-		inputFile >> confNames[i];
+	nFixedEffects.resize(nOutcomes);
+	for(unsigned int m=0;m<nOutcomes;m++)
+	  inputFile >> nFixedEffects[m];
+
+	confNames.resize(nOutcomes);
+	for(unsigned int m=0;m<nOutcomes;m++){
+	  confNames[m].resize(nFixedEffects[m]);
+	  for(unsigned int i=0;i<nFixedEffects[m];i++)
+	    inputFile >> confNames[m][i];
 	}
-	inputFile >> nFixedEffects_mix;
-	confNames_mix.resize(nFixedEffects_mix);
-	for(unsigned int i=0;i<nFixedEffects_mix;i++){
-	  inputFile >> confNames_mix[i];
+
+	nFixedEffects_mix.resize(nOutcomes);
+	for(unsigned int m=0;m<nOutcomes;m++)
+	  inputFile >> nFixedEffects_mix[m];
+
+	confNames_mix.resize(nOutcomes);
+	for(unsigned int m=0;m<nOutcomes;m++){
+	  confNames_mix[m].resize(nFixedEffects_mix[m]);
+	  for(unsigned int i=0;i<nFixedEffects_mix[m];i++)
+	    inputFile >> confNames_mix[m][i];
 	}
+
 	if(outcomeType.compare("LME")==0){
-	  inputFile >> nRandomEffects;
-	  confNames_RE.resize(nRandomEffects);
-	  for(unsigned int i=0;i<nRandomEffects;i++){
-	    inputFile >> confNames_RE[i];
+
+	  nRandomEffects.resize(nOutcomes);
+	  for(unsigned int m=0;m<nOutcomes;m++)
+	    inputFile >> nRandomEffects[m];
+
+	  confNames_RE.resize(nOutcomes);
+	  for(unsigned int m=0;m<nOutcomes;m++){
+	    confNames_RE[m].resize(nRandomEffects[m]);
+	    for(unsigned int i=0;i<nRandomEffects[m];i++)
+	      inputFile >> confNames_RE[m][i];
 	  }
+
 	}
+
 	// Get the number of categories of outcome Y
 	if(outcomeType.compare("Categorical")==0){
 		inputFile >> nCategoriesY;
@@ -453,12 +486,20 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 	// Get the data
 	discreteY.resize(nSubjects);
 	//RJ resize Y (nTimes), and times, tStart, and tStop
-	int nOutcomes = nTimes/nSubjects;
+	if(outcomeType.compare("MVN")!=0)
+	  nOutcomes = nTimes/nSubjects;
 	continuousY.resize(nTimes);
 	times.resize(nTimes);
-	tStart.resize(nSubjects);
-	tStop.resize(nSubjects);
+
+	if(outcomeType.compare("LME")!=0){
+	  tStart.resize(nSubjects);
+	  tStop.resize(nSubjects);
+	}else{
+	  tStart.resize(nSubjects*nOutcomes);
+	  tStop.resize(nSubjects*nOutcomes);
+	}
 	times_corr.resize(nTimes);
+
 	discreteX.resize(nSubjects+nPredictSubjects);
 	continuousX.resize(nSubjects+nPredictSubjects);
 	W.resize(nSubjects);
@@ -477,20 +518,18 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 	nContinuousCovariatesNotMissing.resize(nSubjects+nPredictSubjects);
 	vector<double> meanX(nCovariates,0);
 	vector<unsigned int> nXNotMissing(nCovariates,0);
-	vector<double> Y0_LME=dataset.continuousY();
 
-	Y0_LME.resize(nSubjects);
 
 	for(unsigned int i=0;i<nSubjects;i++){
-		if(outcomeType.compare("Normal")==0||outcomeType.compare("Survival")==0||outcomeType.compare("MVN")==0){
-			for(unsigned int j=0; j<nOutcomes; j++){//RJ read in MVN data
-				inputFile >> continuousY[i*nOutcomes+j];
-			}
-		}else if(outcomeType.compare("LME")==0){
-		  inputFile >> Y0_LME[i];
-		}else{
-			inputFile >> discreteY[i];
-		}
+	  if(outcomeType.compare("LME")!=0){
+	    if(outcomeType.compare("Normal")==0||outcomeType.compare("Survival")==0||outcomeType.compare("MVN")==0){
+	      for(unsigned int j=0; j<nOutcomes; j++){//RJ read in MVN data
+	        inputFile >> continuousY[i*nOutcomes+j];
+	      }
+	    }else{
+	      inputFile >> discreteY[i];
+	    }
+	  }
 		if(covariateType.compare("Discrete")==0 || covariateType.compare("Normal")==0){
 			discreteX[i].resize(nCovariates);
 			continuousX[i].resize(nCovariates);
@@ -539,79 +578,121 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 			}
 		}
 
-		W[i].resize(nFixedEffects);
-		W_mix[i].resize(nFixedEffects_mix);
+		if(outcomeType.compare("LME")!=0){
+		  //Read outcomes
 
-		for(unsigned int j=0;j<nFixedEffects;j++){
-			inputFile >> W[i][j];
-		}
-		for(unsigned int j=0;j<nFixedEffects_mix;j++){
-		  inputFile >> W_mix[i][j];
-		}
-		if(outcomeType.compare("Poisson")==0){
-			double tmp;
-			inputFile >> tmp;
-			logOffset[i]=log(tmp);
-		}
-		if(outcomeType.compare("Binomial")==0){
-			inputFile >> nTrials[i];
-		}
-		if(outcomeType.compare("Survival")==0){
-			inputFile >> censoring[i];
+		  W[i].resize(nFixedEffects[0]);
+		  //W_mix[i].resize(nFixedEffects_mix);
+
+		  for(unsigned int j=0;j<nFixedEffects[0];j++){
+		    inputFile >> W[i][j]; //used only if Ymodel != LME
+		  }
+		  // for(unsigned int j=0;j<nFixedEffects_mix;j++){
+		  //   inputFile >> W_mix[i][j];//used only if Ymodel != LME
+		  // }
+		  if(outcomeType.compare("Poisson")==0){
+		    double tmp;
+		    inputFile >> tmp;
+		    logOffset[i]=log(tmp);
+		  }
+		  if(outcomeType.compare("Binomial")==0){
+		    inputFile >> nTrials[i];
+		  }
+		  if(outcomeType.compare("Survival")==0){
+		    inputFile >> censoring[i];
+		  }
 		}
 	}
+
+
 	//RJ Read in timepoints and longitudinal data
 	if(outcomeType.compare("Longitudinal")==0 || outcomeType.compare("LME")==0){
 
-		for(unsigned int i=0; i<nSubjects; i++){
-			inputFile >> tStart[i];
-			inputFile >> tStop[i];
-    }
-		for(unsigned int i=0; i<nTimes; i++){
-			inputFile >> times[i];
-			inputFile >> continuousY[i];
-		}
+	  int ind=0;
+	  for(unsigned int m=0; m<nOutcomes; m++){
+	    for(unsigned int i=0; i<nSubjects; i++){
+	      inputFile >> tStart[ind];
+	      inputFile >> tStop[ind];
+	      ind++;
+	    }
+	  }
 
-		int length = tStop[0] - tStart[0] + 1;
-		equalTimes = length;
-		for(unsigned int i=1; i<nSubjects; i++){
-			if(!std::equal(times.begin(),times.begin()+length,times.begin()+length*i)){
-				equalTimes = 0;
-			}
-		}
+	  if(outcomeType.compare("Longitudinal")==0){
+	    for(unsigned int i=0; i<nTimes; i++){
+	      inputFile >> times[i];
+	      inputFile >> continuousY[i];
+	    }
+	  }else{//LME
+	    int dd=0;
+	    for(unsigned int m=0; m<nOutcomes; m++){
+	      for(unsigned int i=0; i<nTimes_m[m]; i++){
+	        inputFile >> times[dd];
+	        inputFile >> continuousY[dd];
+	        dd++;
+	      }
+	    }
+	  }
 
-		if(outcomeType.compare("LME")==0){
-		  W_LME.setZero(nTimes,nFixedEffects);
-		  for(unsigned int i=0;i<nTimes;i++){
-		    for(unsigned int k=0;k<nFixedEffects;k++){
-		      inputFile >> W_LME(i,k);
-		    }
+
+	  int length = tStop[0] - tStart[0] + 1;
+	  equalTimes = length;
+	  for(unsigned int i=1; i<nSubjects; i++){
+	    if(!std::equal(times.begin(),times.begin()+length,times.begin()+length*i)){
+	      equalTimes = 0;
+	    }
+	  }
+
+	  if(outcomeType.compare("LME")==0){
+	    W_LME.resize(nOutcomes);
+	    for(unsigned int m=0;m<nOutcomes;m++){
+	      W_LME[m].setZero(nTimes_m[m],nFixedEffects[m]);
+	      for(unsigned int i=0;i<nTimes_m[m];i++){
+	        for(unsigned int k=0;k<nFixedEffects[m];k++){
+	          inputFile >> W_LME[m](i,k);
+	        }
+	      }
+	    }
+
+	    W_LME_mix.resize(nOutcomes);
+	    for(unsigned int m=0;m<nOutcomes;m++){
+	      W_LME_mix[m].setZero(nTimes_m[m],nFixedEffects_mix[m]);
+	      for(unsigned int i=0;i<nTimes_m[m];i++){
+	        for(unsigned int k=0;k<nFixedEffects_mix[m];k++){
+	          inputFile >> W_LME_mix[m](i,k);
+	        }
+	      }
+	    }
+
+	    W_RE.resize(nOutcomes);
+	    for(unsigned int m=0;m<nOutcomes;m++){
+	      W_RE[m].setZero(nTimes_m[m],nRandomEffects[m]);
+	      for(unsigned int i=0;i<nTimes_m[m];i++){
+	        for(unsigned int k=0;k<nRandomEffects[m];k++){
+	          inputFile >> W_RE[m](i,k);
+	        }
+	      }
+	    }
+	  }
+
+
+		//std::cout << " continuousY0 "<<continuousY[0]<<endl;
+		//std::cout << " times0 "<<times[0]<<endl;
+		//std::cout << " continuousY "<<continuousY[nTimes_m[0]+nTimes_m[1]+nTimes_m[2]-1]<<endl;
+		//std::cout << " times "<<times[nTimes_m[0]+nTimes_m[1]+nTimes_m[2]-1]<<endl;
+		//std::cout << " W_LME_mix "<<W_LME_mix(0,0)<<endl;
+		//std::cout << " W_RE "<<W_RE(0,0)<<endl;
+
+
+		if(outcomeType.compare("LME")!=0){
+		  //AR Read in timepoints and longitudinal data
+		  inputFile >> nTimes_unique;
+		  times_unique.resize(nTimes_unique);
+		  for(unsigned int i=0; i<nTimes_unique; i++){
+		    inputFile >> times_unique[i];
 		  }
-
-		  W_LME_mix.setZero(nTimes,nFixedEffects_mix);
-		  for(unsigned int i=0;i<nTimes;i++){
-		    for(unsigned int k=0;k<nFixedEffects_mix;k++){
-		      inputFile >> W_LME_mix(i,k);
-		    }
+		  for(unsigned int i=0; i<nTimes; i++){
+		    inputFile >> times_corr[i];
 		  }
-
-	    W_RE.setZero(nTimes,nRandomEffects);
-		  for(unsigned int i=0;i<nTimes;i++){
-		    for(unsigned int k=0;k<nRandomEffects;k++){
-		      inputFile >> W_RE(i,k);
-		    }
-		  }
-		}
-
-
-		//AR Read in timepoints and longitudinal data
-		inputFile >> nTimes_unique;
-		times_unique.resize(nTimes_unique);
-		for(unsigned int i=0; i<nTimes_unique; i++){
-		  inputFile >> times_unique[i];
-		}
-		for(unsigned int i=0; i<nTimes; i++){
-		  inputFile >> times_corr[i];
 		}
 	}
 
@@ -721,6 +802,11 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
         neighFile.close();
 	}
 
+	std::cout << " continuousY "<<endl;
+	for(unsigned int j=0;j<continuousY.size();j++)
+	  std::cout << continuousY[j]<< " ";
+
+
 	// Return if there was an error
 	if(wasError){
 		Rprintf("Please use:\n");
@@ -731,7 +817,7 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
 }
 
 // Function to read the hyper parameters from file
-void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperParams){
+void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperParams, unsigned int nOutcomes){
 
 	ifstream inputFile;
 	inputFile.open(filename.c_str());
@@ -984,7 +1070,10 @@ void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperPar
 		      SigmaLME_R0(j1,j2)=SigmaVec[j1*dim+j2];
 		    }
 		  }
-		  hyperParams.SigmaLME_R0(SigmaLME_R0);
+		  for(unsigned int m=0;m<nOutcomes;m++){
+		    hyperParams.SigmaLME_R0(m,SigmaLME_R0);
+		  }
+
 		}else if(inString.find("MVNmu0")==0){
 			size_t pos = inString.find("=")+1;
 			string tmpStr = inString.substr(pos,inString.size()-pos);
@@ -1200,7 +1289,7 @@ void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperPar
 // function to read hyper parameters)
 void initialisePReMiuM(baseGeneratorType& rndGenerator,
 				const mcmcModel<pReMiuMParams,pReMiuMOptions,pReMiuMData>& model,
-				pReMiuMParams& params){
+ 				pReMiuMParams& params){
 
 	const pReMiuMData& dataset = model.dataset();
   const string kernelType=model.options().kernelType(); //AR
@@ -1215,10 +1304,10 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 	unsigned int nCovariates=dataset.nCovariates();
 	unsigned int nDiscreteCovs=dataset.nDiscreteCovs();
 	unsigned int nContinuousCovs=dataset.nContinuousCovs();
-	unsigned int nRandomEffects=dataset.nRandomEffects();
+	vector<unsigned int> nRandomEffects=dataset.nRandomEffects();
 	string outcomeType = options.outcomeType();
-	unsigned int nFixedEffects=dataset.nFixedEffects();
-	unsigned int nFixedEffects_mix=dataset.nFixedEffects_mix();
+	vector<unsigned int> nFixedEffects=dataset.nFixedEffects();
+	vector<unsigned int> nFixedEffects_mix=dataset.nFixedEffects_mix();
 	unsigned int nCategoriesY=dataset.nCategoriesY();
 	unsigned int nPredictSubjects=dataset.nPredictSubjects();
 	unsigned int nClusInit = options.nClusInit();
@@ -1241,13 +1330,13 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 	hyperParams.setDefaults(dataset,options);
 	// Read the parameters from file if file provided
 	if(hyperParamFileName.compare("")!=0){
-		readHyperParamsFromFile(hyperParamFileName,hyperParams);
+		readHyperParamsFromFile(hyperParamFileName,hyperParams, nOutcomes);
 	}
 
 	// Allocate the right sizes for each of the parameter variables
 	// This also switches "on" all variable indicators (gamma)
 	// This gets changed below if variable selection is being done
-	params.setSizes(nSubjects,nCovariates,nDiscreteCovs,nContinuousCovs,nFixedEffects,nFixedEffects_mix,nCategoriesY,	nPredictSubjects,nTimes,nTimes_unique,nCategories,nClusInit,covariateType,outcomeType,weibullFixedShape,kernelType, nRandomEffects); //AR
+	params.setSizes(nSubjects,nCovariates,nDiscreteCovs,nContinuousCovs,nFixedEffects,nFixedEffects_mix,nCategoriesY,	nPredictSubjects,nTimes,nTimes_unique,nOutcomes, nCategories,nClusInit,covariateType,outcomeType,weibullFixedShape,kernelType, nRandomEffects); //AR
 	unsigned int maxNClusters=params.maxNClusters();
 
 	// Define a uniform random number generator
@@ -1755,166 +1844,177 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 	}
 
 	if(includeResponse){
-		// Finally we sample the theta and beta values from uniform distributions
-		for(unsigned int c=0;c<maxNClusters;c++){
-		  for (unsigned int k=0;k<nCategoriesY;k++){
-		    // Thetas are randomly between -2 and 2
-		    params.theta(c,k,-2.0+4.0*unifRand(rndGenerator));
-		  }
-		}
+	  // Finally we sample the theta and beta values from uniform distributions
+	  for(unsigned int c=0;c<maxNClusters;c++){
+	    for (unsigned int k=0;k<nCategoriesY;k++){
+	      // Thetas are randomly between -2 and 2
+	      params.theta(c,k,-2.0+4.0*unifRand(rndGenerator));
+	    }
+	  }
 
-		for(unsigned int j=0;j<nFixedEffects;j++){
-		    for (unsigned int k=0;k<nCategoriesY;k++){
-		      // Betas are randomly between -2 and 2
-		      if(outcomeType.compare("Longitudinal")!=0 & outcomeType.compare("LME")!=0){ //AR
-		        params.beta(j,k,-2.0+4.0*unifRand(rndGenerator));
-		      }else{
-		        params.beta(j,k,0);
-		      }
-		    }
-		  }
+	  for(unsigned int m=0;m<nOutcomes;m++){
+	    for(unsigned int j=0;j<nFixedEffects[m];j++){
+	      for (unsigned int k=0;k<nCategoriesY;k++){
+	        // Betas are randomly between -2 and 2
+	        if(outcomeType.compare("Longitudinal")!=0 & outcomeType.compare("LME")!=0){ //AR
+	          params.beta(m,j,k,nCategoriesY,-2.0+4.0*unifRand(rndGenerator));
+	        }else{
+	          params.beta(m,j,k,nCategoriesY,0);
+	        }
+	      }
+	    }
 
-		  for(unsigned int j=0;j<nFixedEffects_mix;j++){
-  		  for(unsigned int c=0;c<maxNClusters;c++){
-  		    params.beta_mix(c,j,0);
-  		  }
-		  }
+	    if(outcomeType.compare("LME")==0){ //AR
+	      for(unsigned int j=0;j<nFixedEffects_mix[m];j++){
+	        for(unsigned int c=0;c<maxNClusters;c++){
+	          for (unsigned int k=0;k<nCategoriesY;k++)
+	            params.beta_mix(m,c,j,k,nCategoriesY,0);
+	        }
+	      }
+	    }
+	  }
 
-		if(outcomeType.compare("Normal")==0){
-			randomGamma gammaRand(hyperParams.shapeSigmaSqY(),1.0/hyperParams.scaleSigmaSqY());
-			double sigmaSqY=1.0/(gammaRand(rndGenerator));
-			params.sigmaSqY(sigmaSqY);
-		}
 
-		if(outcomeType.compare("Survival")==0){
-			randomGamma gammaRand(hyperParams.shapeNu(),hyperParams.scaleNu());
-			if(weibullFixedShape){
-				double nu=gammaRand(rndGenerator);
-				params.nu(0,nu);
+	  if(outcomeType.compare("Normal")==0){
+	    randomGamma gammaRand(hyperParams.shapeSigmaSqY(),1.0/hyperParams.scaleSigmaSqY());
+	    double sigmaSqY=1.0/(gammaRand(rndGenerator));
+	    params.sigmaSqY(sigmaSqY);
+	  }
 
-			} else {
-				for (unsigned int c=0;c<maxNClusters;c++){
-					double nu=gammaRand(rndGenerator);
-					params.nu(c,nu);
-				}
-			}
-		}
-		else if(outcomeType.compare("MVN")==0){
-			vector<VectorXd> xi(nSubjects);
-			for(unsigned int i=0;i<nSubjects;i++){
-				xi[i].setZero(nOutcomes);
-				for(unsigned int j=0;j<nOutcomes;j++){
-					xi[i](j)=dataset.continuousY(i*nOutcomes+j);
-				}
-			}
-			vector<VectorXd> meanX(maxNClusters);
-			for(unsigned int c=0;c<maxNClusters;c++){
-				meanX[c].setZero(nOutcomes);
-			}
-			for(unsigned int i=0;i<nSubjects;i++){
-				meanX[params.z(i)]=meanX[params.z(i)]+xi[i];
-			}
-			for(unsigned int c=0;c<maxNClusters;c++){
-				if(params.workNXInCluster(c)>0){
-					meanX[c]=meanX[c]/(double)params.workNXInCluster(c);
-				}else{
-					meanX[c].setZero(nOutcomes);
-				}
-				MatrixXd covMat(nOutcomes,nOutcomes);
-				covMat = (hyperParams.MVNTau0()+params.workNXInCluster(c)*hyperParams.MVNTau0()).inverse();
-				VectorXd meanVec(nOutcomes);
-				meanVec = hyperParams.MVNTau0()*hyperParams.MVNmu0()+params.workNXInCluster(c)*hyperParams.MVNTau0()*meanX[c];
-				meanVec = covMat*meanVec;
-				VectorXd mu(nOutcomes);
-				mu = multivarNormalRand(rndGenerator,meanVec,covMat);
-				params.MVNmu(c,mu);
-			}
-			vector<MatrixXd> Rc(maxNClusters);
-			for(unsigned int c=0;c<maxNClusters;c++){
-				Rc[c].setZero(nOutcomes,nOutcomes);
-			}
-			for(unsigned int i=0;i<nSubjects;i++){
-				unsigned int zi = params.z(i);
-				Rc[zi]=Rc[zi]+(xi[i]-params.MVNmu(zi))*((xi[i]-params.MVNmu(zi)).transpose());
-			}
-			for(unsigned int c=0;c<maxNClusters;c++){
-				Rc[c]=(hyperParams.MVNR0().inverse()+Rc[c]).inverse();
-				//MatrixXd Tau = wishartRand(rndGenerator,Rc[c],params.workNXInCluster(c)+hyperParams.MVNkappa0());
-				MatrixXd Tau ;
-				Tau = wishartRand(rndGenerator,Rc[c],params.workNXInCluster(c)+hyperParams.MVNnu0());
-				params.MVNTau(c,Tau);
-			}
-		}
+	  if(outcomeType.compare("Survival")==0){
+	    randomGamma gammaRand(hyperParams.shapeNu(),hyperParams.scaleNu());
+	    if(weibullFixedShape){
+	      double nu=gammaRand(rndGenerator);
+	      params.nu(0,nu);
 
-		if(outcomeType.compare("LME")==0){ //AR
-		  MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(),hyperParams.SigmaLME_kappa0());
-		  params.covRE(Tau.inverse());
-		  LLT<MatrixXd> llt;
-		  for(unsigned int c=0;c<maxNClusters;c++){
-		    params.workLogDetTauLME(c,log(Tau.determinant()));
-		    params.workSqrtTauLME(c,(llt.compute(Tau)).matrixU());
-		  }
-		  // Initialise random effects
-  		  for(unsigned int i=0;i<nSubjects;i++){
-  		    VectorXd mu(nRandomEffects);
-  		    VectorXd meanRE(nRandomEffects);
-  		    meanRE.setZero();
-  		    MatrixXd covRE=params.covRE();
-  		    mu = multivarNormalRand(rndGenerator,meanRE,covRE);
-  	      params.RandomEffects(i,mu);
-  		  }
+	    } else {
+	      for (unsigned int c=0;c<maxNClusters;c++){
+	        double nu=gammaRand(rndGenerator);
+	        params.nu(c,nu);
+	      }
+	    }
+	  }
+	  else if(outcomeType.compare("MVN")==0){
+	    vector<VectorXd> xi(nSubjects);
+	    for(unsigned int i=0;i<nSubjects;i++){
+	      xi[i].setZero(nOutcomes);
+	      for(unsigned int j=0;j<nOutcomes;j++){
+	        xi[i](j)=dataset.continuousY(i*nOutcomes+j);
+	      }
+	    }
+	    vector<VectorXd> meanX(maxNClusters);
+	    for(unsigned int c=0;c<maxNClusters;c++){
+	      meanX[c].setZero(nOutcomes);
+	    }
+	    for(unsigned int i=0;i<nSubjects;i++){
+	      meanX[params.z(i)]=meanX[params.z(i)]+xi[i];
+	    }
+	    for(unsigned int c=0;c<maxNClusters;c++){
+	      if(params.workNXInCluster(c)>0){
+	        meanX[c]=meanX[c]/(double)params.workNXInCluster(c);
+	      }else{
+	        meanX[c].setZero(nOutcomes);
+	      }
+	      MatrixXd covMat(nOutcomes,nOutcomes);
+	      covMat = (hyperParams.MVNTau0()+params.workNXInCluster(c)*hyperParams.MVNTau0()).inverse();
+	      VectorXd meanVec(nOutcomes);
+	      meanVec = hyperParams.MVNTau0()*hyperParams.MVNmu0()+params.workNXInCluster(c)*hyperParams.MVNTau0()*meanX[c];
+	      meanVec = covMat*meanVec;
+	      VectorXd mu(nOutcomes);
+	      mu = multivarNormalRand(rndGenerator,meanVec,covMat);
+	      params.MVNmu(c,mu);
+	    }
+	    vector<MatrixXd> Rc(maxNClusters);
+	    for(unsigned int c=0;c<maxNClusters;c++){
+	      Rc[c].setZero(nOutcomes,nOutcomes);
+	    }
+	    for(unsigned int i=0;i<nSubjects;i++){
+	      unsigned int zi = params.z(i);
+	      Rc[zi]=Rc[zi]+(xi[i]-params.MVNmu(zi))*((xi[i]-params.MVNmu(zi)).transpose());
+	    }
+	    for(unsigned int c=0;c<maxNClusters;c++){
+	      Rc[c]=(hyperParams.MVNR0().inverse()+Rc[c]).inverse();
+	      //MatrixXd Tau = wishartRand(rndGenerator,Rc[c],params.workNXInCluster(c)+hyperParams.MVNkappa0());
+	      MatrixXd Tau ;
+	      Tau = wishartRand(rndGenerator,Rc[c],params.workNXInCluster(c)+hyperParams.MVNnu0());
+	      params.MVNTau(c,Tau);
+	    }
+	  }
 
-  		//randomChiSquare chisQRand(hyperParams.eps_vu());
-		  //double temp = chisQRand(rndGenerator);
-		  //double epsilon = hyperParams.eps_vu()*hyperParams.eps_sigma2_0()/temp;
-		  //params.SigmaE(epsilon);
-		  // Define a inverse gamma random number generator
-		  randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_rate()); //k, 1/theta
+	  if(outcomeType.compare("LME")==0){ //AR
 
-		  double temp = gammaRand(rndGenerator);
-		  double epsilon = 1/temp;
-		  params.SigmaE(epsilon);
-		}
+	    for(unsigned int m=0;m<nOutcomes;m++){
+	      for(unsigned int c=0;c<maxNClusters;c++){
+	        MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m));
+	        params.covRE(m,c, Tau.inverse());
+	        params.workLogDetTauLME(m,c,log(Tau.determinant()));
+	        LLT<MatrixXd> llt;
+	        params.workSqrtTauLME(m,c,(llt.compute(Tau)).matrixU());
+	      }
+	      // Initialise random effects
+	      for(unsigned int i=0;i<nSubjects;i++){
+	        int zi = params.z(i);
+	        VectorXd mu(nRandomEffects[m]);
+	        VectorXd meanRE(nRandomEffects[m]);
+	        meanRE.setZero();
+	        MatrixXd covRE=params.covRE(m,zi);
+	        mu = multivarNormalRand(rndGenerator,meanRE,covRE);
+	        params.RandomEffects(m,i,mu);
+	      }
 
-		//RJ populate params.L
-		if(outcomeType.compare("Longitudinal")==0){
-		  unsigned int nL;
-		  if(kernelType.compare("SQexponential")==0){ //AR
-        nL=3;
-		  }else{
-		    nL=4;
-		  }
+	      //randomChiSquare chisQRand(hyperParams.eps_vu());
+	      //double temp = chisQRand(rndGenerator);
+	      //double epsilon = hyperParams.eps_vu()*hyperParams.eps_sigma2_0()/temp;
+	      //params.SigmaE(epsilon);
+	      // Define a inverse gamma random number generator
+	      randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_rate()); //k, 1/theta
 
-		  if (hyperParams.initL().size()==0){
-  			for (unsigned int c=0;c<maxNClusters;c++){
-  				for(unsigned int l=0;l<nL;l++){
-  					randomNormal normalRand(hyperParams.muL(l),hyperParams.sigmaL(l));
-  					params.L(c,l,normalRand(rndGenerator));
-  				}
+	      double temp = gammaRand(rndGenerator);
+	      double epsilon = 1/temp;
+	      params.SigmaE(m,epsilon);
+	    }
+	  }
 
-  				if(options.sampleGPmean()){ //AR
-  				  VectorXd Fval(dataset.nTimes_unique());
+	  //RJ populate params.L
+	  if(outcomeType.compare("Longitudinal")==0){
+	    unsigned int nL;
+	    if(kernelType.compare("SQexponential")==0){ //AR
+	      nL=3;
+	    }else{
+	      nL=4;
+	    }
 
-  				  Fval =  Sample_GPmean(params, dataset, c, rndGenerator,1);
-  				  for(unsigned int j=0;j<dataset.nTimes_unique();j++){
-  				    params.meanGP(c,j, Fval(j));
-  				  }
+	    if (hyperParams.initL().size()==0){
+	      for (unsigned int c=0;c<maxNClusters;c++){
+	        for(unsigned int l=0;l<nL;l++){
+	          randomNormal normalRand(hyperParams.muL(l),hyperParams.sigmaL(l));
+	          params.L(c,l,normalRand(rndGenerator));
+	        }
 
-  				  if(options.estim_ratio()){
-  				    double vVal = betaRand(rndGenerator,hyperParams.aRatio(),hyperParams.bRatio());
-  				    params.ratio(c, vVal);
-  				  }
-  				}
-  			}
-		  }else{
-		    for (unsigned int c=0;c<maxNClusters;c++){
-		      VectorXd lval =hyperParams.initL(c);
-		      for(unsigned int l=0;l<nL;l++){
-		        params.L(c,l,lval(l));
-		      }
-		    }
-		  }
-		}
+	        if(options.sampleGPmean()){ //AR
+	          VectorXd Fval(dataset.nTimes_unique());
+
+	          Fval =  Sample_GPmean(params, dataset, c, rndGenerator,1);
+	          for(unsigned int j=0;j<dataset.nTimes_unique();j++){
+	            params.meanGP(c,j, Fval(j));
+	          }
+
+	          if(options.estim_ratio()){
+	            double vVal = betaRand(rndGenerator,hyperParams.aRatio(),hyperParams.bRatio());
+	            params.ratio(c, vVal);
+	          }
+	        }
+	      }
+	    }else{
+	      for (unsigned int c=0;c<maxNClusters;c++){
+	        VectorXd lval =hyperParams.initL(c);
+	        for(unsigned int l=0;l<nL;l++){
+	          params.L(c,l,lval(l));
+	        }
+	      }
+	    }
+	  }
+	}
 
 		// And also the extra variation values if necessary
 		if(responseExtraVar){
@@ -1927,45 +2027,39 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 			params.tauEpsilon(tau);
 
 			randomNormal normalRand(0,1.0/sqrt(tau));
-			for(unsigned int i=0;i<nSubjects;i++){
-				double eps = normalRand(rndGenerator);
-				int zi = params.z(i);
-				double meanVal = params.theta(zi,0);
 
-				if(outcomeType.compare("Categorical")==0){
-					for(unsigned int j=0;j<nFixedEffects;j++){
-						meanVal+=params.beta(j,dataset.discreteY(i))*dataset.W(i,j);
-					}
-				} else if(outcomeType.compare("LME")==0){
-				  for(unsigned int j=0;j<nFixedEffects;j++){
-				    meanVal+=params.beta(j,0)*dataset.W_LME(i,j);
-				  }
-				  for(unsigned int j=0;j<nFixedEffects_mix;j++){
-				    meanVal+=params.beta_mix(zi,j*1)*dataset.W_LME_mix(i,j);
-				  }
-				}else{
-				  for(unsigned int j=0;j<nFixedEffects;j++){
-				    if(outcomeType.compare("LME")!=0){
-				      meanVal+=params.beta(j,0)*dataset.W(i,j);
-				    }else{
-				      meanVal+=params.beta(j,0)*dataset.W_LME(i,j);
-				    }
-				  }
-				  for(unsigned int j=0;j<nFixedEffects_mix;j++){
-				    if(outcomeType.compare("LME")!=0){
-				      meanVal+=params.beta_mix(zi,j*1)*dataset.W_mix(i,j);
-				    }else{
-				      meanVal+=params.beta_mix(zi,j*1)*dataset.W_LME_mix(i,j);
-				    }
-				  }
-				}
-				if(outcomeType.compare("Poisson")==0){
-					meanVal+=dataset.logOffset(i);
-				}
-				params.lambda(i,meanVal+eps);
+			if(outcomeType.compare("LME")!=0){
+			  for(unsigned int i=0;i<nSubjects;i++){
+			    double eps = normalRand(rndGenerator);
+			    int zi = params.z(i);
+			    double meanVal = 0;
 
+			    meanVal+= params.theta(zi,0);
+
+			    if(outcomeType.compare("Categorical")==0){
+			      for(unsigned int j=0;j<nFixedEffects[0];j++){
+			        meanVal+=params.beta(0,j,dataset.discreteY(i),nCategoriesY)*dataset.W(i,j);
+			      }
+			    } else{ // Bernoulli, Poisson, Binomial, Survivak, LVN, Longitudinal
+			      for(unsigned int j=0;j<nFixedEffects[0];j++){
+			        meanVal+=params.beta(0,j,0,nCategoriesY)*dataset.W(i,j);
+			        // }
+			        // for(unsigned int j=0;j<nFixedEffects_mix[0];j++){
+			        //   meanVal+=params.beta_mix(0,zi,j, 0, nCategoriesY)*dataset.W_mix(i,j);
+			        // }
+			      }
+			      if(outcomeType.compare("Poisson")==0){
+			        meanVal+=dataset.logOffset(i);
+			      }
+			      params.lambda(i,meanVal+eps);
+			    }
+			  }
+			}else{//LME
+			  for(unsigned int i=0;i<nSubjects;i++)
+			    params.lambda(i,0);
 			}
-		}
+
+
 	        // And also _uCAR and _TauCAR if includeCAR==TRUE
 	  if (includeCAR){
 			// Boost parameterised in terms of shape and scale
@@ -2015,8 +2109,8 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 		string outcomeType = sampler.model().options().outcomeType();
 		string kernelType = sampler.model().dataset().kernelType();
 		bool computeEntropy = sampler.model().options().computeEntropy();
-		unsigned int nFixedEffects = sampler.model().dataset().nFixedEffects();
-		unsigned int nFixedEffects_mix = sampler.model().dataset().nFixedEffects_mix();
+		vector<unsigned int> nFixedEffects = sampler.model().dataset().nFixedEffects();
+		vector<unsigned int> nFixedEffects_mix = sampler.model().dataset().nFixedEffects_mix();
 		string varSelectType = sampler.model().options().varSelectType();
 		string predictType = sampler.model().options().predictType();
 		bool weibullFixedShape = sampler.model().options().weibullFixedShape();
@@ -2072,11 +2166,11 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 			    fileName = fileStem + "_theta.txt";
 			    outFiles.push_back(new ofstream(fileName.c_str()));
 			  }
-			  if(nFixedEffects>0){
+			  if(nFixedEffects[0]>0){
 			    fileName = fileStem + "_beta.txt";
 			    outFiles.push_back(new ofstream(fileName.c_str()));
 			   }
-			  if(nFixedEffects_mix>0){
+			  if(nFixedEffects_mix[0]>0){
 			    fileName = fileStem + "_beta_cluster-specific.txt";
 			    outFiles.push_back(new ofstream(fileName.c_str()));
 
@@ -2085,7 +2179,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 				  fileName = fileStem + "_thetaProp.txt";
 				  outFiles.push_back(new ofstream(fileName.c_str()));
 				}
-				if(nFixedEffects>0){
+				if(nFixedEffects[0]>0){
 				  fileName = fileStem + "_betaProp.txt";
 				  outFiles.push_back(new ofstream(fileName.c_str()));
 				}
@@ -2211,13 +2305,13 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 		if(includeResponse){
 		  if(outcomeType.compare("Longitudinal")!=0 && outcomeType.compare("LME")!=0)
 		    thetaInd=r++;
-		  if(nFixedEffects>0)
+		  if(nFixedEffects[0]>0)
 		    betaInd=r++;
-			if(nFixedEffects_mix>0)
+			if(nFixedEffects_mix[0]>0)
 			  betamixInd=r++;
 			if(outcomeType.compare("Longitudinal")!=0 && outcomeType.compare("LME")!=0)
 			  thetaPropInd=r++;
-			if(nFixedEffects>0)
+			if(nFixedEffects[0]>0)
 			  betaPropInd=r++;
 			if(outcomeType.compare("Normal")==0){
 				sigmaSqYInd=r++;
@@ -2427,167 +2521,176 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 
 
 		if(includeResponse){
-			if(outcomeType.compare("Categorical")==0){
-				// Print beta
-				for(unsigned int j=0;j<nFixedEffects;j++){
-					for (unsigned int k=0;k<nCategoriesY;k++){
-						*(outFiles[betaInd]) << params.beta(j,k) <<" ";
-					}
-					if(j==(nFixedEffects-1)){
-						*(outFiles[betaInd]) << endl;
-					}
-				}
-				for(unsigned int c=0;c<maxNClusters;c++){
-				  for(unsigned int j=0;j<nFixedEffects_mix;j++){
-				    for (unsigned int k=0;k<nCategoriesY;k++){
-				      *(outFiles[betamixInd]) << params.beta_mix(c, j+k*nFixedEffects_mix) <<" ";
-				    }
-				    if(j==(nFixedEffects_mix-1) && c == (maxNClusters-1)){
-				      *(outFiles[betamixInd]) << endl;
-				    }
-				  }
-				}
-			} else {
-			  if(outcomeType.compare("Normal")==0){
-			    *(outFiles[sigmaSqYInd]) << params.sigmaSqY() << endl;
-			  }
-			  if(outcomeType.compare("Survival")==0){
-			    // Print parameter nu for each cluster
-			    if (weibullFixedShape){
-			      *(outFiles[nuInd]) << params.nu(0) << endl;
-			    } else {
-			      for(unsigned int c=0;c<maxNClusters;c++){
-			        *(outFiles[nuInd]) << params.nu(c);
-			        if(c<maxNClusters-1){
-			          *(outFiles[nuInd]) << " ";
-			        }else{
-			          *(outFiles[nuInd]) << endl;
-			        }
-			      }
-			    }
-			  }
-			  if(outcomeType.compare("Longitudinal")==0){
-			    //RJ Print parameter L for each cluster
-			    for(unsigned int c=0;c<maxNClusters;c++){
-			      unsigned int nL;
-			      if(kernelType.compare("SQexponential")==0){
-			        nL=3;
-			      }else{
-			        nL=4;
-			      }
-			      for(unsigned int l=0;l<nL;l++){
-			        *(outFiles[LInd]) << params.L(c,l);
-			        if(c<(maxNClusters-1) || l<(nL-1)){
-			          *(outFiles[LInd]) << " ";
-			        }else{
-			          *(outFiles[LInd]) << endl;
-			        }
-			      }
+		  if(outcomeType.compare("Categorical")==0){
+		    // Print beta
+		    for(unsigned int j=0;j<nFixedEffects[0];j++){
+		      for (unsigned int k=0;k<nCategoriesY;k++){
+		        *(outFiles[betaInd]) << params.beta(0,j,k,nCategoriesY) <<" ";
+		      }
+		      if(j==(nFixedEffects[0]-1)){
+		        *(outFiles[betaInd]) << endl;
+		      }
+		    }
+		    // for(unsigned int c=0;c<maxNClusters;c++){
+		    //   for(unsigned int j=0;j<nFixedEffects_mix;j++){
+		    //     for (unsigned int k=0;k<nCategoriesY;k++){
+		    //       *(outFiles[betamixInd]) << params.beta_mix(c, j, k, nCategoriesY) <<" ";
+		    //     }
+		    //     if(j==(nFixedEffects_mix-1) && c == (maxNClusters-1)){
+		    //       *(outFiles[betamixInd]) << endl;
+		    //     }
+		    //   }
+		    // }
+		  } else {
+		    if(outcomeType.compare("Normal")==0){
+		      *(outFiles[sigmaSqYInd]) << params.sigmaSqY() << endl;
+		    }
+		    if(outcomeType.compare("Survival")==0){
+		      // Print parameter nu for each cluster
+		      if (weibullFixedShape){
+		        *(outFiles[nuInd]) << params.nu(0) << endl;
+		      } else {
+		        for(unsigned int c=0;c<maxNClusters;c++){
+		          *(outFiles[nuInd]) << params.nu(c);
+		          if(c<maxNClusters-1){
+		            *(outFiles[nuInd]) << " ";
+		          }else{
+		            *(outFiles[nuInd]) << endl;
+		          }
+		        }
+		      }
+		    }
+		    if(outcomeType.compare("Longitudinal")==0){
+		      //RJ Print parameter L for each cluster
+		      for(unsigned int c=0;c<maxNClusters;c++){
+		        unsigned int nL;
+		        if(kernelType.compare("SQexponential")==0){
+		          nL=3;
+		        }else{
+		          nL=4;
+		        }
+		        for(unsigned int l=0;l<nL;l++){
+		          *(outFiles[LInd]) << params.L(c,l);
+		          if(c<(maxNClusters-1) || l<(nL-1)){
+		            *(outFiles[LInd]) << " ";
+		          }else{
+		            *(outFiles[LInd]) << endl;
+		          }
+		        }
 
-			      if(sampler.model().options().sampleGPmean()){ //AR
-			        for(unsigned int l=0;l<dataset.nTimes_unique();l++){
-			          *(outFiles[meanGPInd]) << params.meanGP(c,l)<< " ";
-			          if(c<(maxNClusters-1) || l<(dataset.nTimes_unique()-1)){
-			            *(outFiles[meanGPInd]) << " ";
-			          }else{
-			            *(outFiles[meanGPInd]) << endl;
-			          }
-			        }
+		        if(sampler.model().options().sampleGPmean()){ //AR
+		          for(unsigned int l=0;l<dataset.nTimes_unique();l++){
+		            *(outFiles[meanGPInd]) << params.meanGP(c,l)<< " ";
+		            if(c<(maxNClusters-1) || l<(dataset.nTimes_unique()-1)){
+		              *(outFiles[meanGPInd]) << " ";
+		            }else{
+		              *(outFiles[meanGPInd]) << endl;
+		            }
+		          }
 
-			        if(sampler.model().options().estim_ratio()){ //AR
-			          *(outFiles[estim_ratioInd]) << params.ratio(c);
-			          if(c<(maxNClusters-1)){
-			            *(outFiles[estim_ratioInd]) << " ";
-			          }else{
-			            *(outFiles[estim_ratioInd]) << endl;
-			          }
-			        }
-			      }
-			    }
-			  }
-			  if(outcomeType.compare("MVN")==0){
-			    //RJ Print MVN parameters for each cluster
-			    for(unsigned int c=0;c< maxNClusters;c++){
-			      for(unsigned int l=0;l<nOutcomes;l++){
-			        *(outFiles[MVNmuInd]) << " "<< params.MVNmu(c,l);
-			        //*(outFiles[MVNmuInd]) << " "<<sweep << " c "<< c << " l "<< l << " maxNClusters " << maxNClusters << " nOutcomes " << nOutcomes << " p "<< params.MVNmu(c,l)<<endl;//RJ!!params.MVNmu(c,l);
-			        if(c<maxNClusters-1 || l<(nOutcomes-1)){
-			          *(outFiles[MVNmuInd]) << " ";
-			        }else{
-			          *(outFiles[MVNmuInd]) << endl;
-			        }
-			        for(unsigned int l2=0;l2<=l;l2++){
-			          *(outFiles[MVNSigmaInd]) << ""<<params.MVNSigma(c,l,l2);//RJ!!params.MVNSigma(c,l,l2);
-			          if(c<maxNClusters-1 || l2<(nOutcomes-1)){
-			            *(outFiles[MVNSigmaInd]) << " ";
-			          }else{
-			            *(outFiles[MVNSigmaInd]) << endl;
-			          }
-			        }
-			      }
-			    }
-			  }
-			  if(outcomeType.compare("LME")==0){
-			    unsigned int nRandomEffects = sampler.model().dataset().nRandomEffects();
-			    //for(unsigned int c=0;c< maxNClusters;c++){
-			      for(unsigned int l=0;l<nRandomEffects;l++){
-  			      for(unsigned int l2=0;l2<=l;l2++){
-  			        *(outFiles[CovRELMEInd]) << ""<< params.covRE(l,l2);
-  			        if( l2<(nRandomEffects-1)){
-  			          *(outFiles[CovRELMEInd]) << " ";
-  			        }else{
-  			          *(outFiles[CovRELMEInd]) << endl;
-  			        }
-  			      }
-			      }
-			    //}
+		          if(sampler.model().options().estim_ratio()){ //AR
+		            *(outFiles[estim_ratioInd]) << params.ratio(c);
+		            if(c<(maxNClusters-1)){
+		              *(outFiles[estim_ratioInd]) << " ";
+		            }else{
+		              *(outFiles[estim_ratioInd]) << endl;
+		            }
+		          }
+		        }
+		      }
+		    }
+		    if(outcomeType.compare("MVN")==0){
+		      //RJ Print MVN parameters for each cluster
+		      for(unsigned int c=0;c< maxNClusters;c++){
+		        for(unsigned int l=0;l<nOutcomes;l++){
+		          *(outFiles[MVNmuInd]) << " "<< params.MVNmu(c,l);
+		          //*(outFiles[MVNmuInd]) << " "<<sweep << " c "<< c << " l "<< l << " maxNClusters " << maxNClusters << " nOutcomes " << nOutcomes << " p "<< params.MVNmu(c,l)<<endl;//RJ!!params.MVNmu(c,l);
+		          if(c<maxNClusters-1 || l<(nOutcomes-1)){
+		            *(outFiles[MVNmuInd]) << " ";
+		          }else{
+		            *(outFiles[MVNmuInd]) << endl;
+		          }
+		          for(unsigned int l2=0;l2<=l;l2++){
+		            *(outFiles[MVNSigmaInd]) << ""<<params.MVNSigma(c,l,l2);//RJ!!params.MVNSigma(c,l,l2);
+		            if(c<maxNClusters-1 || l2<(nOutcomes-1)){
+		              *(outFiles[MVNSigmaInd]) << " ";
+		            }else{
+		              *(outFiles[MVNSigmaInd]) << endl;
+		            }
+		          }
+		        }
+		      }
+		    }
+		    if(outcomeType.compare("LME")==0){
+		      vector<unsigned int> nRandomEffects = dataset.nRandomEffects();
 
-			    *(outFiles[EpsilonLMEInd]) << params.SigmaE() << endl; //params.sigmakInd(c);
+		      for(unsigned int m=0;m<nOutcomes;m++){
+		        for(unsigned int c=0;c< maxNClusters;c++){
+		          for(unsigned int l=0;l<nRandomEffects[m];l++){
+		            for(unsigned int l2=0;l2<=l;l2++){
+		              *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,c,l,l2);
+		              if( l2<(nRandomEffects[m]-1)){
+		                *(outFiles[CovRELMEInd]) << " ";
+		              }else{
+		                *(outFiles[CovRELMEInd]) << endl;
+		              }
+		            }
+		          }
+		        }
 
-			    for(unsigned int i=0;i<nSubjects;i++){
-			      *(outFiles[RandomEffectsLMEInd]) << " "<< params.RandomEffects(i).transpose(); //params.sigmakInd(c);
-			      if(i<nSubjects-1){
-			        *(outFiles[RandomEffectsLMEInd]) << " ";
-			      }else{
-			        *(outFiles[RandomEffectsLMEInd]) << endl;
-			      }
-			    }
-			  }
+		        *(outFiles[EpsilonLMEInd]) << params.SigmaE(m) << endl; //params.sigmakInd(c);
+		      }
 
-			  for(unsigned int j=0;j<nFixedEffects;j++){
-			    *(outFiles[betaInd]) << params.beta(j,0);
-			    if(j<nFixedEffects-1){
-			      *(outFiles[betaInd]) << " ";
-			    }else{
-			      *(outFiles[betaInd]) << endl;
-			    }
-			  }
+		      for(unsigned int m=0;m<nOutcomes;m++){
+		        for(unsigned int i=0;i<nSubjects;i++){
+		          *(outFiles[RandomEffectsLMEInd]) << " "<< params.RandomEffects(i).transpose(); //params.sigmakInd(c);
+		          if(i<nSubjects-1){
+		            *(outFiles[RandomEffectsLMEInd]) << " ";
+		          }else{
+		            *(outFiles[RandomEffectsLMEInd]) << endl;
+		          }
+		        }
+		      }
 
-			  for(unsigned int c=0;c< maxNClusters;c++){
-			    for(unsigned int j=0;j<nFixedEffects_mix;j++){
-			      *(outFiles[betamixInd]) << params.beta_mix(c,j); //j*1 (Ycategory)
-			      if(c<maxNClusters-1 || j<nFixedEffects_mix-1){
-			        *(outFiles[betamixInd]) << " ";
-			      }else{
-			        *(outFiles[betamixInd]) << endl;
-			      }
-			    }
-			  }
-			}
-			if (includeCAR){
-				for(unsigned int i=0;i<nSubjects;i++){
-					double uCARi = params.uCAR(i);
-					*(outFiles[uCARInd]) << uCARi;
-					if(i<nSubjects-1){
-						*(outFiles[uCARInd]) << " ";
-					}else{
-						*(outFiles[uCARInd]) << endl;
-					}
-				}
-				double tau=params.TauCAR();
-				*(outFiles[TauCARInd]) << tau;
-				*(outFiles[TauCARInd]) << endl;
-			}
+		      for(unsigned int m=0;m<nOutcomes;m++){
+		        for(unsigned int j=0;j<nFixedEffects[m];j++){
+		          *(outFiles[betaInd]) << params.beta(m,j,0,nCategoriesY);
+		          if(j<nFixedEffects[m]-1){
+		            *(outFiles[betaInd]) << " ";
+		          }else{
+		            *(outFiles[betaInd]) << endl;
+		          }
+		        }
+		      }
+
+		      for(unsigned int m=0;m<nOutcomes;m++){
+		        for(unsigned int c=0;c< maxNClusters;c++){
+		          for(unsigned int j=0;j<nFixedEffects_mix[m];j++){
+		            *(outFiles[betamixInd]) << params.beta_mix(m,c,j, 0, nCategoriesY); //j*1 (Ycategory)
+		            if(c<maxNClusters-1 || j<nFixedEffects_mix[m]-1){
+		              *(outFiles[betamixInd]) << " ";
+		            }else{
+		              *(outFiles[betamixInd]) << endl;
+		            }
+		          }
+		        }
+		      }
+		    }
+		    if (includeCAR){
+		      for(unsigned int i=0;i<nSubjects;i++){
+		        double uCARi = params.uCAR(i);
+		        *(outFiles[uCARInd]) << uCARi;
+		        if(i<nSubjects-1){
+		          *(outFiles[uCARInd]) << " ";
+		        }else{
+		          *(outFiles[uCARInd]) << endl;
+		        }
+		      }
+		      double tau=params.TauCAR();
+		      *(outFiles[TauCARInd]) << tau;
+		      *(outFiles[TauCARInd]) << endl;
+		    }
+		  }
 		}
 
 		// Print the allocations
@@ -2645,11 +2748,11 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 
 			// Print the acceptance rates for beta
 			anyUpdates = proposalParams.betaAnyUpdates();
-			if(anyUpdates){
-				for(unsigned int j=0;j<nFixedEffects;j++){
+			if(anyUpdates){//yModel-=LME
+				for(unsigned int j=0;j<nFixedEffects[0];j++){
 					*(outFiles[betaPropInd]) << sampler.proposalParams().betaAcceptRate(j) <<
 							" " << sampler.proposalParams().betaStdDev(j);
-					if(j<(nFixedEffects-1)){
+					if(j<(nFixedEffects[0]-1)){
 						*(outFiles[betaPropInd]) << endl;
 					}
 					*(outFiles[betaPropInd]) << endl;
@@ -2667,43 +2770,38 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropPara
 				//   proposalParams.betaAnyUpdates(false);
 				// }
 				if(responseExtraVar){
-					vector<double> meanVec(nSubjects,0.0);
-					if(outcomeType.compare("Poisson")==0){
-						meanVec=dataset.logOffset();
-					}
-					for(unsigned int i=0;i<nSubjects;i++){
-						int zi = params.z(i);
-						double meanVal = meanVec[i]+params.theta(zi,0);
-						for(unsigned int j=0;j<nFixedEffects;j++){
-						  if(outcomeType.compare("LME")!=0){
-						    meanVal+=params.beta(j,0)*dataset.W(i,j);
-						  }else{
-						    meanVal+=params.beta(j,0)*dataset.W_LME(i,j);
-						  }
-						}
-						for(unsigned int j=0;j<nFixedEffects_mix;j++){
-						  if(outcomeType.compare("LME")!=0){
-						    meanVal+=params.beta_mix(zi,j)*dataset.W_mix(i,j);
-						  }else{
-						    meanVal+=params.beta_mix(zi,j)*dataset.W_LME_mix(i,j);
-						  }
-						}
-						double eps=params.lambda(i)-meanVal;
-						*(outFiles[epsilonInd]) << eps;
-						if(i<nSubjects-1){
-							*(outFiles[epsilonInd]) << " ";
-						}else{
-							*(outFiles[epsilonInd]) << endl;
-						}
-					}
-					anyUpdates = proposalParams.lambdaAnyUpdates();
-					if(anyUpdates){
-						*(outFiles[epsilonPropInd]) << sampler.proposalParams().lambdaAcceptRate() <<
-								" " << sampler.proposalParams().lambdaStdDev() << endl;
-						proposalParams.lambdaAnyUpdates(false);
-					}
-					*(outFiles[sigmaEpsilonInd]) << 1.0/sqrt(params.tauEpsilon()) << endl;
-				}
+				  if(outcomeType.compare("LME")!=0){
+				    vector<double> meanVec(nSubjects,0.0);
+				    if(outcomeType.compare("Poisson")==0){
+				      meanVec=dataset.logOffset();
+				    }
+				    for(unsigned int i=0;i<nSubjects;i++){
+				      int zi = params.z(i);
+				      double meanVal = meanVec[i]+params.theta(zi,0);
+
+				      for(unsigned int j=0;j<nFixedEffects[0];j++)
+				        meanVal+=params.beta(0,j,0,nCategoriesY)*dataset.W(i,j);
+
+
+				      double eps=params.lambda(i)-meanVal;
+				      *(outFiles[epsilonInd]) << eps;
+				      if(i<nSubjects-1){
+				        *(outFiles[epsilonInd]) << " ";
+				      }else{
+				        *(outFiles[epsilonInd]) << endl;
+				      }
+				    }
+				    anyUpdates = proposalParams.lambdaAnyUpdates();
+				    if(anyUpdates){
+				      *(outFiles[epsilonPropInd]) << sampler.proposalParams().lambdaAcceptRate() <<
+				        " " << sampler.proposalParams().lambdaStdDev() << endl;
+				      proposalParams.lambdaAnyUpdates(false);
+				    }
+				    *(outFiles[sigmaEpsilonInd]) << 1.0/sqrt(params.tauEpsilon()) << endl;
+				  }
+				  }else{
+				    printf("responseExtraVar not possible with yModel = LME.");
+				  }
 			}
 		}
 
@@ -2846,18 +2944,23 @@ string storeLogFileData(const pReMiuMOptions& options,
 		}
 		tmpStr << endl;
 	}
-	if(dataset.nFixedEffects()>0){
+	if(dataset.nFixedEffects(0)>0){
 		tmpStr << "FixedEffects: " ;//<< endl;
-		for(unsigned int j=0;j<dataset.nFixedEffects();j++){
-			tmpStr << "\t" << dataset.fixedEffectNames(j) << endl;
-		}
+	  for(unsigned int m=0;m<dataset.nOutcomes();m++){
+	    for(unsigned int j=0;j<dataset.nFixedEffects(m);j++){
+	      tmpStr << "\t" << dataset.fixedEffectNames(m,j) << " ";
+	    }
+	  }
+	  tmpStr << endl;
 	}else{
 		tmpStr<< "No fixed effects" << endl;
 	}
-	if(dataset.nFixedEffects_mix()>0){
+	if(dataset.nFixedEffects_mix(0)>0){
 	  tmpStr << "Cluster-specific FixedEffects: " ;//<< endl;
-	  for(unsigned int j=0;j<dataset.nFixedEffects_mix();j++){
-	    tmpStr << "\t" << dataset.fixedEffectNames_mix(j) << " ";
+	  for(unsigned int m=0;m<dataset.nOutcomes();m++){
+	    for(unsigned int j=0;j<dataset.nFixedEffects_mix(m);j++){
+	      tmpStr << "\t" << dataset.fixedEffectNames_mix(m,j) << " ";
+	    }
 	  }
 	  tmpStr << endl;
 	}else{
@@ -2885,12 +2988,15 @@ string storeLogFileData(const pReMiuMOptions& options,
   	    tmpStr << "Estimation ratio between L1k and L3k: True" << endl;
   	}
 	}
+
 	if(options.outcomeType().compare("LME")==0){
 	  tmpStr << "RandomEffects: " ;
-	  for(unsigned int j=0;j<dataset.nRandomEffects();j++){
-	   tmpStr << "\t" << dataset.randomEffectNames(j) << " ";
+	  for(unsigned int m=0;m<dataset.nOutcomes();m++){
+	    for(unsigned int j=0;j<dataset.nRandomEffects(m);j++){
+	      tmpStr << "\t" << dataset.randomEffectNames(m,j) << " ";
+	    }
+	    tmpStr << endl;
 	  }
-	  tmpStr << endl;
 	}
 	if(options.fixedAlpha()<=-1){
 		tmpStr << "Update alpha: True" << endl;
@@ -2947,7 +3053,7 @@ string storeLogFileData(const pReMiuMOptions& options,
 	tmpStr << "sigmaTheta: " << hyperParams.sigmaTheta() << endl;
 	tmpStr << "dofTheta: " << hyperParams.dofTheta() << endl;
 
-	if(dataset.nFixedEffects()>0|| dataset.nFixedEffects_mix()>0){
+	if(dataset.nFixedEffects(0)>0|| dataset.nFixedEffects_mix(0)>0){
 		tmpStr << "muBeta: " << hyperParams.muBeta() << endl;
 		tmpStr << "sigmaBeta: " << hyperParams.sigmaBeta() << endl;
 		tmpStr << "dofBeta: " << hyperParams.dofBeta() << endl;
@@ -2955,10 +3061,10 @@ string storeLogFileData(const pReMiuMOptions& options,
 
 	if(options.outcomeType().compare("LME")==0){
 	  tmpStr << " cov RE, Sigma R0: ";
-	  if(dataset.nRandomEffects()>1)
+	  if(dataset.nRandomEffects(0)>1)
 	    tmpStr<<endl;
-	  tmpStr << hyperParams.SigmaLME_R0()<< " ";
-	  tmpStr << " cov RE, kappa0: "<< hyperParams.SigmaLME_kappa0()<< endl;
+	  tmpStr << hyperParams.SigmaLME_R0(0)<< " ";
+	  tmpStr << " cov RE, kappa0: "<< hyperParams.SigmaLME_kappa0(0)<< endl;
 
 	  //tmpStr << "eps_vu: "<< hyperParams.eps_vu() << endl;
 	  //tmpStr << "eps_sigma2_0: "<< hyperParams.eps_sigma2_0() <<endl;
