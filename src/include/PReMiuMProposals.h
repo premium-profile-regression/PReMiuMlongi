@@ -1632,7 +1632,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
     for(unsigned int i=0;i<nSubjects;i++){
       VectorXd yi;
-      VectorXd ui(nRandomEffects);
+      VectorXd ui(nRandomEffects[0]);
       unsigned int zi= currentParams.z(i);
 
       unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
