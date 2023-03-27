@@ -1598,14 +1598,14 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     MatrixXd Tau;
     VectorXd nS_c;
     nS_c.setZero(maxZ+1);
-    vector<MatrixXd> Rc(maxZ+1);
-    for(unsigned int c=0;c<=maxZ;c++){
-      Rc[c].setZero(nRandomEffects[m],nRandomEffects[m]);
-    }
+    MatrixXd Rc;
+    // for(unsigned int c=0;c<=maxZ;c++){
+    //   Rc[c].setZero(nRandomEffects[m],nRandomEffects[m]);
+    // }
 
     for(unsigned int i=0;i<nSubjects;i++){
       unsigned int zi = currentParams.z(i);
-      Rc[zi]=Rc[zi]+bi[i]*(bi[i].transpose());
+      Rc=Rc+bi[i]*(bi[i].transpose());
       nS_c[zi]++;
     }
     //Tau = wishartRand(rndGenerator,R,nSubjects+hyperParams.SigmaLME_kappa0());
@@ -1619,12 +1619,11 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
     //currentParams.covRE(Tau.inverse());
 
-    for(unsigned int c=0;c<=maxZ;c++){
-
-      Rc[c]=(hyperParams.workTauLME_R0(m).inverse()+Rc[c]).inverse();
-      MatrixXd Tau = wishartRand(rndGenerator,Rc[c],nS_c[c]+hyperParams.SigmaLME_kappa0(m));
+    Rc=(hyperParams.workTauLME_R0(m).inverse()+Rc).inverse();
+    Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
+    for(unsigned int c=0;c<=maxZ;c++)
       currentParams.covRE(m,c, Tau.inverse());
-    }
+
 
     // Update Random effects
     // Mean B*Z^T V^{-1}(Yi-Xi beta)
@@ -1632,7 +1631,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
     for(unsigned int i=0;i<nSubjects;i++){
       VectorXd yi;
-      VectorXd ui(nRandomEffects[0]);
+      VectorXd ui(nRandomEffects[m]);
       unsigned int zi= currentParams.z(i);
 
       unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
@@ -1655,21 +1654,20 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
       MatrixXd sigmae=MatrixXd::Identity(ni, ni) * currentParams.SigmaE(m);
 
-      MatrixXd V = block *currentParams.covRE(m,zi)* block.transpose() + sigmae;
+      MatrixXd V = block *currentParams.covRE(m,0)* block.transpose() + sigmae;
       LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
       MatrixXd L = lltOfA.matrixL();
       //double logDetPrecMat=  2*log(L.determinant());
       MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
-      VectorXd mu = currentParams.covRE(m,zi)*block.transpose()*Vi_inv*yi;
+      VectorXd mu = currentParams.covRE(m,0)*block.transpose()*Vi_inv*yi;
 
       //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-      MatrixXd cov = currentParams.covRE(m,zi) - currentParams.covRE(m,zi)*block.transpose()*Vi_inv*block*currentParams.covRE(m,zi);
+      MatrixXd cov = currentParams.covRE(m,0) - currentParams.covRE(m,0)*block.transpose()*Vi_inv*block*currentParams.covRE(m,0);
 
       ui = multivarNormalRand(rndGenerator,mu,cov);
       currentParams.RandomEffects(m,i,ui);
       ind ++;
     }
-
   }
 }
 

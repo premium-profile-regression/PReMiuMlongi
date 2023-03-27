@@ -61,7 +61,7 @@ template<class modelParamType> class mcmcState {
 		/// \brief Explicit constructor
 		mcmcState(const modelParamType& parameters,const vector<double>& logPostVec) :
 		    _logPosterior(logPostVec[0]),_logLikelihood(logPostVec[1]),
-				_logPrior(logPostVec[2]), _parameters(parameters){
+				 _parameters(parameters), _logPrior(logPostVec[2]){
 		};
 
 		const modelParamType& parameters() const{

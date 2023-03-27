@@ -31,7 +31,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
                    xModel="Discrete", sampler="SliceDependent", alpha=-2, dPitmanYor=0, excludeY=FALSE, extraYVar=FALSE,
                    varSelectType="None", entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs= NULL, continuousCovs= NULL,
                    whichLabelSwitch="123", includeCAR=FALSE, neighboursFile="Neighbours.txt",
-                   weibullFixedShape=TRUE, useNormInvWishPrior=FALSE,
+                   weibullFixedShape=TRUE, useNormInvWishPrior=FALSE, idvar = "ID",
                    kernel="SQexponential", sampleGPmean= FALSE,  estim_ratio=F, time_grid=NULL, ngrid=0, timevar=NULL){
 
   # suppress scientific notation
@@ -59,17 +59,26 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (useNormInvWishPrior==TRUE && !varSelectType=="None") stop("Variable selection is not available for Normal-inverse-Wishart prior for Normal covariates.")
   ##//RJ sort data sets by IDs
   if(length(longData)>0){
-    if (length(which(colnames(longData)=='ID'))<1 || length(which(colnames(longData)=='time'))<1 || length(which(colnames(longData)=='outcome'))<1) {
-      stop("Please provide longData as a data.frame with columns 'ID', 'time' and 'outcome'.")
+    if(yModel == " Longitudinal"){
+      if (length(which(colnames(longData)=='ID'))<1 || length(which(colnames(longData)=='time'))<1 || length(which(colnames(longData)=='outcome'))<1) {
+        stop("Please provide longData as a data.frame with columns 'ID', 'time' and 'outcome'.")
+      }
+    }
+    if(!(idvar%in%names(longData))){
+      stop("Error: longData should contain a column named idvar (= 'ID' by default).")
+    }else{
+      longData$ID <- longData[,which(names(longData)==idvar)]
     }
     IDlist <- longData$ID
     IDs <- unique(IDlist)
-    if (length(which(colnames(data)=='ID'))<1 && yModel %in% c('Longitudinal','LME')) {
+    if (length(which(colnames(data)==idvar))<1 && yModel %in% c('Longitudinal','LME')) {
       print("No ID column in data; assuming the same ordering as in longData.")
       if(length(IDs)!=dim(data)[1]){
         stop("Please supply ID column in data.")
       }
       data <- cbind(IDs,data)
+    }else{
+      data$ID <-data[,which(colnames(data)==idvar)]
     }
     if(sum(IDs %in% data$ID)!=length(IDs)){
       stop("ID values in data and longData do not match.")
@@ -79,7 +88,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   #if(yModel == "LME" & missing(formula))
-    #stop("The argument formula must be specified in LME ymodel")
+  #stop("The argument formula must be specified in LME ymodel")
   if (missing(longData) & yModel %in% c("Longitudinal", "LME"))
     stop("The argument data should be specified and defined as a data.frame")
   if(yModel == "LME")
@@ -105,12 +114,16 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # create outcome if excludeY=TRUE and outcome not provided
   nOutcomes <- length(outcome)
 
-  if (length(which(colnames(data)%in%outcome))<1&&excludeY==TRUE) {
+  if (length(which(colnames(data)%in%outcome))<1 || excludeY==TRUE) {
     dataMatrix<-rep(0,dim(data)[1])
     yModel="Bernoulli"
   } else {
-    nOutcomes <- length(which(colnames(data)%in%outcome))
-    dataMatrix<-data[,sapply(1:length(outcome), function(x) which(colnames(data)==outcome[x]))]
+    #nOutcomes <- length(which(colnames(data)%in%outcome))
+    if(!(yModel %in% c("LME","Longitudinal"))){
+      dataMatrix<-data[,sapply(1:length(outcome), function(x) which(colnames(data)==outcome[x]))]
+    }else{
+      dataMatrix<-rep(0,dim(data)[1])
+    }
   }
 
   if (sum(is.na(dataMatrix))>0 & !excludeY) stop("ERROR: the outcome cannot have missing values. Use the profiles with missing outcome for predictions.")
@@ -200,10 +213,10 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   for (k in 1:nCovariates){
-    missingX<-is.na(dataMatrix[,(k+nOutcomes)])
+    missingX<-is.na(dataMatrix[,(k+1)])
     nMissingX<-sum(missingX)
     if (nMissingX>0) {
-      dataMatrix[missingX,(k+nOutcomes)]<- rep(-999,nMissingX)
+      dataMatrix[missingX,(k+1)]<- rep(-999,nMissingX)
     }
   }
 
@@ -211,24 +224,41 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   nmes<- c(table(longData_FE$ID))
   # fixed effects
   if (!missing(fixedEffectsNames)) {
-    nFixedEffects<-sapply(1:length(fixedEffectsNames), function(x) length(fixedEffectsNames[[x]]))[1] #length(fixedEffectsNames_clust)
-#length(fixedEffectsNames)
+    nFixedEffects<-sapply(1:nOutcomes, function(x) length(fixedEffectsNames[[x]])) #length(fixedEffectsNames_clust)
+    #length(fixedEffectsNames)
 
+
+    uniqFE <- unlist(unique(fixedEffectsNames))
+    diff=0
+    for(mm in 1:nOutcomes){
+      if(length(intersect(fixedEffectsNames[[mm]],uniqFE))!=length(uniqFE))
+        diff=1
+    }
+    if(diff==1)
+      message("check if different cluster-spec Fixed effects per outcome")
+
+    uniq_FE <- unlist(unique(fixedEffectsNames))
     #FEIndeces_mix<- c()
-    if(length(intersect(timevar,fixedEffectsNames))>0){
-      for(j in 1:length(intersect(timevar,fixedEffectsNames))){
-        name <- intersect(timevar,fixedEffectsNames)[j]
+    if(length(intersect(timevar,uniq_FE))>0){
+      for(j in 1:length(intersect(timevar,uniq_FE))){
+        name <- intersect(timevar,uniq_FE)[j]
         longData_FE[[name]]<-longData[[name]]
       }
     }
 
-    FEIndeces<-vector()
-    for (i in 1:nFixedEffects){
-      tmpIndex<-which(colnames(data)==fixedEffectsNames[i])
-      if (length(tmpIndex)==0) stop("ERROR: fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression")
-      FEIndeces<-append(FEIndeces,tmpIndex)
+    FEIndeces<-vector(mode="numeric")
+
+    #all_fixedEffectsNames <- unique(fixedEffectsNames)
+
+    for (i in 1:max(nFixedEffects)){
+      if(!(fixedEffectsNames[i]%in%timevar)){
+        tmpIndex<-which(colnames(data)==fixedEffectsNames[i])
+        if (length(tmpIndex)==0) stop("ERROR: fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression")
+        FEIndeces<-append(FEIndeces,tmpIndex)
+      }
     }
     fixedEffects<-data[,FEIndeces]
+
     if(yModel=="LME"){
       for(j in 1:length(which(!fixedEffectsNames%in%timevar))){
         name <- fixedEffectsNames[which(!fixedEffectsNames%in%timevar)][j]
@@ -242,9 +272,10 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
     if (sum(is.na(fixedEffects))>0) stop("ERROR: fixed effects cannot have missing values. Use an imputation method before using profRegr().")
     dataMatrix<-cbind(dataMatrix,fixedEffects)
-    for (i in dim(fixedEffects)[2]){
+    for (i in 1:dim(fixedEffects)[2]){
       if (class(fixedEffects[,i])=="character") stop("ERROR: fixed effects must be of class numeric. See help pages.")
     }
+
   } else {
     nFixedEffects<-rep(0,nOutcomes)
     #if (yModel=="Survival") stop("ERROR: For the current implementation of Survival outcome the fixed effects must be provided. ")
@@ -252,21 +283,48 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
   # cluster-specific fixed effects
   if (!missing(fixedEffectsNames_clust)) {
-    nFixedEffects_mix<-sapply(1:length(fixedEffectsNames_clust), function(x) length(fixedEffectsNames_clust[[x]]))[1] #length(fixedEffectsNames_clust)
 
-    for(j in 1:nFixedEffects_mix){
-      name <- fixedEffectsNames_clust[j]
-      longData_FE[[name]]<-longData[[name]] #long format
+    nFixedEffects_mix<-sapply(1:nOutcomes, function(x) length(fixedEffectsNames_clust[[x]])) #length(fixedEffectsNames_clust)
+
+    uniqFEm <- unlist(unique(fixedEffectsNames_clust))
+    diff=0
+    for(mm in 1:nOutcomes){
+      if(length(intersect(fixedEffectsNames_clust[[mm]],uniqFEm))!=length(uniqFEm))
+        diff=1
+    }
+    if(diff==1)
+      message("check if different cluster-spec Fixed effects per outcome")
+
+    #FEIndeces_mix<- c()
+    if(length(intersect(timevar,uniqFEm))>0){
+      for(j in 1:length(intersect(timevar,uniqFEm))){
+        name <- intersect(timevar,uniqFEm)[j]
+        longData_FE[[name]]<-longData[[name]]
+      }
     }
 
-    FEIndeces_mix<-vector()
-    for (i in 1:nFixedEffects_mix){
-      tmpIndex_mix<-which(colnames(data)==fixedEffectsNames_clust[i])
-      if (length(tmpIndex_mix)==0 && !is.element(fixedEffectsNames_clust[i],timevar)) stop("ERROR: cluster-specific fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression, nor to timevar for yModel=LME")
-      FEIndeces_mix<-append(FEIndeces_mix,tmpIndex_mix)
+    m=1
+    FEIndeces_mix<-vector(mode="numeric")
+    for (i in 1:(max(nFixedEffects_mix))){
+      if(!(fixedEffectsNames_clust[[m]][i]%in%timevar)){
+        tmpIndex_mix<-which(colnames(data)==fixedEffectsNames_clust[[m]][i])
+        if (length(tmpIndex_mix)==0 && !is.element(fixedEffectsNames_clust[[m]][i],timevar)) stop("ERROR: cluster-specific fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression, nor to timevar for yModel=LME")
+        FEIndeces_mix<-append(FEIndeces_mix,tmpIndex_mix)
+      }
     }
 
     fixedEffects_mix<-data[,FEIndeces_mix] #one line by individual
+
+    if(yModel=="LME"){
+      for(j in 1:length(which(!fixedEffectsNames_clust[[m]]%in%timevar))){
+        name <- fixedEffectsNames_clust[[m]][which(!fixedEffectsNames_clust[[m]]%in%timevar)][j]
+        if(length(fixedEffects_mix)==1){
+          longData_FE[[name]] <- rep(fixedEffects_mix,times=nmes)
+        }else{
+          longData_FE[[name]] <- rep(fixedEffects_mix[[name]],times=nmes)
+        }
+      }
+    }
 
     # for(j in 1:length(fixedEffectsNames_clust)){
     #   name <- which(names(fixedEffects_mix)==fixedEffectsNames_clust[j])
@@ -279,9 +337,9 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
 
 
-    if (sum(is.na(fixedEffects_mix))>0) stop("ERROR: cluster-specific fixed effects cannot have missing values. Use an imputation method before using profRegr().")
+    if (sum(is.na(fixedEffects_mix[[m]]))>0) stop("ERROR: cluster-specific fixed effects cannot have missing values. Use an imputation method before using profRegr().")
     dataMatrix<-cbind(dataMatrix,fixedEffects_mix)
-    for (i in dim(fixedEffects_mix)[2]){
+    for (i in 1:dim(fixedEffects_mix)[2]){
       if (class(fixedEffects_mix[,i])=="character") stop("ERROR: cluster-specific fixed effects must be of class numeric. See help pages.")
     }
   } else {
@@ -291,18 +349,29 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
   # cluster-specific fixed effects
   if (yModel== 'LME' ){
-    if(!missing(randomEffectsNames) && length(randomEffectsNames)>0) {
-      nRandomEffects<-length(randomEffectsNames)
-      REIndeces<-vector()
-      for (i in 1:nRandomEffects){
-        tmpIndex_RE<-which(colnames(longData)==randomEffectsNames[i])
+    if(!missing(randomEffectsNames) && max(lengths(randomEffectsNames))>0) {
+      nRandomEffects<-lengths(randomEffectsNames)
+      REIndeces<-vector(mode="numeric")
+
+      uniqRE <- unlist(unique(randomEffectsNames))
+      diff=0
+      for(mm in 1:nOutcomes){
+        if(length(intersect(randomEffectsNames[[mm]],uniqRE))!=length(uniqRE))
+          diff=1
+      }
+      if(diff==1)
+        message("check if different random effects per marker.")
+
+      m=1
+      for (i in 1:nRandomEffects[[m]]){
+        tmpIndex_RE<-which(colnames(longData)==randomEffectsNames[[m]][i])
         if (length(tmpIndex_RE)==0) stop("ERROR: random effects names should be included in the names in longData.")
         REIndeces<-append(REIndeces,tmpIndex_RE)
       }
       randomEffects<-longData[,REIndeces, drop=FALSE]
       if (sum(is.na(randomEffects))>0) stop("ERROR: covariates with random effects cannot have missing values. Use an imputation method before using profRegr().")
       #longData<-cbind(longData,randomEffects)
-      for (i in dim(randomEffects)[2]){
+      for (i in 1:dim(randomEffects)[2]){
         if (class(randomEffects[,i])=="character") stop("ERROR: covariates with random effects must be of class numeric. See help pages.")
       }
     } else {
@@ -333,8 +402,13 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   write(as.character(nSubjects), fileName,ncolumns=1)
   # print number of outcomes
   write(as.character(nOutcomes),fileName,append=T,ncolumns=1)
+
+  for(i in 1:length(outcome))
+    write(as.character(outcome[i]),fileName,append=T,ncolumns=nOutcomes)
+
   # print number of covariates and their names
   write(as.character(nCovariates),fileName,append=T,ncolumns=1)
+
   ##//RJ add number of time points to file
   if(length(longData)>0){
     if(yModel=="Longitudinal"){
@@ -342,10 +416,10 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     }else{#LME
       nTimes_m <- c()
       for(j in 1:nOutcomes){
-        nTimes_m <- c(nTimes_m, length(which(!is.na(longData[,outcome[j]]))))
+        nTimes_m <- c(nTimes_m, length(which(!is.na(longData[[outcome[j]]]))))
       }
     }
-    write(nTimes_m, fileName,append=T,ncolumns=nOutcomes)
+    write(nTimes_m, fileName,append=T,ncolumns=1)
   }else{
     write(as.character(nSubjects*nOutcomes), fileName,append=T,ncolumns=1)
   }
@@ -357,50 +431,66 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # print number of fixed effects and their names
   if(yModel!='LME'){
 
-    write(nFixedEffects, fileName,append=T,ncolumns=1)
+    write(nFixedEffects, fileName,append=T,ncolumns=nOutcomes)
 
     if (nFixedEffects>0){
       write(t(fixedEffectsNames), fileName,append=T,ncolumns=1)
     }
-    write(nFixedEffects_mix, fileName,append=T,ncolumns=1)
-
-    if (nFixedEffects_mix>0){
-      write(t(fixedEffectsNames_clust), fileName,append=T,ncolumns=1)
-    }
+    # write(nFixedEffects_mix, fileName,append=T,ncolumns=1)
+    #
+    # if (nFixedEffects_mix>0){
+    #   write(t(fixedEffectsNames_clust), fileName,append=T,ncolumns=1)
+    #}
   }else{
+
     write(nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames, 1, 0),
           fileName,
           append = T,
-          ncolumns = 1)
+          ncolumns = nOutcomes)
 
-    if (nFixedEffects > 0) {
-      if (timevar[1] %in% fixedEffectsNames)
-        fixedEffectsNames <- c("intercept", fixedEffectsNames)
-      write(t(fixedEffectsNames),
-            fileName,
-            append = T,
-            ncolumns = 1)
+    if(max(nFixedEffects)>0){
+      for(mm in 1:nOutcomes){
+        if (timevar[1] %in% fixedEffectsNames[[mm]]){
+          fclust <- c("intercept", fixedEffectsNames[[mm]])
+        }else{
+          fclust <- fixedEffectsNames[[mm]]
+        }
+        write(fclust,
+              fileName,
+              append = T,
+              ncolumns = length(fclust))
+      }
     }
-    write(nFixedEffects_mix + ifelse(timevar[1] %in% fixedEffectsNames_clust, 1, 0),
+
+
+    out_m <- c()
+    for(mm in 1:nOutcomes)
+      out_m <- c(out_m, nFixedEffects_mix[mm] + ifelse(timevar[1] %in% unlist(fixedEffectsNames_clust[mm]), 1, 0))
+    write(t(out_m),
           fileName,
           append = T,
-          ncolumns = 1)
-    if (nFixedEffects_mix > 0) {
-      if (timevar[1] %in% fixedEffectsNames_clust)
-        fixedEffectsNames_clust <-
-          c("intercept", fixedEffectsNames_clust)
-      write(t(fixedEffectsNames_clust),
-            fileName,
-            append = T,
-            ncolumns = 1)
+          ncolumns = nOutcomes)
+
+    if(max(nFixedEffects_mix)>0){
+      for(mm in 1:nOutcomes){
+        if (timevar[1] %in% fixedEffectsNames_clust[[mm]]){
+          fclust <- c("intercept", fixedEffectsNames_clust[[mm]])
+        }else{
+          fclust <- fixedEffectsNames_clust[[mm]]
+        }
+        write(fclust,
+              fileName,
+              append = T,
+              ncolumns = length(fclust))
+      }
     }
-  }
 
 
-  if(yModel=="LME"){
-    write(nRandomEffects + 1, fileName,append=T,ncolumns=1)
-    randomEffectsNames <- c("intercept",randomEffectsNames)
-    write(t(randomEffectsNames), fileName,append=T,ncolumns=1)
+    write(nRandomEffects + 1, fileName,append=T,ncolumns=nOutcomes)
+    for(mm in 1:nOutcomes){
+      REnames <- c("intercept",randomEffectsNames[[mm]])
+      write(t(REnames), fileName,append=T,ncolumns=length(REnames))
+    }
   }
   if (yModel=="Categorical") write(yLevels,fileName,append=T,ncolumns=1)
   if (xModel=="Discrete"||xModel=="Mixed"){
@@ -410,6 +500,9 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # write prediction file
   #	if (!missing(predict)&(includeCAR)) stop ("Predictions are not available with spatial effect.")
   if (!missing(predict)) {
+    if(yModel=="LME")
+      message("not implemented for yModel = LME yet.")
+
     nPreds<-dim(predict)[1]
     write(nPreds, paste(output,"_predict.txt",sep=""),ncolumns=1)
     for (k in 1:nPreds){
@@ -458,6 +551,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     nPreds<-0
     fullPredictFile<-FALSE
   }
+
   if(yModel!="LME"){ #dim(dataMatrix)[2]==(nFixedEffects+nFixedEffects_mix+2)
     write(t(dataMatrix), fileName,append=T,ncolumns=dim(dataMatrix)[2])
   }else{
@@ -466,11 +560,14 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     #names(d2)[1:dim(dataMatrix)[2]]<-names(as.data.frame(dataMatrix))
 
     # Write covariates X
-    d2 <- dataMatrix[,length(outcome)+(1:length(covNames)),drop=F]
+    d2 <- dataMatrix[,1+(1:length(covNames)),drop=F]
     write(t(d2), fileName,append=T,ncolumns=dim(d2)[2])
   }
 
   if(!is.null(longData)){
+    longData$timeADD <- longData[[timevar[1]]]
+    longData <- longData[with(longData, order(ID, timeADD)), ]
+    longData <- longData[,-dim(longData)[2]]
 
     id_YnoNA <- c()
     for(j in 1:length(outcome)){
@@ -480,13 +577,13 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     ##//RJ get trajectory lengths
     IDlist <- longData$ID
     IDs <- unique(IDlist)
-    tStop <- vector(length=nSubjects*nOutcomes)
-    tStop[1] <- sum(IDlist[id_YnoNA[[1]]]==IDs[1])
-    tStart <- vector(length=nSubjects*nOutcomes)
-    ind_i <- 1
+    tStop <- vector(mode="numeric",length=nSubjects*nOutcomes)
+    tStart <- vector(mode="numeric",length=nSubjects*nOutcomes)
 
+    ind_i <- 1
     for(m in 1:nOutcomes){
-      tStart[ind_i] <- 1
+      tStart[ind_i] <- 1 #init i=1 for each m, starts at line 1
+      tStop[ind_i] <- sum(IDlist[id_YnoNA[[m]]]==IDs[1])
       ind_i <- ind_i + 1
 
       for(i in 2:nSubjects){
@@ -504,93 +601,82 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         meanLongData <- ifelse(yModel=='Longitudinal',mean(longData$outcome),0)
         longData$outcome <- longData$outcome - meanLongData
         write(t(cbind(longData$time,longData$outcome)),fileName,append=T,ncolumns=(dim(longData)[2]-1))
+
       }else if(yModel=='LME'){
 
         #time, outcome per marker
         for(j in 1:length(outcome)){
-          d0 <- longData[,sapply(c(timevar,outcome[j]), function(x) which(names(longData)==x))]
+          d0 <- longData[,sapply(c(timevar[1],outcome[j]), function(x) which(names(longData)==x))]
           d0 <- d0[id_YnoNA[[j]],]
           write(t(d0),fileName,append=T,ncolumns=dim(d0)[2])
         }
-      }
-    }
 
-    if(yModel=="LME"){
-      a <- fixedEffectsNames
-      fixedEffectsNames<-c()
-      for(m in 1:nOutcomes)
-        fixedEffectsNames <- c(fixedEffectsNames, list(a))
+        if(max(nFixedEffects)>0){
+          for(m in 1:nOutcomes){
+            d1 <- longData_FE[,which(names(longData_FE)%in%fixedEffectsNames[[m]])]
+            if(timevar[1]%in%fixedEffectsNames[[m]])
+              d1 <- data.frame("intercept"=rep(1,dim(longData_FE)[1]),d1)
+            if(length(fixedEffectsNames[[m]])>0)
+              write(t(d1[id_YnoNA[[m]],]), fileName,append=T, ncolumns=length(fixedEffectsNames[[m]]))
 
-      a <- fixedEffectsNames
-      fixedEffectsNames<-c()
-      for(m in 1:nOutcomes)
-        fixedEffectsNames <- c(fixedEffectsNames, list(a))
+          }
+        }
 
-      a <- randomEffects
-      randomEffects<-c()
-      for(m in 1:nOutcomes)
-        randomEffects <- c(randomEffects, list(a))
+        if(max(nFixedEffects_mix)>0){
+          for(m in 1:nOutcomes){
+            d3 <- longData_FE[,which(names(longData_FE)%in%fixedEffectsNames_clust[[m]])]
+            if(timevar[1]%in%fixedEffectsNames_clust[[m]])
+              d3 <- data.frame("intercept"=rep(1,dim(longData_FE)[1]),d3)
+            if(length(fixedEffectsNames_clust[[m]])>0)
+              write(t(d3[id_YnoNA[[m]],]), fileName,append=T, ncolumns=length(fixedEffectsNames_clust[[m]])+ifelse(timevar[1]%in%fixedEffectsNames_clust[[m]],1,0))
+          }
+        }
 
-
-      for(m in 1:nOutcomes){
-        d1 <- longData_FE[,which(names(longData_FE)%in%fixedEffectsNames[[m]])]
-        if(timevar[1]%in%fixedEffectsNames[[m]])
-          d1 <- data.frame("intercept"=rep(1,dim(longData_FE)[1]),d1)
-        if(length(fixedEffectsNames[[m]])>0)
-          write(t(d1[id_YnoNA[[m]],]), fileName,append=T, ncolumns=length(fixedEffectsNames[[m]]))
-
-      }
-
-      for(m in 1:nOutcomes){
-        d3 <- longData_FE[,which(names(longData_FE)%in%fixedEffectsNames_clust[[m]])]
-        if(timevar[1]%in%fixedEffectsNames_clust[[m]])
-          d3 <- data.frame("intercept"=rep(1,dim(longData_FE)[1]),d3)
-        if(length(fixedEffectsNames_clust[[m]])>0)
-          write(t(d3[id_YnoNA[[m]],]), fileName,append=T, ncolumns=length(fixedEffectsNames_clust[[m]]))
-      }
-
-      for(m in 1:nOutcomes){
-        wMat_RE<-data.frame("intercept"=rep(1,dim(longData)[1]))#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
-        if(length(randomEffectsNames[[m]])>1)
-          wMat_RE<-data.frame("intercept"=rep(1,dim(randomEffects[[m]])[1]),randomEffects[[m]])#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
-        write(t(wMat_RE[id_YnoNA[[m]],]), fileName,append=T, ncolumns=dim(wMat_RE)[2])
-      }
-    }
-
-    all_times<-c()
-
-    ##//AR correspondance times to sample GPmean
-    if(!is.null(time_grid)){
-      all_times=time_grid
-      ngrid=length(time_grid)
-    }else{
-      if(ngrid==0){
-        all_times <- unique(longData$time)
-      }else{
-        all_times <- seq(min(longData$time, na.rm = T), max(longData$time, na.rm = T),(max(longData$time, na.rm = T)-min(longData$time, na.rm = T))/(ngrid-1))
-      }
-    }
-
-    all_times <- all_times[order(all_times)]
-    times_corr <- vector(length=length(longData$time))
-
-    count=0
-    for(i in 1:nSubjects){
-      for(j in 1:(timeindices[i,2]-timeindices[i,1]+1)){
-        if(ngrid==length(unique(longData$time))){
-          times_corr[count + j] <- min(which(all_times == longData$time[count + j]))-1
-        }else{
-          times_corr[count + j] <- which(abs((all_times-longData$time[count + j]))==min(abs(all_times-longData$time[count + j])))
+        for(m in 1:nOutcomes){
+          wMat_RE<-data.frame("intercept"=rep(1,dim(longData)[1]))#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
+          if(length(randomEffectsNames[[m]])>1)
+            wMat_RE<-data.frame("intercept"=rep(1,dim(randomEffects)[1]),randomEffects)#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
+          write(t(wMat_RE[id_YnoNA[[m]],]), fileName,append=T, ncolumns=dim(wMat_RE)[2])
         }
       }
-      count <- count + j
+
+      if(yModel=='Longitudinal'){
+        all_times<-c()
+
+        ##//AR correspondance times to sample GPmean
+        if(!is.null(time_grid)){
+          all_times=time_grid
+          ngrid=length(time_grid)
+        }else{
+          if(ngrid==0){
+            all_times <- unique(longData$time)
+          }else{
+            all_times <- seq(min(longData$time, na.rm = T), max(longData$time, na.rm = T),(max(longData$time, na.rm = T)-min(longData$time, na.rm = T))/(ngrid-1))
+          }
+        }
+
+        all_times <- all_times[order(all_times)]
+        times_corr <- vector(length=length(longData$time))
+
+        count=0
+        for(i in 1:nSubjects){
+          for(j in 1:(timeindices[i,2]-timeindices[i,1]+1)){
+            if(ngrid==length(unique(longData$time))){
+              times_corr[count + j] <- min(which(all_times == longData$time[count + j]))-1
+            }else{
+              times_corr[count + j] <- which(abs((all_times-longData$time[count + j]))==min(abs(all_times-longData$time[count + j])))
+            }
+          }
+          count <- count + j
+        }
+
+        times_corr = times_corr -1
+        write(length(all_times),fileName,append=T,ncolumns=1)
+
+        write(t(all_times),fileName,append=T,ncolumns=1)
+        write(t(times_corr),fileName,append=T,ncolumns=1)
+      }
     }
-
-    times_corr = times_corr -1
-    write(length(all_times),fileName,append=T,ncolumns=1)
-
-    write(t(all_times),fileName,append=T,ncolumns=1)
-    write(t(times_corr),fileName,append=T,ncolumns=1)
   }
 
 
@@ -803,6 +889,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (estim_ratio) inputString<-paste(inputString," --estim_ratio=" ,estim_ratio,sep="")
   if (!missing(seed)) inputString<-paste(inputString," --seed=",seed,sep="")
 
+browser()
   if (run) .Call('profRegr', inputString, PACKAGE = 'PReMiuMlongi')
 
   # define directory path and fileStem
@@ -849,6 +936,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     longMean <- meanLongData
   }
 
+  browser()
   if(nFixedEffects>0){
     wMat <- as.data.frame(matrix(0,dim(dataMatrix)[1],nFixedEffects))
     wMat[1:(nFixedEffects-length(intersect(fixedEffectsNames,timevar)))]<-dataMatrix[,(1+nOutcomes+nCovariates):(nOutcomes+nCovariates+nFixedEffects-length(intersect(fixedEffectsNames,timevar)))]

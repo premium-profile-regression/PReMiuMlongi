@@ -338,6 +338,18 @@ class pReMiuMData{
 			return _covariateNames;
 		}
 
+		vector<string>& outcNames(){
+		  return _outcNames;
+		}
+
+		vector<string> outcNames() const{
+		  return _outcNames;
+		}
+
+		const string& outcNames(const unsigned int& j) const{
+		  return _outcNames[j];
+		}
+
 
 		/// \brief Set the vector of the covariate names
 		void covariateNames(const vector<string>& covNames){
@@ -981,6 +993,7 @@ class pReMiuMData{
 
 		/// \brief A vector of covariate names
 		vector<string> _covariateNames;
+		vector<string> _outcNames;
 
 		/// \brief A matrix (vector of vectors) of where there are missing
 		/// covariate values
