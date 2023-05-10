@@ -285,7 +285,7 @@ public:
       //_workLogDetTauLME_R0.resize(nOutcomes);
       //_SigmaLME_kappa0.resize(nOutcomes);
       for(unsigned int m=0;m<nOutcomes;m++){
-        _SigmaLME_R0[m] = 0.1*MatrixXd::Identity(nRandomEffects[m],nRandomEffects[m]);
+        _SigmaLME_R0[m] = 0.01*MatrixXd::Identity(nRandomEffects[m],nRandomEffects[m]);
         _workTauLME_R0[m]=_SigmaLME_R0[m].inverse();
         //_SigmaLME_R0[m]=MatrixXd::Identity(nRandomEffects[m],nRandomEffects[m]);
         //_workTauLME_R0[m]=_SigmaLME_R0[m].inverse();
@@ -1025,10 +1025,10 @@ public:
 
         for(unsigned int c=0;c<maxNClusters;c++){
           _covRE[m][c].setZero(nRandomEffects[m], nRandomEffects[m]);
-          LLT<MatrixXd> llt;
-          MatrixXd mat = 0.1*MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
-          _covRE[m][c] = mat;
-          _workSqrtTauLME[m][c] = (llt.compute(mat)).matrixU();//.setZero(nRandomEffects[m],nRandomEffects[m]);
+          //LLT<MatrixXd> llt;
+          //MatrixXd mat = 0.1*MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
+          //_covRE[m][c] = mat;
+          _workSqrtTauLME[m][c].setZero(nRandomEffects[m], nRandomEffects[m]);// = (llt.compute(mat)).matrixU();
         }
        }
     }
@@ -1706,7 +1706,15 @@ public:
   }
 
   const MatrixXd& covRE(const unsigned int& m, const unsigned int& c) const{
-    return _covRE[c][m];
+    return _covRE[m][c];
+  }
+
+  const vector<vector<MatrixXd>>& covRE() const{
+    return _covRE;
+  }
+
+  const vector<MatrixXd>& covRE(const unsigned int& m) const{
+    return _covRE[m];
   }
 
   double covRE(const unsigned int& m, const unsigned int& c, const unsigned int& i, const unsigned int& j) const{
@@ -3557,7 +3565,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   const string varSelectType = model.options().varSelectType();
   double fixedAlpha = model.options().fixedAlpha();
   unsigned int nSubjects=dataset.nSubjects();
-  unsigned int nTimes=dataset.nTimes();
+  //unsigned int nTimes=dataset.nTimes();
   unsigned int nOutcomes=dataset.nOutcomes();
   unsigned int maxNClusters=params.maxNClusters();
   unsigned int nCovariates=dataset.nCovariates();
@@ -3933,7 +3941,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
                                 hyperParams.eps_rate()); //Gamma(shape,rate=1/scale)
 
          for(unsigned int i=0;i<nSubjects;i++){
-           unsigned int zi = params.z(i);
+           //unsigned int zi = params.z(i);
            VectorXd RE=params.RandomEffects(m,i);
            VectorXd mu;
            mu.setZero(nRandomEffects[m]);

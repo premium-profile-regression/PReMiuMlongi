@@ -607,7 +607,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         write(t(cbind(longData$time,longData$outcome)),fileName,append=T,ncolumns=(dim(longData)[2]-1))
 
       }else if(yModel=='LME'){
-
+        meanLongData <- NA
         #time, outcome per marker
         for(j in 1:length(outcome)){
           d0 <- longData[,sapply(c(timevar[1],outcome[j]), function(x) which(names(longData)==x))]

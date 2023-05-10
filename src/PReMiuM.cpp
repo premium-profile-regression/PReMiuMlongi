@@ -72,314 +72,322 @@ RcppExport SEXP profRegr(SEXP inputString) {
   /* ---------- Start the timer ------------------*/
   time_t beginTime,currTime;
   beginTime = time(NULL);
-  /* -----------Process the command line ---------*/
-  pReMiuMOptions options = processCommandLine(inputStr);
-  /* ---------- Set up the sampler object--------*/
-  // Initialise the sampler object
-  mcmcSampler<pReMiuMParams,pReMiuMOptions,
-              pReMiuMPropParams,pReMiuMData> pReMiuMSampler;
 
-  // Set the options
-  pReMiuMSampler.options(options);
-  // Set the model
-  pReMiuMSampler.model(&importPReMiuMData,&initialisePReMiuM,
-                       &pReMiuMLogPost,true);
-  // Set the missing data function
-  pReMiuMSampler.updateMissingDataFn(&updateMissingPReMiuMData);
 
-  // Add the function for writing output
-  pReMiuMSampler.userOutputFn(&writePReMiuMOutput);
+    /* -----------Process the command line ---------*/
+    pReMiuMOptions options = processCommandLine(inputStr);
+    /* ---------- Set up the sampler object--------*/
+    // Initialise the sampler object
+    mcmcSampler<pReMiuMParams,pReMiuMOptions,
+                pReMiuMPropParams,pReMiuMData> pReMiuMSampler;
 
-  // Seed the random number generator
-  pReMiuMSampler.seedGenerator(options.seed());
-  //pReMiuMSampler.seedGeneratorMult(options.seedsMult());
+    // Set the options
+    pReMiuMSampler.options(options);
+    // Set the model
+    pReMiuMSampler.model(&importPReMiuMData,&initialisePReMiuM,
+                         &pReMiuMLogPost,true);
+    // Set the missing data function
+    pReMiuMSampler.updateMissingDataFn(&updateMissingPReMiuMData);
 
-  // Set the sampler specific variables
-  pReMiuMSampler.nSweeps(options.nSweeps());
-  pReMiuMSampler.nBurn(options.nBurn());
-  pReMiuMSampler.nFilter(options.nFilter());
-  pReMiuMSampler.nProgress(options.nProgress());
-  pReMiuMSampler.reportBurnIn(options.reportBurnIn());
+    // Add the function for writing output
+    pReMiuMSampler.userOutputFn(&writePReMiuMOutput);
 
-  /* ---------- Read in the data -------- */
-  pReMiuMSampler.model().dataset().outcomeType(options.outcomeType());
-  pReMiuMSampler.model().dataset().kernelType(options.kernelType());//AR
-  pReMiuMSampler.model().dataset().covariateType(options.covariateType());
-  pReMiuMSampler.model().dataset().includeCAR(options.includeCAR());
-  pReMiuMSampler.importData(options.inFileName(),options.predictFileName(),options.neighbourFileName());
-  pReMiuMData dataset = pReMiuMSampler.model().dataset();
-  std::cout << " apres importdata" <<endl;
+    // Seed the random number generator
+    pReMiuMSampler.seedGenerator(options.seed());
+    //pReMiuMSampler.seedGeneratorMult(options.seedsMult());
 
-  /* ---------- Add the proposals -------- */
-  // Set the proposal parameters
-  pReMiuMPropParams proposalParams(options.nSweeps(), dataset.nCovariates(), //dataset.nOutcomes(),
-                                   dataset.nFixedEffects(),dataset.nCategoriesY(),dataset.kernelType());
-  pReMiuMSampler.proposalParams(proposalParams);
+    // Set the sampler specific variables
+    pReMiuMSampler.nSweeps(options.nSweeps());
+    pReMiuMSampler.nBurn(options.nBurn());
+    pReMiuMSampler.nFilter(options.nFilter());
+    pReMiuMSampler.nProgress(options.nProgress());
+    pReMiuMSampler.reportBurnIn(options.reportBurnIn());
 
-  // The gibbs update for the active V
-  pReMiuMSampler.addProposal("gibbsForVActive",1.0,1,1,&gibbsForVActive);
+    /* ---------- Read in the data -------- */
+    pReMiuMSampler.model().dataset().outcomeType(options.outcomeType());
+    pReMiuMSampler.model().dataset().kernelType(options.kernelType());//AR
+    pReMiuMSampler.model().dataset().covariateType(options.covariateType());
+    pReMiuMSampler.model().dataset().includeCAR(options.includeCAR());
 
-  if(options.covariateType().compare("Discrete")==0){
-    // For discrete X data we do a mixture of Categorical and ordinal updates
-    //  Update for the active phi parameters
-    pReMiuMSampler.addProposal("updateForPhiActive",1.0,1,1,&updateForPhiActive);
+    pReMiuMSampler.importData(options.inFileName(),options.predictFileName(),options.neighbourFileName());
 
-  }else if(options.covariateType().compare("Normal")==0){
-    // Need to add the proposals for the normal case
-    // Update for the active mu parameters
-    if (options.useNormInvWishPrior()){
-      // If Inverse Normal Inverse Wishart Prior is used
-      pReMiuMSampler.addProposal("gibbsForMuActiveNIWP",1.0,1,1,&gibbsForMuActiveNIWP);
-    }else{
-      // If independant Normal and Inverse Wishart priors are used
-      pReMiuMSampler.addProposal("gibbsForMuActive",1.0,1,1,&gibbsForMuActive);
-    }
+    pReMiuMData dataset = pReMiuMSampler.model().dataset();
 
-    // Update for the active Sigma parameters
-    pReMiuMSampler.addProposal("gibbsForTauActive",1.0,1,1,&gibbsForTauActive);
+    /* ---------- Add the proposals -------- */
+    // Set the proposal parameters
+    pReMiuMPropParams proposalParams(options.nSweeps(), dataset.nCovariates(), //dataset.nOutcomes(),
+                                     dataset.nFixedEffects(),dataset.nCategoriesY(),dataset.kernelType());
+    pReMiuMSampler.proposalParams(proposalParams);
 
-  }else if(options.covariateType().compare("Mixed")==0){
-    // For discrete X data we do a mixture of Categorical and ordinal updates
-    //  Update for the active phi parameters
-    pReMiuMSampler.addProposal("updateForPhiActive",1.0,1,1,&updateForPhiActive);
+    // The gibbs update for the active V
+    pReMiuMSampler.addProposal("gibbsForVActive",1.0,1,1,&gibbsForVActive);
 
-    // Need to add the proposals for the normal case
-    // Update for the active mu parameters
-    if (options.useNormInvWishPrior()){
-      // If Inverse Normal Inverse Wishart Prior is used
-      pReMiuMSampler.addProposal("gibbsForMuActiveNIWP",1.0,1,1,&gibbsForMuActiveNIWP);
-    }else{
-      // If independant Normal and Inverse Wishart priors are used
-      pReMiuMSampler.addProposal("gibbsForMuActive",1.0,1,1,&gibbsForMuActive);
-    }
+    if(options.covariateType().compare("Discrete")==0){
+      // For discrete X data we do a mixture of Categorical and ordinal updates
+      //  Update for the active phi parameters
+      pReMiuMSampler.addProposal("updateForPhiActive",1.0,1,1,&updateForPhiActive);
 
-    // Update for the active Sigma parameters
-    pReMiuMSampler.addProposal("gibbsForTauActive",1.0,1,1,&gibbsForTauActive);
-
-  }
-
-  if(options.varSelectType().compare("None")!=0){
-    // Add the variable selection moves
-    unsigned int firstSweep;
-    firstSweep=1+(unsigned int)(options.nBurn()/10);
-    if(options.varSelectType().compare("Continuous")!=0){
-      // Gibbs update for gamma
-      pReMiuMSampler.addProposal("gibbsForGammaActive",1.0,1,firstSweep,&gibbsForGammaActive);
-    }
-  }
-
-  if(options.includeResponse()){
-    // The Metropolis Hastings update for the active theta
-    if(options.outcomeType().compare("Longitudinal")!=0  & options.outcomeType().compare("LME")!=0 )//&& options.outcomeType().compare("LME")!=0) //AR
-      pReMiuMSampler.addProposal("metropolisHastingsForThetaActive",1.0,1,1,&metropolisHastingsForThetaActive);
-
-    // Adaptive MH for beta
-    if(options.outcomeType().compare("LME")!=0){
-      if(dataset.nFixedEffects(0)>0)
-      pReMiuMSampler.addProposal("metropolisHastingsForBeta",1.0,1,1,&metropolisHastingsForBeta);
-    }else{
-      if(dataset.nFixedEffects(0)>0||dataset.nFixedEffects_mix(0)>0) // or MAX
-        pReMiuMSampler.addProposal("gibbsForBeta",1.0,1,1,&GibbsForBeta);
-    }
-
-    if(options.responseExtraVar()){
-      if(options.outcomeType().compare("LME")!=0){
-        // Adaptive MH for lambda
-        pReMiuMSampler.addProposal("metropolisHastingsForLambda",1.0,1,1,&metropolisHastingsForLambda);
-
-        // Gibbs for tauEpsilon
-        pReMiuMSampler.addProposal("gibbsForTauEpsilon",1.0,1,1,&gibbsForTauEpsilon);
+    }else if(options.covariateType().compare("Normal")==0){
+      // Need to add the proposals for the normal case
+      // Update for the active mu parameters
+      if (options.useNormInvWishPrior()){
+        // If Inverse Normal Inverse Wishart Prior is used
+        pReMiuMSampler.addProposal("gibbsForMuActiveNIWP",1.0,1,1,&gibbsForMuActiveNIWP);
       }else{
-        printf("Not proposed for yModel = LME.");
+        // If independant Normal and Inverse Wishart priors are used
+        pReMiuMSampler.addProposal("gibbsForMuActive",1.0,1,1,&gibbsForMuActive);
       }
-    }
 
-    //if spatial random term
-    if (options.includeCAR()){
-      if(options.outcomeType().compare("LME")!=0){
-        //Adaptive rejection sampling for uCAR
-        pReMiuMSampler.addProposal("gibbsforUCAR", 1.0,1,1,&gibbsForUCAR);
-
-        //Gibbs for TauCAR
-        pReMiuMSampler.addProposal("gibbsForTauCAR", 1.0,1,1,&gibbsForTauCAR);
-      }else{
-        printf("Not proposed for yModel = LME.");
-      }
-    }
-
-    if(options.outcomeType().compare("Survival")==0){
-      if (!options.weibullFixedShape()) {
-        // Gibbs for shape parameter (cluster specific) of Weibull for survival response model
-        pReMiuMSampler.addProposal("gibbsForNu",1.0,1,1,&gibbsForNu);
-      }
-    }
-    //RJ add sampler for L & MVN
-    if(options.outcomeType().compare("Longitudinal")==0){
-      pReMiuMSampler.addProposal("metropolisHastingsForL",1.0,1,1,&metropolisHastingsForL);
-    }
-    if(options.outcomeType().compare("MVN")==0){
-      //pReMiuMSampler.addProposal("gibbsForMVNMuActive",1.0,1,1,&gibbsForMVNMuActive);
       // Update for the active Sigma parameters
-      pReMiuMSampler.addProposal("gibbsForMVNTauActive",1.0,1,1,&gibbsForMVNTauActive);
-    }
-    //AR
-    if(options.outcomeType().compare("LME")==0){
-      // Update covariance matrices and random effects
-      pReMiuMSampler.addProposal("gibbsForCovRELMEActive",1.0,1,1,&gibbsForCovRELMEActive);
-      // Update variance error
-      pReMiuMSampler.addProposal("gibbsForSigmaEpsilonLME",1.0,1,1,&gibbsForSigmaEpsilonLME);
-    }
-  }
+      pReMiuMSampler.addProposal("gibbsForTauActive",1.0,1,1,&gibbsForTauActive);
 
-  // The Metropolis Hastings update for labels
-  if(options.whichLabelSwitch().compare("123")==0){
-    pReMiuMSampler.addProposal("metropolisHastingsForLabels123",1.0,1,1,&metropolisHastingsForLabels123);
-  } else if (options.whichLabelSwitch().compare("12")==0){
-    pReMiuMSampler.addProposal("metropolisHastingsForLabels12",1.0,1,1,&metropolisHastingsForLabels12);
-  } else if(options.whichLabelSwitch().compare("3")==0){
-    pReMiuMSampler.addProposal("metropolisHastingsForLabels3",1.0,1,1,&metropolisHastingsForLabels3);
-  }
-  // Gibbs for U
-  if(options.samplerType().compare("Truncated")!=0){
-    pReMiuMSampler.addProposal("gibbsForU",1.0,1,1,&gibbsForU);
-  }
+    }else if(options.covariateType().compare("Mixed")==0){
+      // For discrete X data we do a mixture of Categorical and ordinal updates
+      //  Update for the active phi parameters
+      pReMiuMSampler.addProposal("updateForPhiActive",1.0,1,1,&updateForPhiActive);
 
-  // The Metropolis Hastings update for alpha
-  if(options.fixedAlpha()<=-1){
-    pReMiuMSampler.addProposal("metropolisHastingsForAlpha",1.0,1,1,&metropolisHastingsForAlpha);
-  }
+      // Need to add the proposals for the normal case
+      // Update for the active mu parameters
+      if (options.useNormInvWishPrior()){
+        // If Inverse Normal Inverse Wishart Prior is used
+        pReMiuMSampler.addProposal("gibbsForMuActiveNIWP",1.0,1,1,&gibbsForMuActiveNIWP);
+      }else{
+        // If independant Normal and Inverse Wishart priors are used
+        pReMiuMSampler.addProposal("gibbsForMuActive",1.0,1,1,&gibbsForMuActive);
+      }
 
-  // The gibbs update for the inactive V
-  pReMiuMSampler.addProposal("gibbsForVInActive",1.0,1,1,&gibbsForVInActive);
+      // Update for the active Sigma parameters
+      pReMiuMSampler.addProposal("gibbsForTauActive",1.0,1,1,&gibbsForTauActive);
 
-  if(options.covariateType().compare("Discrete")==0){
-    // For discrete X data we do a mixture of Categorical and ordinal updates
-    //  Update for the inactive phi parameters
-    pReMiuMSampler.addProposal("gibbsForPhiInActive",1.0,1,1,&gibbsForPhiInActive);
-
-  }else if(options.covariateType().compare("Normal")==0){
-    // Need to add the proposals for the normal case
-    // Update for the active mu parameters
-    if (options.useNormInvWishPrior()){
-      // If Inverse Normal Inverse Wishart Prior is used
-      pReMiuMSampler.addProposal("gibbsForMuInActiveNIWP",1.0,1,1,&gibbsForMuInActiveNIWP);
-    }else{
-      // If independant Normal and Inverse Wishart priors are used
-      pReMiuMSampler.addProposal("gibbsForMuInActive",1.0,1,1,&gibbsForMuInActive);
-    }
-    // Update for the active Sigma parameters
-    pReMiuMSampler.addProposal("gibbsForTauInActive",1.0,1,1,&gibbsForTauInActive);
-
-  }else if(options.covariateType().compare("Mixed")==0){
-
-    // For discrete X data we do a mixture of Categorical and ordinal updates
-    //  Update for the inactive phi parameters
-    pReMiuMSampler.addProposal("gibbsForPhiInActive",1.0,1,1,&gibbsForPhiInActive);
-
-    // Need to add the proposals for the normal case
-    // Update for the active mu parameters
-    if (options.useNormInvWishPrior()){
-      // If Inverse Normal Inverse Wishart Prior is used
-      pReMiuMSampler.addProposal("gibbsForMuInActiveNIWP",1.0,1,1,&gibbsForMuInActiveNIWP);
-    }else{
-      // If independant Normal and Inverse Wishart priors are used
-      pReMiuMSampler.addProposal("gibbsForMuInActive",1.0,1,1,&gibbsForMuInActive);
-    }
-    // Update for the active Sigma parameters
-    pReMiuMSampler.addProposal("gibbsForTauInActive",1.0,1,1,&gibbsForTauInActive);
-  }
-
-  if(options.varSelectType().compare("None")!=0){
-    // Add the variable selection moves
-    unsigned int firstSweep;
-    firstSweep=1+(unsigned int)(options.nBurn()/10);
-    if(options.varSelectType().compare("Continuous")!=0){
-      // Gibbs update for gamma
-      pReMiuMSampler.addProposal("gibbsForGammaInActive",1.0,1,firstSweep,&gibbsForGammaInActive);
-    }
-  }
-
-  if(options.includeResponse()){
-    // The Metropolis Hastings update for the inactive theta
-    if(options.outcomeType().compare("Longitudinal")!=0 && options.outcomeType().compare("LME")!=0) //AR
-      pReMiuMSampler.addProposal("gibbsForThetaInActive",1.0,1,1,&gibbsForThetaInActive);
-
-    if(options.outcomeType().compare("Survival")==0&&!options.weibullFixedShape()) {
-      pReMiuMSampler.addProposal("gibbsForNuInActive",1.0,1,1,&gibbsForNuInActive);
-    }
-    //RJ add sampler for L & MVN inactive
-    if(options.outcomeType().compare("Longitudinal")==0){
-      // Gibbs for L for longitudinal response
-      pReMiuMSampler.addProposal("gibbsForLInActive",1.0,1,1,&gibbsForLInActive);
-    }
-    if(options.outcomeType().compare("MVN")==0){
-      pReMiuMSampler.addProposal("gibbsForMVNMuInActive",1.0,1,1,&gibbsForMVNMuInActive);
-      pReMiuMSampler.addProposal("gibbsForMVNTauInActive",1.0,1,1,&gibbsForMVNTauInActive);
-    }
-    if(options.outcomeType().compare("LME")==0){
-      pReMiuMSampler.addProposal("gibbsForCovRELMEInActive",1.0,1,1,&gibbsForCovRELMEInActive);
-      pReMiuMSampler.addProposal("gibbsForBetaInActive",1.0,1,1,&gibbsForBetaInActive);
-    }
-  }
-
-  if(options.varSelectType().compare("None")!=0){
-    // Add the variable selection moves
-    // Metropolis Hastings for joint update of rho and omega
-    unsigned int firstSweep;
-    firstSweep=1+(unsigned int)(options.nBurn()/10);
-
-    pReMiuMSampler.addProposal("metropolisHastingsForRhoOmega",1.0,1,firstSweep,&metropolisHastingsForRhoOmega);
-  }
-
-  if(options.includeResponse()){
-    if(options.outcomeType().compare("Normal")==0){
-      // Gibbs for sigmaSqY for Normal response model
-      pReMiuMSampler.addProposal("gibbsForSigmaSqY",1.0,1,1,&gibbsForSigmaSqY);
     }
 
-    if(options.outcomeType().compare("Survival")==0){
-      if (options.weibullFixedShape()) {
-        // Gibbs for shape parameter of Weibull for survival response model
-        pReMiuMSampler.addProposal("gibbsForNu",1.0,1,1,&gibbsForNu);
+    if(options.varSelectType().compare("None")!=0){
+      // Add the variable selection moves
+      unsigned int firstSweep;
+      firstSweep=1+(unsigned int)(options.nBurn()/10);
+      if(options.varSelectType().compare("Continuous")!=0){
+        // Gibbs update for gamma
+        pReMiuMSampler.addProposal("gibbsForGammaActive",1.0,1,firstSweep,&gibbsForGammaActive);
       }
     }
+
+    if(options.includeResponse()){
+      // The Metropolis Hastings update for the active theta
+      if(options.outcomeType().compare("Longitudinal")!=0  & options.outcomeType().compare("LME")!=0 )//&& options.outcomeType().compare("LME")!=0) //AR
+        pReMiuMSampler.addProposal("metropolisHastingsForThetaActive",1.0,1,1,&metropolisHastingsForThetaActive);
+
+      // Adaptive MH for beta
+      if(options.outcomeType().compare("LME")!=0){
+        if(dataset.nFixedEffects(0)>0)
+          pReMiuMSampler.addProposal("metropolisHastingsForBeta",1.0,1,1,&metropolisHastingsForBeta);
+      }else{
+        if(dataset.nFixedEffects(0)>0||dataset.nFixedEffects_mix(0)>0) // or MAX
+          pReMiuMSampler.addProposal("gibbsForBeta",1.0,1,1,&GibbsForBeta);
+      }
+
+      if(options.responseExtraVar()){
+        if(options.outcomeType().compare("LME")!=0){
+          // Adaptive MH for lambda
+          pReMiuMSampler.addProposal("metropolisHastingsForLambda",1.0,1,1,&metropolisHastingsForLambda);
+
+          // Gibbs for tauEpsilon
+          pReMiuMSampler.addProposal("gibbsForTauEpsilon",1.0,1,1,&gibbsForTauEpsilon);
+        }else{
+          printf("Not proposed for yModel = LME.");
+        }
+      }
+
+      //if spatial random term
+      if (options.includeCAR()){
+        if(options.outcomeType().compare("LME")!=0){
+          //Adaptive rejection sampling for uCAR
+          pReMiuMSampler.addProposal("gibbsforUCAR", 1.0,1,1,&gibbsForUCAR);
+
+          //Gibbs for TauCAR
+          pReMiuMSampler.addProposal("gibbsForTauCAR", 1.0,1,1,&gibbsForTauCAR);
+        }else{
+          printf("Not proposed for yModel = LME.");
+        }
+      }
+
+      if(options.outcomeType().compare("Survival")==0){
+        if (!options.weibullFixedShape()) {
+          // Gibbs for shape parameter (cluster specific) of Weibull for survival response model
+          pReMiuMSampler.addProposal("gibbsForNu",1.0,1,1,&gibbsForNu);
+        }
+      }
+      //RJ add sampler for L & MVN
+      if(options.outcomeType().compare("Longitudinal")==0){
+        pReMiuMSampler.addProposal("metropolisHastingsForL",1.0,1,1,&metropolisHastingsForL);
+      }
+      if(options.outcomeType().compare("MVN")==0){
+        //pReMiuMSampler.addProposal("gibbsForMVNMuActive",1.0,1,1,&gibbsForMVNMuActive);
+        // Update for the active Sigma parameters
+        pReMiuMSampler.addProposal("gibbsForMVNTauActive",1.0,1,1,&gibbsForMVNTauActive);
+      }
+      //AR
+      if(options.outcomeType().compare("LME")==0){
+        // Update covariance matrices and random effects
+        pReMiuMSampler.addProposal("gibbsForCovRELMEActive",1.0,1,1,&gibbsForCovRELMEActive);
+        // Update variance error
+        pReMiuMSampler.addProposal("gibbsForSigmaEpsilonLME",1.0,1,1,&gibbsForSigmaEpsilonLME);
+      }
+    }
+
+    // The Metropolis Hastings update for labels
+    if(options.whichLabelSwitch().compare("123")==0){
+      pReMiuMSampler.addProposal("metropolisHastingsForLabels123",1.0,1,1,&metropolisHastingsForLabels123);
+    } else if (options.whichLabelSwitch().compare("12")==0){
+      pReMiuMSampler.addProposal("metropolisHastingsForLabels12",1.0,1,1,&metropolisHastingsForLabels12);
+    } else if(options.whichLabelSwitch().compare("3")==0){
+      pReMiuMSampler.addProposal("metropolisHastingsForLabels3",1.0,1,1,&metropolisHastingsForLabels3);
+    }
+    // Gibbs for U
+    if(options.samplerType().compare("Truncated")!=0){
+      pReMiuMSampler.addProposal("gibbsForU",1.0,1,1,&gibbsForU);
+    }
+
+    // The Metropolis Hastings update for alpha
+    if(options.fixedAlpha()<=-1){
+      pReMiuMSampler.addProposal("metropolisHastingsForAlpha",1.0,1,1,&metropolisHastingsForAlpha);
+    }
+
+    // The gibbs update for the inactive V
+    pReMiuMSampler.addProposal("gibbsForVInActive",1.0,1,1,&gibbsForVInActive);
+
+    if(options.covariateType().compare("Discrete")==0){
+      // For discrete X data we do a mixture of Categorical and ordinal updates
+      //  Update for the inactive phi parameters
+      pReMiuMSampler.addProposal("gibbsForPhiInActive",1.0,1,1,&gibbsForPhiInActive);
+
+    }else if(options.covariateType().compare("Normal")==0){
+      // Need to add the proposals for the normal case
+      // Update for the active mu parameters
+      if (options.useNormInvWishPrior()){
+        // If Inverse Normal Inverse Wishart Prior is used
+        pReMiuMSampler.addProposal("gibbsForMuInActiveNIWP",1.0,1,1,&gibbsForMuInActiveNIWP);
+      }else{
+        // If independant Normal and Inverse Wishart priors are used
+        pReMiuMSampler.addProposal("gibbsForMuInActive",1.0,1,1,&gibbsForMuInActive);
+      }
+      // Update for the active Sigma parameters
+      pReMiuMSampler.addProposal("gibbsForTauInActive",1.0,1,1,&gibbsForTauInActive);
+
+    }else if(options.covariateType().compare("Mixed")==0){
+
+      // For discrete X data we do a mixture of Categorical and ordinal updates
+      //  Update for the inactive phi parameters
+      pReMiuMSampler.addProposal("gibbsForPhiInActive",1.0,1,1,&gibbsForPhiInActive);
+
+      // Need to add the proposals for the normal case
+      // Update for the active mu parameters
+      if (options.useNormInvWishPrior()){
+        // If Inverse Normal Inverse Wishart Prior is used
+        pReMiuMSampler.addProposal("gibbsForMuInActiveNIWP",1.0,1,1,&gibbsForMuInActiveNIWP);
+      }else{
+        // If independant Normal and Inverse Wishart priors are used
+        pReMiuMSampler.addProposal("gibbsForMuInActive",1.0,1,1,&gibbsForMuInActive);
+      }
+      // Update for the active Sigma parameters
+      pReMiuMSampler.addProposal("gibbsForTauInActive",1.0,1,1,&gibbsForTauInActive);
+    }
+
+    if(options.varSelectType().compare("None")!=0){
+      // Add the variable selection moves
+      unsigned int firstSweep;
+      firstSweep=1+(unsigned int)(options.nBurn()/10);
+      if(options.varSelectType().compare("Continuous")!=0){
+        // Gibbs update for gamma
+        pReMiuMSampler.addProposal("gibbsForGammaInActive",1.0,1,firstSweep,&gibbsForGammaInActive);
+      }
+    }
+
+    if(options.includeResponse()){
+      // The Metropolis Hastings update for the inactive theta
+      if(options.outcomeType().compare("Longitudinal")!=0 && options.outcomeType().compare("LME")!=0) //AR
+        pReMiuMSampler.addProposal("gibbsForThetaInActive",1.0,1,1,&gibbsForThetaInActive);
+
+      if(options.outcomeType().compare("Survival")==0&&!options.weibullFixedShape()) {
+        pReMiuMSampler.addProposal("gibbsForNuInActive",1.0,1,1,&gibbsForNuInActive);
+      }
+      //RJ add sampler for L & MVN inactive
+      if(options.outcomeType().compare("Longitudinal")==0){
+        // Gibbs for L for longitudinal response
+        pReMiuMSampler.addProposal("gibbsForLInActive",1.0,1,1,&gibbsForLInActive);
+      }
+      if(options.outcomeType().compare("MVN")==0){
+        pReMiuMSampler.addProposal("gibbsForMVNMuInActive",1.0,1,1,&gibbsForMVNMuInActive);
+        pReMiuMSampler.addProposal("gibbsForMVNTauInActive",1.0,1,1,&gibbsForMVNTauInActive);
+      }
+      if(options.outcomeType().compare("LME")==0){
+        //pReMiuMSampler.addProposal("gibbsForCovRELMEInActive",1.0,1,1,&gibbsForCovRELMEInActive);
+        pReMiuMSampler.addProposal("gibbsForBetaInActive",1.0,1,1,&gibbsForBetaInActive);
+      }
+    }
+
+    if(options.varSelectType().compare("None")!=0){
+      // Add the variable selection moves
+      // Metropolis Hastings for joint update of rho and omega
+      unsigned int firstSweep;
+      firstSweep=1+(unsigned int)(options.nBurn()/10);
+
+      pReMiuMSampler.addProposal("metropolisHastingsForRhoOmega",1.0,1,firstSweep,&metropolisHastingsForRhoOmega);
+    }
+
+    if(options.includeResponse()){
+      if(options.outcomeType().compare("Normal")==0){
+        // Gibbs for sigmaSqY for Normal response model
+        pReMiuMSampler.addProposal("gibbsForSigmaSqY",1.0,1,1,&gibbsForSigmaSqY);
+      }
+
+      if(options.outcomeType().compare("Survival")==0){
+        if (options.weibullFixedShape()) {
+          // Gibbs for shape parameter of Weibull for survival response model
+          pReMiuMSampler.addProposal("gibbsForNu",1.0,1,1,&gibbsForNu);
+        }
+      }
+    }
+
+    // Gibbs update for the allocation parameters
+    pReMiuMSampler.addProposal("gibbsForZ",1.0,1,1,&gibbsForZ);
+    /* ---------- Initialise the output files -----*/
+    pReMiuMSampler.initialiseOutputFiles(options.outFileStem());
+    /* ---------- Write the log file ------------- */
+    // The standard log file
+    pReMiuMSampler.writeLogFile();
+
+    /* ---------- Initialise the chain ---- */
+    pReMiuMSampler.initialiseChain();
+
+    std::cout << " apres init "<<endl;
+    if(2<1){
+    pReMiuMHyperParams hyperParams = pReMiuMSampler.chain().currentState().parameters().hyperParams();
+    unsigned int nClusInit = pReMiuMSampler.chain().currentState().parameters().workNClusInit();
+
+    // The following is only used if the sampler type is truncated
+    unsigned int maxNClusters = pReMiuMSampler.chain().currentState().parameters().maxNClusters();
+
+    /* ---------- Run the sampler --------- */
+    // Note: in this function the output gets written
+
+    pReMiuMSampler.run();
+
+
+    /* -- End the clock time and write the full run details to log file --*/
+    currTime = time(NULL);
+    double timeInSecs=(double)currTime-(double)beginTime;
+    string tmpStr = storeLogFileData(options,dataset,hyperParams,nClusInit,maxNClusters,timeInSecs);
+    pReMiuMSampler.appendToLogFile(tmpStr);
+
+    /* ---------- Clean Up ---------------- */
+    pReMiuMSampler.closeOutputFiles();
+
+
   }
-  // Gibbs update for the allocation parameters
-  pReMiuMSampler.addProposal("gibbsForZ",1.0,1,1,&gibbsForZ);
-  /* ---------- Initialise the output files -----*/
-  pReMiuMSampler.initialiseOutputFiles(options.outFileStem());
-  /* ---------- Write the log file ------------- */
-  // The standard log file
-   pReMiuMSampler.writeLogFile();
-   std::cout << " avant initialiseChain" <<endl;
-
-   /* ---------- Initialise the chain ---- */
-   //pReMiuMSampler.initialiseChain();
-
-   pReMiuMHyperParams hyperParams = pReMiuMSampler.chain().currentState().parameters().hyperParams();
-   unsigned int nClusInit = pReMiuMSampler.chain().currentState().parameters().workNClusInit();
-
-   // The following is only used if the sampler type is truncated
-   unsigned int maxNClusters = pReMiuMSampler.chain().currentState().parameters().maxNClusters();
-
-  /* ---------- Run the sampler --------- */
-  // Note: in this function the output gets written
-   //pReMiuMSampler.run();
-
-
-   /* -- End the clock time and write the full run details to log file --*/
-   currTime = time(NULL);
-   double timeInSecs=(double)currTime-(double)beginTime;
-   string tmpStr = storeLogFileData(options,dataset,hyperParams,nClusInit,maxNClusters,timeInSecs);
-   pReMiuMSampler.appendToLogFile(tmpStr);
-
-   /* ---------- Clean Up ---------------- */
-   pReMiuMSampler.closeOutputFiles();
-
-   //int err = 0;
-   return Rcpp::wrap(0);
-  // alternative output
-  // return Rcpp::List::create(Rcpp::Named("yModel")=options.outcomeType());
+    //int err = 0;
+    return Rcpp::wrap(0);
+    // alternative output
+    // return Rcpp::List::create(Rcpp::Named("yModel")=options.outcomeType());
 
 }
 
