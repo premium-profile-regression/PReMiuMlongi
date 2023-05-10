@@ -33,7 +33,6 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
   lowerNu=NULL
   upperNu=NULL
   sampleGPmean=FALSE
-  nFixedEffects_clust=0
 
   for (i in 1:length(riskProfObj)) assign(names(riskProfObj)[i],riskProfObj[[i]])
   for (i in 1:length(riskProfClusObj)) assign(names(riskProfClusObj)[i],riskProfClusObj[[i]])
@@ -47,7 +46,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
   }
 
   if(is.null(profile_X) && yModel == "LME" && length(which(!c(fixedEffectsNames,fixedEffectsNames_clust)%in%c("intercept",timevar)))>0){
-    stop("Error: profile_X should be defined as a dataframe with the same name as fixedEffectsNames (and/or fixedEffectsNames_clust) if yModel = LME.")
+    stop("Error: profile_X should be defined as a list of covariates values such list(cov=1)")
   }
 
   if (nClusters==1) stop("Cannot produce plots because only one cluster has been found.")
@@ -91,9 +90,9 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       nDiscreteCovs <- length(discreteCovs)
       continuousCovs <- continuousCovs[whichContinuousCovs-nDiscreteCovsAll]
       nContinuousCovs <- length(continuousCovs)
-      profilePhi<-profilePhi[,,whichDiscreteCovs,, drop=FALSE]
+      profilePhi<-profilePhi[,,whichDiscreteCovs,]
       nCategories<-nCategories[whichDiscreteCovs]
-      profileMu<-profileMu[,,whichContinuousCovs-nDiscreteCovsAll, drop=FALSE]
+      profileMu<-profileMu[,,whichContinuousCovs-nDiscreteCovsAll]
       profileStdDev<-profileStdDev[,,whichContinuousCovs-nDiscreteCovsAll,whichContinuousCovs-nDiscreteCovsAll]
       covNames<-c(discreteCovs,continuousCovs)
       nCovariates<-length(covNames)
@@ -440,42 +439,42 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       plotObj<-plotObj+theme(plot.margin=unit(c(0.5,0.15,0.5,0.15),'lines'))+
         theme(plot.margin=unit(c(0,0,0,0),'lines'))
       print(plotObj,vp=viewport(layout.pos.row=1:6,layout.pos.col=2))
-      	}else if (yModel=="Survival"&&!weibullFixedShape){
-      		rownames(riskDF)<-seq(1,nrow(riskDF),by=1)
-
-      		# Create the risk plot
-      		plotObj<-ggplot(riskDF)
-      		plotObj<-plotObj+geom_hline(aes(x=as.factor(cluster),y=risk,yintercept=meanRisk))
-      		plotObj<-plotObj+geom_boxplot(aes(x=as.factor(cluster),y=risk,fill=as.factor(fillColor)),outlier.size=0.5)
-      		plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=lowerRisk,colour=as.factor(fillColor)),size=1.5)
-      		plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=upperRisk,colour=as.factor(fillColor)),size=1.5)
-      		plotObj<-plotObj+scale_fill_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
-      			scale_colour_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
-      			theme(legend.position="none")+
-      			labs(x="Cluster",y=ifelse(showRelativeRisk,'RR',
-      			ifelse(yModel=="Categorical"||yModel=="Bernoulli"||yModel=="Binomial","Probability","E[Y]")))
-      		plotObj<-plotObj+theme(axis.title.y=element_text(size=10,angle=90),axis.title.x=element_text(size=10))
-      		plotObj<-plotObj+labs(title=ifelse(showRelativeRisk,'Relative Risk','Risk'),plot.title=element_text(size=10))
-      		# Margin order is (top,right,bottom,left)
-      		plotObj<-plotObj+theme(plot.margin=unit(c(0,0,0,0),'lines'))+theme(plot.margin=unit(c(0.5,0.15,0.5,0.15),'lines'))
-      		print(plotObj,vp=viewport(layout.pos.row=1:3,layout.pos.col=2))
-
-      		rownames(nuDF)<-seq(1,nrow(nuDF),by=1)
-      		# Create the nu plot
-      		plotObj<-ggplot(nuDF)
-      		plotObj<-plotObj+geom_hline(aes(x=as.factor(cluster),y=nu,yintercept=meanNu))
-      		plotObj<-plotObj+geom_boxplot(aes(x=as.factor(cluster),y=nu,fill=as.factor(fillColor)),outlier.size=0.5)
-      		plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=lowerNu,colour=as.factor(fillColor)),size=1.5)
-      		plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=upperNu,colour=as.factor(fillColor)),size=1.5)
-      		plotObj<-plotObj+scale_fill_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
-      			scale_colour_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
-      			theme(legend.position="none")+
-      			labs(x="Cluster",y="Shape Parameter")
-      		plotObj<-plotObj+theme(axis.title.y=element_text(size=10,angle=90),axis.title.x=element_text(size=10))
-      		plotObj<-plotObj+labs(title="",plot.title=element_text(size=10))
-      		# Margin order is (top,right,bottom,left)
-      		plotObj<-plotObj+theme(plot.margin=unit(c(0,0,0,0),'lines'))+theme(plot.margin=unit(c(0.5,0.15,0.5,0.15),'lines'))
-      		print(plotObj,vp=viewport(layout.pos.row=4:6,layout.pos.col=2))
+      #		}else if (yModel=="Survival"&&!weibullFixedShape){
+      #			rownames(riskDF)<-seq(1,nrow(riskDF),by=1)
+      #
+      #			# Create the risk plot
+      #			plotObj<-ggplot(riskDF)
+      #			plotObj<-plotObj+geom_hline(aes(x=as.factor(cluster),y=risk,yintercept=meanRisk))
+      #			plotObj<-plotObj+geom_boxplot(aes(x=as.factor(cluster),y=risk,fill=as.factor(fillColor)),outlier.size=0.5)
+      #			plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=lowerRisk,colour=as.factor(fillColor)),size=1.5)
+      #			plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=upperRisk,colour=as.factor(fillColor)),size=1.5)
+      #			plotObj<-plotObj+scale_fill_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
+      #				scale_colour_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
+      #				theme(legend.position="none")+
+      #				labs(x="Cluster",y=ifelse(showRelativeRisk,'RR',
+      #				ifelse(yModel=="Categorical"||yModel=="Bernoulli"||yModel=="Binomial","Probability","E[Y]")))
+      #			plotObj<-plotObj+theme(axis.title.y=element_text(size=10,angle=90),axis.title.x=element_text(size=10))
+      #			plotObj<-plotObj+labs(title=ifelse(showRelativeRisk,'Relative Risk','Risk'),plot.title=element_text(size=10))
+      #			# Margin order is (top,right,bottom,left)
+      #			plotObj<-plotObj+theme(plot.margin=unit(c(0,0,0,0),'lines'))+theme(plot.margin=unit(c(0.5,0.15,0.5,0.15),'lines'))
+      #			print(plotObj,vp=viewport(layout.pos.row=1:3,layout.pos.col=2))
+      #
+      #			rownames(nuDF)<-seq(1,nrow(nuDF),by=1)
+      #			# Create the nu plot
+      #			plotObj<-ggplot(nuDF)
+      #			plotObj<-plotObj+geom_hline(aes(x=as.factor(cluster),y=nu,yintercept=meanNu))
+      #			plotObj<-plotObj+geom_boxplot(aes(x=as.factor(cluster),y=nu,fill=as.factor(fillColor)),outlier.size=0.5)
+      #			plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=lowerNu,colour=as.factor(fillColor)),size=1.5)
+      #			plotObj<-plotObj+geom_point(aes(x=as.factor(cluster),y=upperNu,colour=as.factor(fillColor)),size=1.5)
+      #			plotObj<-plotObj+scale_fill_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
+      #				scale_colour_manual(values = c(high ="#CC0033",low ="#0066CC", avg ="#33CC66"))+
+      #				theme(legend.position="none")+
+      #				labs(x="Cluster",y="Shape Parameter")
+      #			plotObj<-plotObj+theme(axis.title.y=element_text(size=10,angle=90),axis.title.x=element_text(size=10))
+      #			plotObj<-plotObj+labs(title="",plot.title=element_text(size=10))
+      #			# Margin order is (top,right,bottom,left)
+      #			plotObj<-plotObj+theme(plot.margin=unit(c(0,0,0,0),'lines'))+theme(plot.margin=unit(c(0.5,0.15,0.5,0.15),'lines'))
+      #			print(plotObj,vp=viewport(layout.pos.row=4:6,layout.pos.col=2))
     } else if (yModel=="MVN"){ ##//RJ yModel!='Longitudinal'||
       rownames(riskDF)<-seq(1,nrow(riskDF),by=1)
 
@@ -864,20 +863,18 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     }
 
     for(c in whichClusters){
-      if(nFixedEffects_clust>0)
-        betamix_mean <- colMeans(betamixArray[,c,])
+      betamix_mean <- colMeans(betamixArray[,c,])
       jj=1
       if(all(timevar %in% fixedEffectsNames_clust)){
         ind_time <- which(fixedEffectsNames_clust %in% c("intercept",timevar))
         mat_times <- rep(1,length(tTimes))
         for(jjj in 1:length(timevar))
           mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jjj))
-        if(nFixedEffects_clust>0)
-          mu <- mu + mat_times %*%betamix_mean[ind_time]
+        mu <- mu + mat_times %*%betamix_mean[ind_time]
         jj = jj + length(ind_time)
       }
 
-      if(length(fixedEffectsNames_clust)>=jj & nFixedEffects_clust>0){
+      if(length(fixedEffectsNames_clust)>=jj){
         for(other_spec_cov in jj:length(fixedEffectsNames_clust))
           mu <- mu + rep(betamix_mean[other_spec_cov] * profile_X[[fixedEffectsNames_clust[jj]]],length(tTimes))
       }

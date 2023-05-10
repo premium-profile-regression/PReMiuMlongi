@@ -60,8 +60,8 @@ template<class modelParamType> class mcmcState {
 
 		/// \brief Explicit constructor
 		mcmcState(const modelParamType& parameters,const vector<double>& logPostVec) :
-		  _parameters(parameters), _logPosterior(logPostVec[0]),
-				_logLikelihood(logPostVec[1]),_logPrior(logPostVec[2]){
+		    _parameters(parameters), _logPosterior(logPostVec[0]),_logLikelihood(logPostVec[1]),
+				_logPrior(logPostVec[2]){
 		};
 
 		const modelParamType& parameters() const{
@@ -82,9 +82,7 @@ template<class modelParamType> class mcmcState {
 		double logPosterior() const {return _logPosterior;}
 
 		/// \brief Member function to set the log posterior of the mcmc state
-		void logPosterior(const double& logPost) {
-		  _logPosterior=logPost;
-		  }
+		void logPosterior(const double& logPost) {_logPosterior=logPost;}
 
 		/// \brief Member function to return the logLikelihood of the mcmc state
 		/// \return The log likelihood of the state
@@ -103,7 +101,7 @@ template<class modelParamType> class mcmcState {
 		/// \brief Member function to set the log posterior, log likelihood
 		/// and log prior of the mcmcState
 		void logPosterior(const vector<double>& logPostVec){
-		  _logPosterior = logPostVec[0];
+			_logPosterior = logPostVec[0];
 			_logLikelihood = logPostVec[1];
 			_logPrior = logPostVec[2];
 		}

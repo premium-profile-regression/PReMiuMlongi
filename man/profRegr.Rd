@@ -79,7 +79,7 @@ than the independant normal and inverse Wishart priors. If this prior is used, v
 \item{estim_ratio}{If yModel=Longitudinal, indicator if, in each cluster, the variance of the measurement error is defined as proportional to the signal variance of the Gaussian Process. If so, we adopt a Beta prior with hyperparameters aRatio, bRatio for the cluster-specific ratios. By default, estim_ratio=FALSE and the variance parameters are independent.}
 \item{time_grid}{If yModel=Longitudinal, a grid of time points used to approximate the inverse covariance matrix. By default, time_grid=NULL and no approximation is made.}
 \item{ngrid}{If yModel=Longitudinal and time_grid is undefined, number of time points for the grid used to approximate the inverse covariance matrix of the Gaussian Process (then defined with regular intervals). By default, ngrid=0 and no approximation is made.}
-\item{timevar}{Name of time variables if yModel="LME". As an example, timevar =c("time", "time2") specifies a quadratic trend, with time and time2 being 2 columns of longData. The intercept is added by default. Default to NULL.}
+\item{timevar}{Name of time variable if yModel="LME". Default to NULL.}
 }
 \value{
 Once the C++ programme has completed the output from fitting the regression is stored in a number of text files in the directory specified. Files are produced

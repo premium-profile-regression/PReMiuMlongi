@@ -24,7 +24,6 @@
 #include<PReMiuMData.h>
 #include<MCMC/model.h>
 #include<Math/random.h>
-#include<PReMiuMModel.h>
 
 // Define the uniform random number generator
 typedef boost::random::uniform_real_distribution<> randomUniform;

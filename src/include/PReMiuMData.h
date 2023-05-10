@@ -56,7 +56,7 @@ class pReMiuMData{
 
 	public:
 		/// \brief Default constructor //RJ add _nTimes
-		pReMiuMData():  _nSubjects(0), _nOutcomes(0), _nTimes(0),_nTimes_unique(0), _nCovariates(0), _nCategoriesY(0), _nPredictSubjects(0) {};
+		pReMiuMData():  _nSubjects(0), _nTimes(0), _nTimes_unique(0), _nCovariates(0), _nFixedEffects(0),_nFixedEffects_mix(0), _nRandomEffects(0), _nCategoriesY(0), _nPredictSubjects(0) {};
 
 		/// \brief Default destructor
 		~pReMiuMData(){};
@@ -76,55 +76,9 @@ class pReMiuMData{
 			_nSubjects = nSubj;
 		}
 
-
-
-		/// \brief Return the number of outcomes
-		unsigned int nOutcomes() const{
-		  return _nOutcomes;
-		}
-
-		/// \brief Return the number of outcomes
-		unsigned int& nOutcomes(){
-		  return _nOutcomes;
-		}
-
-		/// \brief Set the number of outcomes
-		void nOutcomes(const unsigned int& n){
-		  _nOutcomes = n;
-		}
-
-
 		unsigned int size() const{
 			return _nSubjects;
 		}
-
-		void nTimes_m(const unsigned int& m, const unsigned int& nm) {
-		  _nTimes_m[m] = nm;
-		}
-
-		vector<unsigned int> nTimes_m()const{
-		  return _nTimes_m;
-		}
-		vector<unsigned int>& nTimes_m(){
-		  return _nTimes_m;
-		}
-
-		/// \brief Set the output vector
-		void nTimes_m(const vector<unsigned int>& yVec){
-		  _nTimes_m.clear();
-		  _nTimes_m.resize(yVec.size());
-		  _nTimes_m.insert(_nTimes_m.begin(),yVec.begin(),yVec.end());
-		}
-
-		/// \brief Return the output value for the ith subject
-		unsigned int nTimes_m(const unsigned int& i) const{
-		  if(i>_nOutcomes){
-		    throw std::range_error("y subscript i out of range");
-		  }
-		  return _nTimes_m[i];
-		}
-
-
 		//RJ handling functions for _nTimes
 		unsigned int nTimes() const{
 			return _nTimes;
@@ -199,66 +153,42 @@ class pReMiuMData{
 		}
 
 		/// \brief Return the number of fixed effectss
-		unsigned int& nFixedEffects_mix(const unsigned int& m){
-		  return _nFixedEffects_mix[m];
-		}
-
-		unsigned int nFixedEffects_mix(const unsigned int& m) const{
-			return _nFixedEffects_mix[m];
-		}
-
-		void nFixedEffects_mix(const unsigned int& m, const unsigned int& nConf){
-		  _nFixedEffects_mix[m] = nConf;
-		}
-
-
-		vector<unsigned int>& nFixedEffects_mix() {
+		unsigned int &nFixedEffects_mix(){
 		  return _nFixedEffects_mix;
 		}
 
-		vector<unsigned int> nFixedEffects_mix() const{
-		  return _nFixedEffects_mix;
+		unsigned int nFixedEffects_mix() const{
+			return _nFixedEffects_mix;
 		}
 
-		unsigned int& nFixedEffects(const unsigned int& m){
-			return _nFixedEffects[m];
+		void nFixedEffects_mix(const unsigned int& nConf){
+		  _nFixedEffects_mix = nConf;
 		}
 
-		unsigned int nFixedEffects(const unsigned int& m)const{
-		  return _nFixedEffects[m];
+		unsigned int &nFixedEffects(){
+			return _nFixedEffects;
 		}
 
-		void nFixedEffects(const unsigned int& m, const unsigned int& nConf){
-			_nFixedEffects[m] = nConf;
-		}
-
-		vector<unsigned int>& nFixedEffects() {
+		unsigned int nFixedEffects()const{
 		  return _nFixedEffects;
 		}
 
-		vector<unsigned int> nFixedEffects() const{
-		  return _nFixedEffects;
+		void nFixedEffects(const unsigned int& nConf){
+			_nFixedEffects = nConf;
 		}
 
-		unsigned int& nRandomEffects(const unsigned int& m){
-		  return _nRandomEffects[m];
-		}
-
-		unsigned int nRandomEffects(const unsigned int& m)const{
-		  return _nRandomEffects[m];
-		}
-
-		void nRandomEffects(const unsigned int& m, const unsigned int& nConf){
-		  _nRandomEffects[m] = nConf;
-		}
-
-		vector<unsigned int>& nRandomEffects() {
+		unsigned int& nRandomEffects(){
 		  return _nRandomEffects;
 		}
 
-		vector<unsigned int> nRandomEffects() const{
+		unsigned int nRandomEffects()const{
 		  return _nRandomEffects;
 		}
+
+		void nRandomEffects(const unsigned int& nConf){
+		  _nRandomEffects = nConf;
+		}
+
 		//RJ handling functions for equalTimes
 		unsigned int equalTimes() const{
 			return _equalTimes;
@@ -338,18 +268,6 @@ class pReMiuMData{
 			return _covariateNames;
 		}
 
-		vector<string>& outcNames(){
-		  return _outcNames;
-		}
-
-		vector<string> outcNames() const{
-		  return _outcNames;
-		}
-
-		const string& outcNames(const unsigned int& j) const{
-		  return _outcNames[j];
-		}
-
 
 		/// \brief Set the vector of the covariate names
 		void covariateNames(const vector<string>& covNames){
@@ -363,88 +281,70 @@ class pReMiuMData{
 			return _covariateNames[j];
 		}
 
-		vector<vector<string>> fixedEffectNames() const {
+		vector<string> fixedEffectNames() const {
 		  return _fixedEffectNames;
 		}
 
 		/// \brief Return the vector of the fixed effects names
-		vector<vector<string>>& fixedEffectNames() {
+	 vector<string>& fixedEffectNames() {
 			return _fixedEffectNames;
 		}
 
 		/// \brief Set the vector of the fixed effects names
-		void fixedEffectNames(const unsigned int& m, const vector<string>& fixEffNames){
-		  _fixedEffectNames[m].clear();
-		  _fixedEffectNames[m].resize(fixEffNames.size());
-		  _fixedEffectNames[m].insert(_fixedEffectNames[m].begin(),fixEffNames.begin(),fixEffNames.end());
+		void fixedEffectNames(const vector<string>& fixEffNames){
+		  _fixedEffectNames.clear();
+		  _fixedEffectNames.resize(fixEffNames.size());
+		  _fixedEffectNames.insert(_fixedEffectNames.begin(),fixEffNames.begin(),fixEffNames.end());
 		}
 
 		/// \brief Return name for fixed effects j
-		const string& fixedEffectNames(const unsigned int& m, const unsigned int& j) const{
-		  return _fixedEffectNames[m][j];
-		}
-
-		vector<string>& fixedEffectNames(const unsigned int& m){
-		  return _fixedEffectNames[m];
+		const string& fixedEffectNames(const unsigned int& j) const{
+		  return _fixedEffectNames[j];
 		}
 
 		/// \brief Return the vector of the fixed effects names
-	  vector<vector<string>> fixedEffectNames_mix() const {
+	  vector<string> fixedEffectNames_mix() const {
 		  return _fixedEffectNames_mix;
 		}
 
 		/// \brief Return the vector of the fixed effects names
-		vector<vector<string>>& fixedEffectNames_mix()  {
+		vector<string>& fixedEffectNames_mix()  {
 		  return _fixedEffectNames_mix;
 		}
 
 		/// \brief Set the vector of the fixed effects names
-		void fixedEffectNames_mix(const unsigned int& m, const vector<string>& fixEffNames){
-			_fixedEffectNames_mix[m].clear();
-			_fixedEffectNames_mix[m].resize(fixEffNames.size());
-			_fixedEffectNames_mix[m].insert(_fixedEffectNames_mix[m].begin(),fixEffNames.begin(),fixEffNames.end());
+		void fixedEffectNames_mix(const vector<string>& fixEffNames){
+			_fixedEffectNames_mix.clear();
+			_fixedEffectNames_mix.resize(fixEffNames.size());
+			_fixedEffectNames_mix.insert(_fixedEffectNames_mix.begin(),fixEffNames.begin(),fixEffNames.end());
 		}
 
 		/// \brief Return name for fixed effects j
-		const string& fixedEffectNames_mix(const unsigned int& m, const unsigned int& j) const{
-			return _fixedEffectNames_mix[m][j];
+		const string& fixedEffectNames_mix(const unsigned int& j) const{
+			return _fixedEffectNames_mix[j];
 		}
 
-		vector<string> fixedEffectNames_mix(const unsigned int& m) const{
-		  return _fixedEffectNames_mix[m];
-		}
-
-		vector<string>& fixedEffectNames_mix(const unsigned int& m){
-		  return _fixedEffectNames_mix[m];
-		}
-
-		vector<vector<string>> randomEffectNames() const{
+		vector<string> randomEffectNames() const{
 		  return _randomEffectNames;
 		}
-		vector<vector<string>>& randomEffectNames() {
+		vector<string>& randomEffectNames() {
 		  return _randomEffectNames;
 		}
 
-		 void randomEffectNames(const unsigned int& m, const vector<string>& fixEffNames){
-		   _randomEffectNames[m].clear();
-		   _randomEffectNames[m].resize(fixEffNames.size());
-		   _randomEffectNames[m].insert(_randomEffectNames[m].begin(),fixEffNames.begin(),fixEffNames.end());
+		 void randomEffectNames(const vector<string>& fixEffNames){
+		   _randomEffectNames.clear();
+		   _randomEffectNames.resize(fixEffNames.size());
+		   _randomEffectNames.insert(_randomEffectNames.begin(),fixEffNames.begin(),fixEffNames.end());
 		 }
 
-		string randomEffectNames(const unsigned int& m, const unsigned int& j) const{
-		   return _randomEffectNames[m][j];
+		string randomEffectNames(const unsigned int& j) const{
+		   return _randomEffectNames[j];
 		 }
-		string& randomEffectNames(const unsigned int& m, const unsigned int& j) {
-		  return _randomEffectNames[m][j];
+		string& randomEffectNames(const unsigned int& j) {
+		  return _randomEffectNames[j];
 		}
 
-		vector<string>& randomEffectNames(const unsigned int& m) {
-		  return _randomEffectNames[m];
-		}
 
-		vector<string> randomEffectNames(const unsigned int& m) const{
-		  return _randomEffectNames[m];
-		}
 		/// \brief Return the outcome model type
 		const string& outcomeType() const{
 			return _outcomeType;
@@ -707,26 +607,18 @@ class pReMiuMData{
 		  return _W_mix[i][j];
 		}
 
-		/// \brief Return the jth covariate for subject i and marker m
-		vector<MatrixXd>& W_RE(){
-		  return _W_RE;
-		}
-		const vector<MatrixXd>& W_RE()const {
-		  return _W_RE;
+		/// \brief Return the jth covariate for subject i
+		double W_RE(const unsigned int& i,const unsigned int& j) const{
+		  return _W_RE(i,j);
 		}
 
-		/// \brief Return the jth covariate for subject i and marker m
-		double W_RE(const unsigned int& m, const unsigned int& i,const unsigned int& j) const{
-		  return _W_RE[m](i,j);
-		}
-
-		const MatrixXd& W_RE(const unsigned int& m) const{
-		  return _W_RE[m];
+		const MatrixXd& W_RE() const{
+		  return _W_RE;
 		}
 
 		/// \brief Return the fixed effects matrix
-		MatrixXd& W_RE(const unsigned int& m){
-		  return _W_RE[m];
+		MatrixXd& W_RE(){
+		  return _W_RE;
 		}
 
 //
@@ -742,9 +634,9 @@ class pReMiuMData{
 // 		  return _W_RE;
 // 		}
 //
- 		VectorXd W_RE(const unsigned int& m, const unsigned int& i) const{
- 		  return _W_RE[m].row(i);
- 		}
+// 		VectorXd W_RE(const unsigned int& i) const{
+// 		  return _W_RE.row(i);
+// 		}
 
 		// MatrixXd W_RE(const unsigned int& i) {
 		//
@@ -755,53 +647,42 @@ class pReMiuMData{
 		//   return r;
 		// }
 
+		VectorXd W_RE(const unsigned int& i) const{
+		  return _W_RE.row(i);
+		}
 
-		MatrixXd W_RE(const unsigned int& m,const unsigned int& i,const unsigned int& j,const unsigned int& n,const unsigned int& p) const{
-		  return _W_RE[m].block(i, j, n, p);
+		MatrixXd W_RE(const unsigned int& i,const unsigned int& j,const unsigned int& n,const unsigned int& m) const{
+		  return _W_RE.block(i, j, n, m);
 		}
 
 
 		/// \brief Return the fixed effects matrix for LME
-		const MatrixXd& W_LME(const unsigned int& m) const{
-		  return _W_LME[m];
-		}
-
-		/// \brief Return the fixed effects matrix for LME
-		MatrixXd& W_LME(const unsigned int& m){
-		  return _W_LME[m];
-		}
-
-		/// \brief Return the jth covariate for subject i for LME
-		double W_LME(const unsigned int& m, const unsigned int& i,const unsigned int& j) const{
-		  return _W_LME[m](i,j);
-		}
-
-		vector<MatrixXd>& W_LME(){
-		  return _W_LME;
-		}
-		const vector<MatrixXd>& W_LME()const {
+		const MatrixXd& W_LME() const{
 		  return _W_LME;
 		}
 
-		const MatrixXd& W_LME_mix(const unsigned int& m) const{
-		  return _W_LME_mix[m];
-		}
-
 		/// \brief Return the fixed effects matrix for LME
-		MatrixXd& W_LME_mix(const unsigned int& m){
-		  return _W_LME_mix[m];
+		MatrixXd& W_LME(){
+		  return _W_LME;
 		}
 
 		/// \brief Return the jth covariate for subject i for LME
-		double W_LME_mix(const unsigned int& m, const unsigned int& i,const unsigned int& j) const{
-		  return _W_LME_mix[m](i,j);
+		double W_LME(const unsigned int& i,const unsigned int& j) const{
+		  return _W_LME(i,j);
 		}
 
-		vector<MatrixXd>& W_LME_mix(){
+		const MatrixXd& W_LME_mix() const{
 		  return _W_LME_mix;
 		}
-		const vector<MatrixXd>& W_LME_mix()const {
+
+		/// \brief Return the fixed effects matrix for LME
+		MatrixXd& W_LME_mix(){
 		  return _W_LME_mix;
+		}
+
+		/// \brief Return the jth covariate for subject i for LME
+		double W_LME_mix(const unsigned int& i,const unsigned int& j) const{
+		  return _W_LME_mix(i,j);
 		}
 
 		/// \brief Return the fixed effects matrix
@@ -925,7 +806,6 @@ class pReMiuMData{
 	private:
 		/// \brief The number of subjects
 		unsigned int _nSubjects;
-	  unsigned int _nOutcomes;
 		//RJ declare _nTimes
 		unsigned int _nTimes;
 		//AR declare _nTimes_unique
@@ -940,9 +820,9 @@ class pReMiuMData{
 		unsigned int _nContinuousCovs;
 
 		/// \brief The number of fixed effects covariates
-		vector<unsigned int> _nFixedEffects;
-		vector<unsigned int> _nFixedEffects_mix;
-		vector<unsigned int> _nRandomEffects;
+		unsigned int _nFixedEffects;
+		unsigned int _nFixedEffects_mix;
+		unsigned int _nRandomEffects;
 
 		//RJ indicator: 0, unequal times; 1, equal times
 		unsigned int _equalTimes;
@@ -955,8 +835,6 @@ class pReMiuMData{
 
 		/// \brief A vector of the number of categories for each covariate
 		vector<unsigned int> _nCategories;
-
-		vector<unsigned int> _nTimes_m; //If yModel=LME
 
 		/// \brief A string describing the model for y
 		string _outcomeType;
@@ -993,7 +871,6 @@ class pReMiuMData{
 
 		/// \brief A vector of covariate names
 		vector<string> _covariateNames;
-		vector<string> _outcNames;
 
 		/// \brief A matrix (vector of vectors) of where there are missing
 		/// covariate values
@@ -1006,17 +883,14 @@ class pReMiuMData{
 		/// \note This may need to changed to be signed or double
 		vector<vector<double> > _W;
 		vector<vector<double> > _W_mix;
-		//MatrixXd _W_RE;
-		//MatrixXd _W_LME;
-		//MatrixXd _W_LME_mix;
-		vector<MatrixXd> _W_RE;
-		vector<MatrixXd> _W_LME;
-		vector<MatrixXd> _W_LME_mix; //m x [i x j]
+		MatrixXd _W_RE;
+		MatrixXd _W_LME;
+		MatrixXd _W_LME_mix;
 
 		/// \brief A vector of fixed effects names
-		vector<vector<string>> _fixedEffectNames;
-		vector<vector<string>> _fixedEffectNames_mix;
-		vector<vector<string>> _randomEffectNames;
+		vector<string> _fixedEffectNames;
+		vector<string> _fixedEffectNames_mix;
+		vector<string> _randomEffectNames;
 
 		/// \brief A vector of logOffsets (only used in the Poisson model)
 		vector<double> _logOffset;
