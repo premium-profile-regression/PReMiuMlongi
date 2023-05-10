@@ -33,6 +33,7 @@ Imports: cluster,
          tibble
 LinkingTo: Rcpp, RcppEigen (>= 0.3), BH (>= 1.54)
 Suggests: mcclust
+Remotes: github::simisc/premiumPlots
 SystemRequirements: GNU make
 NeedsCompilation: yes
 Encoding: UTF-8
