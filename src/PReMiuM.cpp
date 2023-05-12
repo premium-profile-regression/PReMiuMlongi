@@ -359,8 +359,6 @@ RcppExport SEXP profRegr(SEXP inputString) {
     /* ---------- Initialise the chain ---- */
     pReMiuMSampler.initialiseChain();
 
-    std::cout << " apres init "<<endl;
-    if(2<1){
     pReMiuMHyperParams hyperParams = pReMiuMSampler.chain().currentState().parameters().hyperParams();
     unsigned int nClusInit = pReMiuMSampler.chain().currentState().parameters().workNClusInit();
 
@@ -382,8 +380,6 @@ RcppExport SEXP profRegr(SEXP inputString) {
     /* ---------- Clean Up ---------------- */
     pReMiuMSampler.closeOutputFiles();
 
-
-  }
     //int err = 0;
     return Rcpp::wrap(0);
     // alternative output

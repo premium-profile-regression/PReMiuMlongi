@@ -1024,11 +1024,11 @@ public:
         _covRE[m].resize(maxNClusters);
 
         for(unsigned int c=0;c<maxNClusters;c++){
-          _covRE[m][c].setZero(nRandomEffects[m], nRandomEffects[m]);
+          _covRE[m][c]=MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
           //LLT<MatrixXd> llt;
           //MatrixXd mat = 0.1*MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
           //_covRE[m][c] = mat;
-          _workSqrtTauLME[m][c].setZero(nRandomEffects[m], nRandomEffects[m]);// = (llt.compute(mat)).matrixU();
+          _workSqrtTauLME[m][c]=MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);// = (llt.compute(mat)).matrixU();
         }
        }
     }
@@ -1757,7 +1757,7 @@ public:
     _RandomEffects[m].row(i)=thetaVal;
   }
   /// \brief Return the outcome probabilities
-  vector<vector<double> > theta() const{
+  vector<vector<double>> theta() const{
     return _theta;
   }
 

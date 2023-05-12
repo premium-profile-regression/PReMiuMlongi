@@ -1334,15 +1334,9 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   vector<unsigned int> nCategories;
   nCategories = dataset.nCategories();
 
-
-  for(unsigned int m=0;m<nOutcomes;m++)
-
-    // Set the hyper parameters to their default values
-
-
-    hyperParams.setSizes(nCovariates,nDiscreteCovs,
-                         nContinuousCovs,nOutcomes,covariateType,outcomeType, nRandomEffects);
-
+  // Set the hyper parameters to their default values
+  hyperParams.setSizes(nCovariates,nDiscreteCovs,
+                       nContinuousCovs,nOutcomes,covariateType,outcomeType, nRandomEffects);
 
   hyperParams.setDefaults(dataset,options);
 
@@ -1960,101 +1954,89 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
       }
     }
 
-
-
     if(outcomeType.compare("LME")==0){ //AR
 
-        int ind=0;
-        int ind_y=0;
-        for(unsigned int m=0;m<nOutcomes;m++){
-          MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m));
+      int ind=0;
+      int ind_y=0;
+      for(unsigned int m=0;m<nOutcomes;m++){
+        MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m));
 
-          std::cout << " Tau "<<Tau<< " Tau inv "<<endl;
-          std::cout << " size "<<params.covRE().size() << " and "<<params.covRE(0).size()<<endl;
-          std::cout << " rows "<<params.covRE(0,0).rows() << " cols "<<params.covRE(0,0).cols()<<endl;
-          std::cout << " maxNClusters init " << maxNClusters<<endl;
+        for(unsigned int c=0;c<maxNClusters;c++){
+          MatrixXd Tauinv = Tau.inverse();
+          params.covRE(m,c, Tauinv);
+          MatrixXd covRE=params.covRE(m,c);
+          //_workLogDetTauLME(m,c)=-log(cov.determinant());
+          //_workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
 
-          for(unsigned int c=0;c<maxNClusters;c++){
-            MatrixXd Tauinv = Tau.inverse();
-            params.covRE(m,0, Tauinv);
-            MatrixXd covRE=params.covRE(m,0);
-            std::cout << m << " c "<< c << " covRE "<<endl;
-            //_workLogDetTauLME(m,c)=-log(cov.determinant());
-            //_workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
+          params.workLogDetTauLME(m,c,log(Tau.determinant()));
+          LLT<MatrixXd> llt;
+          params.workSqrtTauLME(m,c,(llt.compute(Tau)).matrixU());
+        }
 
-            params.workLogDetTauLME(m,c,log(Tau.determinant()));
-            LLT<MatrixXd> llt;
-            params.workSqrtTauLME(m,c,(llt.compute(Tau)).matrixU());
-          }
+        // Initialise random effects
+        for(unsigned int i=0;i<nSubjects;i++){
+          VectorXd yi;
+          VectorXd ui(nRandomEffects[m]);
+          unsigned int zi= params.z(i);
 
+          unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
+          yi.resize(ni);
 
-          std::cout << " la "<<endl;
-          if(2<1){
-          // Initialise random effects
-          for(unsigned int i=0;i<nSubjects;i++){
-            VectorXd yi;
-            VectorXd ui(nRandomEffects[m]);
-            unsigned int zi= params.z(i);
+          for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
 
-            unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
-            yi.resize(ni);
+            yi(j) = y[ind_y];//yi(j) = y[tStart[ind]-1+j];
 
-            for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
-
-              yi(j) = y[ind_y];//yi(j) = y[tStart[ind]-1+j];
-
-              for(unsigned int b=0;b<nFixedEffects[m];b++){
-                yi(j)-=params.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
-              }
-              for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-                yi(j)-=params.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
-              }
-
-              ind_y++;
+            for(unsigned int b=0;b<nFixedEffects[m];b++){
+              yi(j)-=params.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
+            }
+            for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
+              yi(j)-=params.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
             }
 
-            MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
-            MatrixXd sigmae=MatrixXd::Identity(ni, ni) * params.SigmaE(m);
-
-            MatrixXd V = block *params.covRE(m,0)* block.transpose() + sigmae;
-            LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
-            MatrixXd L = lltOfA.matrixL();
-            //double logDetPrecMat=  2*log(L.determinant());
-            MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
-            VectorXd mu = params.covRE(m,0)*block.transpose()*Vi_inv*yi;
-
-            //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-            MatrixXd cov = params.covRE(m,0) - params.covRE(m,0)*block.transpose()*Vi_inv*block*params.covRE(m,0);
-
-            ui = multivarNormalRand(rndGenerator,mu,cov);
-            params.RandomEffects(m,i,ui);
-            ind ++;
+            ind_y++;
           }
 
-          // for(unsigned int i=0;i<nSubjects;i++){
-          //   //int zi = params.z(i);
-          //   VectorXd mu(nRandomEffects[m]);
-          //   VectorXd meanRE(nRandomEffects[m]);
-          //   meanRE.setZero();
-          //   MatrixXd covRE=params.covRE(m,0);
-          //   mu = multivarNormalRand(rndGenerator,meanRE,covRE);
-          //   //mu.setZero();
-          //   params.RandomEffects(m,i,mu);
-          // }
+          MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
+          MatrixXd sigmae=MatrixXd::Identity(ni, ni) * params.SigmaE(m);
 
-          //randomChiSquare chisQRand(hyperParams.eps_vu());
-          //double temp = chisQRand(rndGenerator);
-          //double epsilon = hyperParams.eps_vu()*hyperParams.eps_sigma2_0()/temp;
-          //params.SigmaE(epsilon);
-          // Define a inverse gamma random number generator
+          MatrixXd V = block *params.covRE(m,0)* block.transpose() + sigmae;
+          LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
+          MatrixXd L = lltOfA.matrixL();
+          //double logDetPrecMat=  2*log(L.determinant());
+          MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
+          VectorXd mu = params.covRE(m,0)*block.transpose()*Vi_inv*yi;
 
-          randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_rate()); //k, 1/theta
+          //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
+          MatrixXd cov = params.covRE(m,0) - params.covRE(m,0)*block.transpose()*Vi_inv*block*params.covRE(m,0);
 
-          double temp = gammaRand(rndGenerator);
-          double epsilon = 1/temp;
-
-          params.SigmaE(m,epsilon);
+          ui = multivarNormalRand(rndGenerator,mu,cov);
+          params.RandomEffects(m,i,ui);
+          ind ++;
         }
+
+        // for(unsigned int i=0;i<nSubjects;i++){
+        //   //int zi = params.z(i);
+        //   VectorXd mu(nRandomEffects[m]);
+        //   VectorXd meanRE(nRandomEffects[m]);
+        //   meanRE.setZero();
+        //   MatrixXd covRE=params.covRE(m,0);
+        //   mu = multivarNormalRand(rndGenerator,meanRE,covRE);
+        //   //mu.setZero();
+        //   params.RandomEffects(m,i,mu);
+        // }
+
+        //randomChiSquare chisQRand(hyperParams.eps_vu());
+        //double temp = chisQRand(rndGenerator);
+        //double epsilon = hyperParams.eps_vu()*hyperParams.eps_sigma2_0()/temp;
+        //params.SigmaE(epsilon);
+        // Define a inverse gamma random number generator
+
+        randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_rate()); //k, 1/theta
+
+        double temp = gammaRand(rndGenerator);
+        double epsilon = 1/temp;
+
+        params.SigmaE(m,epsilon);
       }
     }
     //RJ populate params.L
@@ -2098,94 +2080,91 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
     }
   }
 
-  std::cout << " ici "<<endl;
-  if(2<1){
-    // And also the extra variation values if necessary
-    if(responseExtraVar){
-      // Shape and rate parameters
-      double a=5,b=2;
-      // Boost parameterised in terms of shape and scale
-      randomGamma gammaRand(a,1.0/b);
-      // Tau is now a Gamma(a,b)
-      double tau = gammaRand(rndGenerator);
-      params.tauEpsilon(tau);
+  // And also the extra variation values if necessary
+  if(responseExtraVar){
+    // Shape and rate parameters
+    double a=5,b=2;
+    // Boost parameterised in terms of shape and scale
+    randomGamma gammaRand(a,1.0/b);
+    // Tau is now a Gamma(a,b)
+    double tau = gammaRand(rndGenerator);
+    params.tauEpsilon(tau);
 
-      randomNormal normalRand(0,1.0/sqrt(tau));
+    randomNormal normalRand(0,1.0/sqrt(tau));
 
-      if(outcomeType.compare("LME")!=0){
-        for(unsigned int i=0;i<nSubjects;i++){
-          double eps = normalRand(rndGenerator);
-          int zi = params.z(i);
-          double meanVal = 0;
+    if(outcomeType.compare("LME")!=0){
+      for(unsigned int i=0;i<nSubjects;i++){
+        double eps = normalRand(rndGenerator);
+        int zi = params.z(i);
+        double meanVal = 0;
 
-          meanVal+= params.theta(zi,0);
+        meanVal+= params.theta(zi,0);
 
-          if(outcomeType.compare("Categorical")==0){
-            for(unsigned int j=0;j<nFixedEffects[0];j++){
-              meanVal+=params.beta(0,j,dataset.discreteY(i),nCategoriesY)*dataset.W(i,j);
-            }
-          } else{ // Bernoulli, Poisson, Binomial, Survivak, LVN, Longitudinal
-            for(unsigned int j=0;j<nFixedEffects[0];j++){
-              meanVal+=params.beta(0,j,0,nCategoriesY)*dataset.W(i,j);
-              // }
-              // for(unsigned int j=0;j<nFixedEffects_mix[0];j++){
-              //   meanVal+=params.beta_mix(0,zi,j, 0, nCategoriesY)*dataset.W_mix(i,j);
-              // }
-            }
-            if(outcomeType.compare("Poisson")==0){
-              meanVal+=dataset.logOffset(i);
-            }
-            params.lambda(i,meanVal+eps);
+        if(outcomeType.compare("Categorical")==0){
+          for(unsigned int j=0;j<nFixedEffects[0];j++){
+            meanVal+=params.beta(0,j,dataset.discreteY(i),nCategoriesY)*dataset.W(i,j);
           }
-        }
-      }else{//LME
-        for(unsigned int i=0;i<nSubjects;i++)
-          params.lambda(i,0);
-      }
-
-      // And also _uCAR and _TauCAR if includeCAR==TRUE
-      if (includeCAR){
-        // Boost parameterised in terms of shape and scale
-        randomGamma gammaRand(5.0,0.5);
-        // Tau is now a Gamma(shape,rate)
-        double tau = gammaRand(rndGenerator);
-        params.TauCAR(tau);
-
-        double mean_w=0;
-        for (unsigned int i=0; i<nSubjects; i++ ) mean_w+=dataset.nNeighbours(i);
-        mean_w /= nSubjects;
-        randomNormal normalRand(0,sqrt(mean_w/tau));
-        for(unsigned int i=0;i<nSubjects;i++){
-          double eps = normalRand(rndGenerator);
-          params.uCAR(i,eps);
+        } else{ // Bernoulli, Poisson, Binomial, Survivak, LVN, Longitudinal
+          for(unsigned int j=0;j<nFixedEffects[0];j++){
+            meanVal+=params.beta(0,j,0,nCategoriesY)*dataset.W(i,j);
+            // }
+            // for(unsigned int j=0;j<nFixedEffects_mix[0];j++){
+            //   meanVal+=params.beta_mix(0,zi,j, 0, nCategoriesY)*dataset.W_mix(i,j);
+            // }
+          }
+          if(outcomeType.compare("Poisson")==0){
+            meanVal+=dataset.logOffset(i);
+          }
+          params.lambda(i,meanVal+eps);
         }
       }
+    }else{//LME
+      for(unsigned int i=0;i<nSubjects;i++)
+        params.lambda(i,0);
     }
 
+    // And also _uCAR and _TauCAR if includeCAR==TRUE
+    if (includeCAR){
+      // Boost parameterised in terms of shape and scale
+      randomGamma gammaRand(5.0,0.5);
+      // Tau is now a Gamma(shape,rate)
+      double tau = gammaRand(rndGenerator);
+      params.TauCAR(tau);
 
-    // std::cout << " parameters "<<endl;
-    // std::cout << " beta "<<endl;
-    // for(unsigned int m=0;m<nOutcomes;m++){
-    //   for(unsigned int b=0;b<nFixedEffects[m];b++)
-    //     std::cout << m << " b "<< b <<  " beta "<< params.beta(m,b,0,nCategoriesY)<<endl;
-    //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-    //     for(unsigned int c=0;c<maxNClusters;c++)
-    //       std::cout << m << " b "<< b <<  " c "<<c<< " betamix "<< params.beta_mix(m,c,b,0, nCategoriesY)<<endl;
-    //   }
-    //   std::cout<<endl << m << " sigmaE "<< params.SigmaE(m)<<endl<<endl;
-    //    for(unsigned int c=0;c<maxNClusters;c++){
-    //      std::cout<<m << " covRE "<< params.covRE(m,c)<<endl;
-    //      std::cout<<m << " workLogDetTauLME "<<params.workLogDetTauLME(m,c)<<endl;
-    //      std::cout<<m << " workSqrtTauLME "<<params.workSqrtTauLME(m,c)<<endl;
-    //      }
-    //   //params.RandomEffects(m,i)
-    // }
+      double mean_w=0;
+      for (unsigned int i=0; i<nSubjects; i++ ) mean_w+=dataset.nNeighbours(i);
+      mean_w /= nSubjects;
+      randomNormal normalRand(0,sqrt(mean_w/tau));
+      for(unsigned int i=0;i<nSubjects;i++){
+        double eps = normalRand(rndGenerator);
+        params.uCAR(i,eps);
+      }
+    }
   }
+
+
+  // std::cout << " parameters "<<endl;
+  // std::cout << " beta "<<endl;
+  // for(unsigned int m=0;m<nOutcomes;m++){
+  //   for(unsigned int b=0;b<nFixedEffects[m];b++)
+  //     std::cout << m << " b "<< b <<  " beta "<< params.beta(m,b,0,nCategoriesY)<<endl;
+  //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
+  //     for(unsigned int c=0;c<maxNClusters;c++)
+  //       std::cout << m << " b "<< b <<  " c "<<c<< " betamix "<< params.beta_mix(m,c,b,0, nCategoriesY)<<endl;
+  //   }
+  //   std::cout<<endl << m << " sigmaE "<< params.SigmaE(m)<<endl<<endl;
+  //    for(unsigned int c=0;c<maxNClusters;c++){
+  //      std::cout<<m << " covRE "<< params.covRE(m,c)<<endl;
+  //      std::cout<<m << " workLogDetTauLME "<<params.workLogDetTauLME(m,c)<<endl;
+  //      std::cout<<m << " workSqrtTauLME "<<params.workSqrtTauLME(m,c)<<endl;
+  //      }
+  //   //params.RandomEffects(m,i)
+  // }
 }
 
 
 // Write the sampler output
-void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions,pReMiuMPropParams,pReMiuMData>& sampler,
+void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropParams,pReMiuMData>& sampler,
                         const unsigned int& sweep){
 
   bool reportBurnIn = sampler.reportBurnIn();
