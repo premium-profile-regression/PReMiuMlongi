@@ -247,16 +247,13 @@ template<class modelParamType,class optionType,class propParamType,class dataTyp
 		  modelParamType tmpModelParams;
 		  _model.initialiseParams(_rndGenerator,tmpModelParams);
 
+		  vector<double> logPostVec;
 
-		  if(1>2){
+		  logPostVec = _model.logPosterior(tmpModelParams);
+		  mcmcState<modelParamType> tmpState(tmpModelParams,logPostVec);
+		  _chain.currentState(tmpState);
+		  modelParamType params=_chain.currentState().parameters();
 
-		    vector<double> logPostVec;
-
-		    logPostVec = _model.logPosterior(tmpModelParams);
-		    mcmcState<modelParamType> tmpState(tmpModelParams,logPostVec);
-		    _chain.currentState(tmpState);
-		    modelParamType params=_chain.currentState().parameters();
-		  }
 		}
 
 		/// \brief Member function to initialise the proposal parameters
@@ -538,10 +535,11 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 	// Write the output of initialisation before sampler begins
 	writeOutput(0);
 
+
 	for(unsigned int sweep=1; sweep<=_nBurn+_nSweeps; sweep++){
 
 		if(sweep==1||sweep%_nProgress==0){
-			Rprintf("Sweep: %i\n",sweep);
+		  Rprintf("Sweep: %i\n", sweep);
 		}
 
 		// Update the missing data (this will only do anything if the
@@ -564,29 +562,27 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 					// Update the chain state
 
 					 std::cout<<endl << "prop " << it->proposalName().c_str();
-				  if(ind<4){
+				  if(ind<1){
+
 				    it->updateParameters(_chain,_model,_rndGenerator);
 				    std::cout << " done "<<endl;
-				  }
+				    }
 
 					ind++;
 				}
 			}
 		}
 
-		int i=0;
-		std::cout << " missing" <<endl;
-		if(i>0){
 		// // At the end of the sweep make sure the log posterior is up to date.
 		 _chain.currentState().logPosterior(_model.logPosterior(_chain.currentState().parameters()));
 		//
 		// // Now write the output (this is controlled by the user defined function
 		 writeOutput(sweep);
-		}
+
 	}
 
-	if(1>2)
-	  writeAcceptanceRates();
+
+	 writeAcceptanceRates();
 
 }
 

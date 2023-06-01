@@ -1424,6 +1424,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   }
   params.workNXInCluster(nXInCluster);
   params.workMaxZi(maxZ);
+
   // Sample v (for logPsi)
   // This is sampled from the posterior given the z vector above
   // Prior comes from the conjugacy of the dirichlet and multinomial
@@ -2160,6 +2161,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   //      }
   //   //params.RandomEffects(m,i)
   // }
+
 }
 
 
@@ -2852,7 +2854,9 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
         //   *(outFiles[betaPropInd]) << endl;
         //   proposalParams.betaAnyUpdates(false);
         // }
+
         if(responseExtraVar){
+
           if(outcomeType.compare("LME")!=0){
             vector<double> meanVec(nSubjects,0.0);
             if(outcomeType.compare("Poisson")==0){
