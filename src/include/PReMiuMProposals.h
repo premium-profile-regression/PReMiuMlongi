@@ -2850,7 +2850,7 @@ void gibbsForBetaInActive(mcmcChain<pReMiuMParams>& chain,
       for (unsigned int k=0;k<nCategoriesY;k++){
         for(unsigned int c=maxZ+1;c<maxNClusters;c++){
           double beta=mu_b+pow(sigma2beta,0.5)*normRand(rndGenerator);
-          currentParams.beta_mix(c,j,k,m,nCategoriesY,beta);
+          currentParams.beta_mix(m,c,j,k,nCategoriesY, beta);
         }
       }
     }
@@ -4249,44 +4249,21 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
 
       S2 /=2.0;
       double ntot2 = ntot/2.0;
-      double shape_post = currentParams.hyperParams().eps_shape() + 1.0/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
+      double shape_post = currentParams.hyperParams().eps_shape() + ntot/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
 
       //(double)((double ntot)/2.0)
       //double scale_post = 2*currentParams.hyperParams().eps_rate()/(2 + S2*currentParams.hyperParams().eps_rate());
-      double scale_rate = currentParams.hyperParams().eps_rate() + S2;
+      double scale_post = 1.0/(currentParams.hyperParams().eps_scale() + S2);
 
-      // Define a inverse gamma random number generator
-      //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
-
-      cout <<endl<< m<<" S2 "<<S2<< " ntot "<<ntot
-           << " shape_post "<<shape_post << " scale "<<scale_rate
-           << " 1/scalerate "<<1/scale_rate << " 1 "<<1.0
-           <<endl;
-      double true_scale =1.0/scale_rate;
-      //<< " temp "<<temp<<endl;
-      cout << "type of shape_post "<<typeid(shape_post).name() << endl;
-      cout << "type of true_scale "<<typeid(true_scale).name() << endl;
-
-      double true_shape = (double)shape_post;
-
-      randomGamma gammaRand(shape_post, true_scale); //gammaRand(shape, scale=1/rate)
-      double temp = gammaRand(rndGenerator);
-
-      cout << " temp "<<temp<<endl;
-
-
-      if(1>2){
-        randomGamma gammaRand(shape_post, true_scale);
+      randomGamma gammaRand(shape_post, scale_post); //gammaRand(shape, scale=1/rate)
       double temp = gammaRand(rndGenerator);
 
       double epsilon = 1.0/temp;
 
+      currentParams.SigmaE(m,epsilon);
+      // Define a inverse gamma random number generator
+      //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
 
-      currentParams.SigmaE(m,epsilon);// variance
-      cout << " "<< m<< " epsilon "<< epsilon<< " temp "<< endl;
-    }
-
-    double epsilon = 1.0;
     currentParams.SigmaE(m,epsilon);// variance
 
   }
