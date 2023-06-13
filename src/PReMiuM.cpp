@@ -173,7 +173,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
 
     if(options.includeResponse()){
       // The Metropolis Hastings update for the active theta
-      if(options.outcomeType().compare("Longitudinal")!=0  & options.outcomeType().compare("LME")!=0 )//&& options.outcomeType().compare("LME")!=0) //AR
+      if(options.outcomeType().compare("Longitudinal")!=0  && options.outcomeType().compare("LME")!=0 )//&& options.outcomeType().compare("LME")!=0) //AR
         pReMiuMSampler.addProposal("metropolisHastingsForThetaActive",1.0,1,1,&metropolisHastingsForThetaActive);
 
       // Adaptive MH for beta

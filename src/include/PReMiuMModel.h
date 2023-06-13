@@ -191,6 +191,7 @@ public:
         mu0(j)=meanX;
         Sigma0(j,j)=rangeX*rangeX;
       }
+
       MatrixXd Tau0 = Sigma0.inverse();
       _Tau0=Tau0;
       LLT<MatrixXd> llt;
@@ -321,7 +322,7 @@ public:
 
     _eps_sigma2_0 = 0.5;
     _eps_vu = 1.0;
-    _eps_shape = 1.0;
+    _eps_shape = 2.0;
     _eps_rate = 1.0;
     _shapeTauEpsilon = 5.0;
     _rateTauEpsilon = 0.5;
@@ -3609,17 +3610,15 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
 
   double logLikelihood=0.0;
   double logPrior=0.0;
-  std::cout << " logLik0 "<< logLikelihood<< endl;
   //std::fstream foutL("compare.txt", std::ios::in | std::ios::out | std::ios::app);
-  std::cout << " nClusters "<< maxNClusters<< endl;
 
   // Add in contribution from X
   for(unsigned int i=0;i<nSubjects;i++){
     //P(xi|zi,params)
     logLikelihood+=params.workLogPXiGivenZi(i);
-    cout << i<<" i "<<params.workLogPXiGivenZi(i) << endl;
   }
-  std::cout << " logLikX "<< logLikelihood<< endl;
+
+  cout << " logLikX "<<logLikelihood<<endl;
 
   // Add in contribution from Y
   vector<double> extraVarPriorVal(nSubjects,0.0);
@@ -3963,7 +3962,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
             //MatrixXd Tau = params.covRE(c).inverse();
             //logPrior+=logPdfWishart(dataset.nRandomEffects(), Tau, params.workLogDetMVNTau(c)
           }
-          logPrior += logPdfGamma(1/params.SigmaE(m),hyperParams.eps_shape(),
+          logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
                                   hyperParams.eps_rate()); //Gamma(shape,rate=1/scale)
 
           for(unsigned int i=0;i<nSubjects;i++){
@@ -4250,7 +4249,7 @@ double logCondPostThetaBeta(const pReMiuMParams& params,
 
   if(responseExtraVar){
     for(unsigned int i=0;i<nSubjects;i++){
-      out+=logPdfNormal(extraVarPriorVal[i],extraVarPriorMean[i],1/sqrt(params.tauEpsilon()));
+      out+=logPdfNormal(extraVarPriorVal[i],extraVarPriorMean[i],1.0/sqrt(params.tauEpsilon()));
     }
   }
   return out;
@@ -4329,7 +4328,7 @@ double logCondPostLambdaiBinomial(const pReMiuMParams& params,
     //                      hyperParams.eps_sigma2_0());
 
     for(unsigned int m=0;m<nOutcomes;m++){
-      logPrior += logPdfGamma(1/params.SigmaE(m),hyperParams.eps_shape(),
+      logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
                               hyperParams.eps_rate()); //Gamma(shape,rate=1/scale)
     }
 

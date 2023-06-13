@@ -1871,7 +1871,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
       for(unsigned int j=0;j<nFixedEffects[m];j++){
         for (unsigned int k=0;k<nCategoriesY;k++){
           // Betas are randomly between -2 and 2
-          if(outcomeType.compare("Longitudinal")!=0 & outcomeType.compare("LME")!=0){ //AR
+          if(outcomeType.compare("Longitudinal")!=0 && outcomeType.compare("LME")!=0){ //AR
             params.beta(m,j,k,nCategoriesY,-2.0+4.0*unifRand(rndGenerator));
           }else{
             params.beta(m,j,k,nCategoriesY,0);
@@ -2034,8 +2034,13 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
         randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_rate()); //k, 1/theta
 
+
         double temp = gammaRand(rndGenerator);
         double epsilon = 1/temp;
+
+        cout << " shape "<<hyperParams.eps_shape()
+             << "  rate "<<hyperParams.eps_rate()
+             << m <<" epsilon "<< epsilon<<endl;
 
         params.SigmaE(m,epsilon);
       }

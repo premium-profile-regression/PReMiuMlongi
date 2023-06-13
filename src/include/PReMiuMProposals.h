@@ -1217,7 +1217,6 @@ void gibbsForVActive(mcmcChain<pReMiuMParams>& chain,
     currentParams.logPsi(c,tmp+log(vVal));
     tmp += log(1-vVal);
   }
-  cout << " v(0) "<<currentParams.v(0)<<endl;
 }
 
 // Moves for updating the Theta which are active i.e. Theta_c where c<=Z_max
@@ -1389,6 +1388,7 @@ void gibbsForMuActive(mcmcChain<pReMiuMParams>& chain,
     VectorXd meanVec(nCovariates);
     meanVec = hyperParams.Tau0()*hyperParams.mu0()+
       nXInC*gammaMat[c]*currentParams.Tau(c)*(meanX[c]-oneMinusGammaMat[c]*currentParams.nullMu());
+
     meanVec = covMat*meanVec;
     VectorXd mu(nCovariates);
     // We sample from this posterior
@@ -1582,6 +1582,8 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
   int ind=0;//tstart
   int ind_y=0;//y and t
   for(unsigned int m=0;m<nOutcomes;m++){//
+    int ntot = 0;
+
     MatrixXd bi(nSubjects, nRandomEffects[m]);
 
     for(unsigned int i=0;i<nSubjects;i++){
@@ -1656,10 +1658,11 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
       unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
       yi.resize(ni);
+      ntot += ni;
 
       for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
 
-        yi(j) = y[ind_y];//yi(j) = y[tStart[ind]-1+j];
+        yi(j) = y[ind_y + tStart[ind]-1+j];//yi(j) = y[tStart[ind]-1+j];
 
         for(unsigned int b=0;b<nFixedEffects[m];b++){
           yi(j)-=currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
@@ -1667,8 +1670,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
           yi(j)-=currentParams.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
         }
-
-        ind_y++;
       }
 
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
@@ -1686,6 +1687,9 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
       ui = multivarNormalRand(rndGenerator,mu,cov);
       currentParams.RandomEffects(m,i,ui);
+
+      if(i==(nSubjects-1))
+        ind_y += ntot;
       ind ++;
     }
   }
@@ -3213,16 +3217,14 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
   for (unsigned int m=0;m<nOutcomes;m++){
 
-    unsigned int mm = 0;
-    unsigned int nT = 0;
-    while (mm<m){
-      nT += nTimes_m[mm];
-      mm++;
-    }
-
-
-
     for(unsigned int b=0;b<(nFixedEffects[m] + nFixedEffects_mix[m]);b++){
+
+      unsigned int mm = 0;
+      unsigned int nT = 0;
+      while (mm<m){
+        nT += nTimes_m[mm];
+        mm++;
+      }
 
       MatrixXd S2;
       S2.setZero(1,1);
@@ -3251,10 +3253,11 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
               Yi(j) -= currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
           }
 
+
           if(b < nFixedEffects[m]){
             Xib(j) = dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,b);
           }else{
-            Xib(j) = dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,b);
+            Xib(j) = dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,b-nFixedEffects[m]);
           }
         }
 
@@ -3269,13 +3272,16 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
         S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
         S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
-      }
 
+      }
 
         S2(0,0) += 1/sigma2beta;
         S2(0,0) = 1 / S2(0,0);
 
+
+
         S(0,0) *=S2(0,0);
+
 
 
         double betaProp = S(0,0)+pow(S2(0,0),0.5)*normRand(rndGenerator);
@@ -3284,26 +3290,23 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
           currentParams.beta(m,b,0,nCategoriesY,betaProp);
         }else{
 
-          std::cout << " maxZ "<<maxZ<<" maxNClusters "<<maxNClusters<<endl;
-          std::cout << " S "<<S(0,0)<<" S2 "<<S2(0,0)<<endl;
-
           for(unsigned int c=0;c<=maxZ;c++){
             betaProp = S(0,0)+pow(S2(0,0),0.5)*normRand(rndGenerator);
             currentParams.beta_mix(m,c,b-nFixedEffects[m],0, nCategoriesY, betaProp);
-            std::cout << " m "<< m  << " c "<<c<< " bb "<<b-nFixedEffects[m] <<" c "<<c<< " betaProp "<<betaProp<<endl;
-
           }
           for(unsigned int c=(maxZ+1);c<maxNClusters;c++){
             double betaProp = mu_b+pow(sigma2beta,0.5)*normRand(rndGenerator);
             currentParams.beta_mix(m,c,b-nFixedEffects[m],0, nCategoriesY, betaProp);
-            std::cout << " m "<< m << " c "<<c<< " bb "<<b-nFixedEffects[m] <<" c "<<c<< " betaProp "<<betaProp<<endl;
           }
         }
       }
     }
 
 
-  std::cout << " parameters beta "<<endl;
+  std::cout << " parameters beta "<< currentParams.beta(0,0,0,nCategoriesY) <<endl;
+  for(unsigned int m=0;m<nOutcomes;m++)
+    cout << m<<" sigmaE "<<currentParams.SigmaE(m)<<endl;
+
   // for(unsigned int m=0;m<nOutcomes;m++){
   //   for(unsigned int b=0;b<nFixedEffects[m];b++)
   //     std::cout << m << " b "<< b <<  " beta "<< currentParams.beta(m,b,0,nCategoriesY)<<endl;
@@ -3315,6 +3318,7 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
   //       std::cout << m << " b "<< b <<  " c "<<c<< " betamix "<< currentParams.beta_mix(m,c,b,0, nCategoriesY)<<endl;
   //   }
   // }
+
 }
 
 // Adaptive Metropolis-Hastings for beta - fixed effects
@@ -4196,7 +4200,7 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
   unsigned int nCategoriesY = dataset.nCategoriesY();
   unsigned int nOutcomes = dataset.nOutcomes();
 
-  double S2= 0.0;
+
 
   unsigned int  nSubjects = dataset.nSubjects();
   vector<double>        y = dataset.continuousY();
@@ -4209,46 +4213,82 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
   unsigned int ind=0;
 
   for(unsigned int m=0;m<nOutcomes;m++){
-    int  ntot = 0;
+    double S2= 0.0;
+    unsigned int  ntot = 0;
     for(unsigned int i=0;i<nSubjects;i++){
 
-      int nmes = (tStop[ind] - tStart[ind] + 1);
+      unsigned int nmes = (tStop[ind] - tStart[ind] + 1);
+
       VectorXd   Yi(nmes);
       int zi   = currentParams.z(i);
-      MatrixXd   Xi(nmes, nFixedEffects[m]);
+
       ntot += nmes;
-      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
-        Yi(j) = y[ind_y + tStart[ind]-1+j];
 
-        for(unsigned int b=0;b<nFixedEffects[m];b++){
-          Yi(j) -= currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
+        for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+          Yi(j) = y[ind_y + tStart[ind]-1+j];
+
+          for(unsigned int b=0;b<nFixedEffects[m];b++){
+            Yi(j) -= currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
+          }
+          for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
+            Yi(j) -= currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
+          }
         }
 
-        for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-          Yi(j) -= currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
-        }
-      }
 
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, tStop[ind]-tStart[ind]+1 , dataset.nRandomEffects(m));
       Yi -= block*currentParams.RandomEffects(m,i);
       S2 += Yi.transpose()*Yi;
-      if(i==(nSubjects=1))
-        ind_y += nSubjects;
+
+      if(i==(nSubjects-1))
+        ind_y += ntot;
+
       ind++;
     }
 
-    S2 /=2;
-    double shape_post = currentParams.hyperParams().eps_shape() + ntot/2;
-    //double scale_post = 2*currentParams.hyperParams().eps_rate()/(2 + S2*currentParams.hyperParams().eps_rate());
-    double scale_rate = currentParams.hyperParams().eps_rate() + S2;
 
-    // Define a inverse gamma random number generator
-    randomGamma gammaRand(shape_post, 1/scale_rate);
+      S2 /=2.0;
+      double ntot2 = ntot/2.0;
+      double shape_post = currentParams.hyperParams().eps_shape() + 1.0/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
 
-    double temp = gammaRand(rndGenerator);
-    double epsilon = 1/temp;
+      //(double)((double ntot)/2.0)
+      //double scale_post = 2*currentParams.hyperParams().eps_rate()/(2 + S2*currentParams.hyperParams().eps_rate());
+      double scale_rate = currentParams.hyperParams().eps_rate() + S2;
 
+      // Define a inverse gamma random number generator
+      //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
+
+      cout <<endl<< m<<" S2 "<<S2<< " ntot "<<ntot
+           << " shape_post "<<shape_post << " scale "<<scale_rate
+           << " 1/scalerate "<<1/scale_rate << " 1 "<<1.0
+           <<endl;
+      double true_scale =1.0/scale_rate;
+      //<< " temp "<<temp<<endl;
+      cout << "type of shape_post "<<typeid(shape_post).name() << endl;
+      cout << "type of true_scale "<<typeid(true_scale).name() << endl;
+
+      double true_shape = (double)shape_post;
+
+      randomGamma gammaRand(shape_post, true_scale); //gammaRand(shape, scale=1/rate)
+      double temp = gammaRand(rndGenerator);
+
+      cout << " temp "<<temp<<endl;
+
+
+      if(1>2){
+        randomGamma gammaRand(shape_post, true_scale);
+      double temp = gammaRand(rndGenerator);
+
+      double epsilon = 1.0/temp;
+
+
+      currentParams.SigmaE(m,epsilon);// variance
+      cout << " "<< m<< " epsilon "<< epsilon<< " temp "<< endl;
+    }
+
+    double epsilon = 1.0;
     currentParams.SigmaE(m,epsilon);// variance
+
   }
 }
 
@@ -5110,15 +5150,15 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
 
   for(unsigned int m=0;m<dataset.nOutcomes();m++){
-    for(unsigned int b=0;b<nFixedEffects[m];b++)
-    std::cout << m << " b : "<< b << " beta "<<currentParams.beta(m,b, 0, dataset.nCategoriesY())<<endl;
-    std::cout << m << " covRE : "<<endl<<currentParams.covRE(m,0)<<endl;
-    std::cout << m << " SigmaE : "<<currentParams.SigmaE(m)<<endl;
-
-    for(unsigned int c=0;c<maxNClusters;c++){
-      for(unsigned int b=0;b<nFixedEffects_mix[m];b++)
-        std::cout << m <<  " c "<< c << " b : "<< b << " beta "<<currentParams.beta_mix(m, c,b,0,dataset.nCategoriesY())<<endl;
-    }
+    // for(unsigned int b=0;b<nFixedEffects[m];b++)
+    // std::cout << m << " b : "<< b << " beta "<<currentParams.beta(m,b, 0, dataset.nCategoriesY())<<endl;
+    // std::cout << m << " covRE : "<<endl<<currentParams.covRE(m,0)<<endl;
+    // std::cout << m << " SigmaE : "<<currentParams.SigmaE(m)<<endl;
+    //
+    // for(unsigned int c=0;c<maxNClusters;c++){
+    //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++)
+    //     std::cout << m <<  " c "<< c << " b : "<< b << " beta "<<currentParams.beta_mix(m, c,b,0,dataset.nCategoriesY())<<endl;
+    // }
 
     if(responseExtraVar)
       std::cout<< " extraVar "<<responseExtraVar<<endl;
