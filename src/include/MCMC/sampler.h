@@ -561,11 +561,11 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 
 					// Update the chain state
 
-					 std::cout<<endl << "prop " << it->proposalName().c_str();
+					//std::cout<<"prop " << it->proposalName().c_str();
 				  //if(ind<2){
 
 				    it->updateParameters(_chain,_model,_rndGenerator);
-				    std::cout << " done "<<endl;
+				    //std::cout << " done "<<endl;
 				    //}
 
 					ind++;

@@ -3302,11 +3302,6 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
       }
     }
 
-
-  std::cout << " parameters beta "<< currentParams.beta(0,0,0,nCategoriesY) <<endl;
-  for(unsigned int m=0;m<nOutcomes;m++)
-    cout << m<<" sigmaE "<<currentParams.SigmaE(m)<<endl;
-
   // for(unsigned int m=0;m<nOutcomes;m++){
   //   for(unsigned int b=0;b<nFixedEffects[m];b++)
   //     std::cout << m << " b "<< b <<  " beta "<< currentParams.beta(m,b,0,nCategoriesY)<<endl;

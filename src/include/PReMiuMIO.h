@@ -1050,11 +1050,11 @@ void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperPar
       string tmpStr = inString.substr(pos,inString.size()-pos);
       double eps_shape = (double)atof(tmpStr.c_str());
       hyperParams.eps_shape(eps_shape);
-    }else if(inString.find("eps_rate")==0){
+    }else if(inString.find("eps_scale")==0){
       size_t pos = inString.find("=")+1;
       string tmpStr = inString.substr(pos,inString.size()-pos);
-      double eps_rate = (double)atof(tmpStr.c_str());
-      hyperParams.eps_rate(eps_rate);
+      double eps_scale = (double)atof(tmpStr.c_str());
+      hyperParams.eps_scale(eps_scale);
     }else if(inString.find("SigmaLME_R0")==0){
       size_t pos = inString.find("=")+1;
       string tmpStr = inString.substr(pos,inString.size()-pos);
@@ -2032,15 +2032,11 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
         //params.SigmaE(epsilon);
         // Define a inverse gamma random number generator
 
-        randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_rate()); //k, 1/theta
+        randomGamma gammaRand(hyperParams.eps_shape(),hyperParams.eps_scale()); //k, 1/theta
 
 
         double temp = gammaRand(rndGenerator);
-        double epsilon = 1/temp;
-
-        cout << " shape "<<hyperParams.eps_shape()
-             << "  rate "<<hyperParams.eps_rate()
-             << m <<" epsilon "<< epsilon<<endl;
+        double epsilon = 1.0/temp;
 
         params.SigmaE(m,epsilon);
       }
@@ -3161,7 +3157,7 @@ string storeLogFileData(const pReMiuMOptions& options,
     //tmpStr << "eps_vu: "<< hyperParams.eps_vu() << endl;
     //tmpStr << "eps_sigma2_0: "<< hyperParams.eps_sigma2_0() <<endl;
     tmpStr << "eps_shape: "<< hyperParams.eps_shape() << endl;
-    tmpStr << "eps_rate: "<< hyperParams.eps_rate() << endl;
+    tmpStr << "eps_scale: "<< hyperParams.eps_scale() << endl;
   }
 
   if(options.responseExtraVar()){

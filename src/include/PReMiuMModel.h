@@ -323,7 +323,7 @@ public:
     _eps_sigma2_0 = 0.5;
     _eps_vu = 1.0;
     _eps_shape = 2.0;
-    _eps_rate = 1.0;
+    _eps_scale = 1.0;
     _shapeTauEpsilon = 5.0;
     _rateTauEpsilon = 0.5;
 
@@ -592,12 +592,12 @@ public:
     _eps_shape = sigma;
   }
 
-  double eps_rate() const{
-    return _eps_rate;
+  double eps_scale() const{
+    return _eps_scale;
   }
 
-  void eps_rate(const double& sigma){
-    _eps_rate = sigma;
+  void eps_scale(const double& sigma){
+    _eps_scale = sigma;
   }
 
   double shapeTauEpsilon() const{
@@ -888,7 +888,7 @@ private:
   double _eps_sigma2_0;
   double _eps_vu;
   double _eps_shape;
-  double _eps_rate;
+  double _eps_scale;
 
   double _aRatio;
   double _bRatio;
@@ -3618,8 +3618,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     logLikelihood+=params.workLogPXiGivenZi(i);
   }
 
-  cout << " logLikX "<<logLikelihood<<endl;
-
   // Add in contribution from Y
   vector<double> extraVarPriorVal(nSubjects,0.0);
   vector<double> extraVarPriorMean(nSubjects,0.0);
@@ -3963,7 +3961,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
             //logPrior+=logPdfWishart(dataset.nRandomEffects(), Tau, params.workLogDetMVNTau(c)
           }
           logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
-                                  hyperParams.eps_rate()); //Gamma(shape,rate=1/scale)
+                                  hyperParams.eps_scale()); //Gamma(shape,rate=1/scale)
 
           for(unsigned int i=0;i<nSubjects;i++){
             //unsigned int zi = params.z(i);
@@ -4329,7 +4327,7 @@ double logCondPostLambdaiBinomial(const pReMiuMParams& params,
 
     for(unsigned int m=0;m<nOutcomes;m++){
       logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
-                              hyperParams.eps_rate()); //Gamma(shape,rate=1/scale)
+                              hyperParams.eps_scale()); //Gamma(shape,rate=1/scale)
     }
 
 

@@ -65,6 +65,8 @@ setHyperparams(shapeAlpha = NULL, rateAlpha = NULL, aPhi = NULL, mu0
 \item{MVNR0}{The matrix parameter for the Wishart distribution for MVNTau_c (default=nSubjects/nOutcomes * inverse of empirical covariance matrix)}
 \item{MVNnu0}{The degrees of freedom parameter for the Wishart distribution for MVNTau_c (default=nOutcomes).}
 \item{MVNkappa0}{Hyperparameter for the conjugate Normal inverse Wishart prior for MVN outcome case. The Normal distribution of MVNmu_c has covariance MVNSigma_c/MVNkappa0. The default value is 0.01. The other hyperparameters for this parametrisation are re-used from the independent priors.}
+\item{eps_shape}{Shape parameter of the Inverse Gamma prior for the variance of the measurement error if yModel=='LME'.}
+\item{eps_scale}{Scale parameter of the Inverse Gamma prior for the variance of the measurement error if yModel=='LME'.}
 }
 
 \value{
