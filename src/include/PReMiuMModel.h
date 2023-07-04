@@ -3033,7 +3033,7 @@ double logPYiGivenZiWiLongitudinal(const pReMiuMParams& params, const pReMiuMDat
   }
   return dmvnorm;
 
-  if(std::isnan(dmvnorm) || isinf(dmvnorm)){
+  if(std::isnan(dmvnorm) || std::isinf(dmvnorm)){
 
     std::cout << " dmvnorm  "<< dmvnorm<< " logDetMat "<<logDetMat << endl<<
       " zi "<<  params.z(ii) << " c "<< c <<endl<<
@@ -3154,7 +3154,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
                       [&](int i1,int i2) { return (times_check[i1] < times_check[i2]); });
 
           logDetPrecMat=Inverse_woodbury(Sigma_inv_ord,logDetSigma, precMat, idx_back);
-          if(std::isnan(logDetPrecMat) || isinf(logDetPrecMat) || logDetPrecMat== -(std::numeric_limits<double>::max())){
+          if(std::isnan(logDetPrecMat) || std::isinf(logDetPrecMat) || logDetPrecMat== -(std::numeric_limits<double>::max())){
             //fout << "indiv: "<< ii << " z(i) "<<params.z(ii)<< " c "<< c<<endl;
           }
           //fout << "Inverse_woodbury add "<<logDetSigma << endl;
@@ -3241,7 +3241,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
           Sigma_ord2.setZero(Sigma_inv_ord.rows(),Sigma_inv_ord.rows());
           GP_cov(Sigma_ord2,params.L(c),times_permut,dataset.equalTimes(),kernelType,1);
           logDetPrecMat=Inverse_woodbury(Sigma_ord2,logDetSigma, precMat, Sigma_inv_ord2);
-          if(std::isnan(logDetPrecMat) || isinf(logDetPrecMat) || logDetPrecMat== -(std::numeric_limits<double>::max())){
+          if(std::isnan(logDetPrecMat) || std::isinf(logDetPrecMat) || logDetPrecMat== -(std::numeric_limits<double>::max())){
             //fout << "indiv: "<< ii << " z(i) "<<params.z(ii)<< " c "<< c<<endl;
           }
           // Sigma_ord2 and Sigma_inv_ord2 including measurement errors
@@ -3273,7 +3273,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
     dmvnorm=0;
   }
 
-  if(std::isnan(dmvnorm) || isinf(dmvnorm)){
+  if(std::isnan(dmvnorm) || std::isinf(dmvnorm)){
 
     std::cout << " dmvnorm  "<< dmvnorm<< " logdetprecMat "<<logDetPrecMat << endl<<
       " zi "<<  params.z(ii) << " c "<< c <<endl<<
@@ -3735,7 +3735,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
       logPrior+=logPdfBeta(params.v(c),1.0-params.dPitmanYor(),params.alpha()+params.dPitmanYor()*(c+1));
     }
 
-    if(isinf(logPrior)){
+    if(std::isinf(logPrior)){
       //for(unsigned int c=0;c<maxNClusters;c++){
       //  foutL <<c << " v " << params.v(c) << " pitmanyor " <<params.dPitmanYor() << " alpha "<< params.alpha()<<endl;
       //}
@@ -3993,7 +3993,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   outVec[1]=logLikelihood;
   outVec[2]=logPrior;
 
-  std::cout << " logLikelihood "<<logLikelihood <<  " logPrior "<<logPrior<<std::endl;
+  //std::cout << " logLikelihood "<<logLikelihood <<  " logPrior "<<logPrior<<std::endl;
    return outVec;
 }
 
@@ -4770,7 +4770,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
     //    <<" ---- " <<endl;
 
 
-    if(std::isnan(logDetPrecMat) || isinf(logDetPrecMat)){
+    if(std::isnan(logDetPrecMat) || std::isinf(logDetPrecMat)){
       for (unsigned int j=0;j<GPmean.size();j++)
         GPmean(j)=0;
 

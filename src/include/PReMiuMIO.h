@@ -2179,8 +2179,8 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
   if((reportBurnIn||((!reportBurnIn)&&sweep>nBurn))&&(sweep%nFilter==0)){
     const pReMiuMParams& params = sampler.chain().currentState().parameters();
 
-    unsigned int nSubjects = params.nSubjects();
-    unsigned int nOutcomes = params.nOutcomes();
+    unsigned int nSubjects = sampler.model().dataset().nSubjects();
+    unsigned int nOutcomes = sampler.model().dataset().nOutcomes();
     unsigned int nPredictSubjects = params.nPredictSubjects();
     unsigned int maxNClusters = params.maxNClusters();
     unsigned int nCovariates = params.nCovariates();
@@ -2355,7 +2355,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
     // File indices
     int nClustersInd=-1,psiInd=-1,phiInd=-1,muInd=-1,SigmaInd=-1,zInd=-1,entropyInd=-1,alphaInd=-1;
     int logPostInd=-1,nMembersInd=-1,alphaPropInd=-1;
-    //RJ add L and MVN to indices
+    //LME and Longitudinal
     int thetaInd=-1,betaInd=-1,betamixInd=-1,thetaPropInd=-1,betaPropInd=-1,sigmaSqYInd=-1,nuInd=-1,LInd=-1,
       meanGPInd=-1,estim_ratioInd=-1,MVNmuInd=-1,MVNSigmaInd=-1,epsilonInd=-1,
       CovRELMEInd=-1, EpsilonLMEInd=-1, RandomEffectsLMEInd=-1 ;//LME
@@ -2456,6 +2456,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
 
 
     *(outFiles[nClustersInd]) << maxNClusters << endl;
+
     unsigned int sumMembers=0;
     for(unsigned int c=0;c<maxNClusters;c++){
       // Print logPsi
@@ -2529,6 +2530,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
       for(unsigned int j=0;j<nCovariates;j++){
         for(unsigned int c=0;c<maxNClusters;c++){
           *(outFiles[muInd]) << params.mu(c,j);
+
           if(c<(maxNClusters-1)||j<(nCovariates-1)){
             *(outFiles[muInd]) << " ";
           }
@@ -2550,6 +2552,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
         }
       }
       *(outFiles[SigmaInd]) << endl;
+
     }else if(covariateType.compare("Mixed")==0){
       for(unsigned int j=0;j<nDiscreteCovs;j++){
         if(nCategories[j]>maxNCategories){
@@ -2707,6 +2710,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             }
           }
         }
+
         if(outcomeType.compare("LME")==0){
           vector<unsigned int> nRandomEffects = dataset.nRandomEffects();
 
@@ -2727,41 +2731,29 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             *(outFiles[EpsilonLMEInd]) << params.SigmaE(m) << endl; //params.sigmakInd(c);
           }
 
+
           for(unsigned int m=0;m<nOutcomes;m++){
             for(unsigned int i=0;i<nSubjects;i++){
-              *(outFiles[RandomEffectsLMEInd]) << " "<< params.RandomEffects(i).transpose(); //params.sigmakInd(c);
-              if(i<nSubjects-1){
-                *(outFiles[RandomEffectsLMEInd]) << " ";
-              }else{
-                *(outFiles[RandomEffectsLMEInd]) << endl;
-              }
+              *(outFiles[RandomEffectsLMEInd]) << " "<< params.RandomEffects(m,i).transpose()<< " "; //params.sigmakInd(c);
             }
+            *(outFiles[RandomEffectsLMEInd]) << endl;
           }
 
           for(unsigned int m=0;m<nOutcomes;m++){
-            for(unsigned int j=0;j<nFixedEffects[m];j++){
-              *(outFiles[betaInd]) << params.beta(m,j,0,nCategoriesY);
-              if(j<nFixedEffects[m]-1){
-                *(outFiles[betaInd]) << " ";
-              }else{
-                *(outFiles[betaInd]) << endl;
-              }
-            }
+            for(unsigned int j=0;j<nFixedEffects[m];j++)
+              *(outFiles[betaInd]) << params.beta(m,j,0,nCategoriesY)<< " ";
+            *(outFiles[betaInd]) << endl;
           }
 
           for(unsigned int m=0;m<nOutcomes;m++){
             for(unsigned int c=0;c< maxNClusters;c++){
-              for(unsigned int j=0;j<nFixedEffects_mix[m];j++){
-                *(outFiles[betamixInd]) << params.beta_mix(m,c,j, 0, nCategoriesY); //j*1 (Ycategory)
-                if(c<maxNClusters-1 || j<nFixedEffects_mix[m]-1){
-                  *(outFiles[betamixInd]) << " ";
-                }else{
-                  *(outFiles[betamixInd]) << endl;
-                }
-              }
-            }
+              for(unsigned int j=0;j<nFixedEffects_mix[m];j++)
+                *(outFiles[betamixInd]) << params.beta_mix(m,c,j, 0, nCategoriesY)<< " "; //j*1 (Ycategory)
+             }
+            *(outFiles[betamixInd]) << endl;
           }
         }
+
         if (includeCAR){
           for(unsigned int i=0;i<nSubjects;i++){
             double uCARi = params.uCAR(i);

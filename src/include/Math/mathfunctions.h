@@ -324,7 +324,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     MatrixXd L = lltOfA.matrixL();
     det=  2*L.diagonal().array().log().sum();
     Mat = L.inverse().transpose()*L.inverse();
-    if(isnan(det))
+    if(std::isnan(det))
       trick=1;
   }else{
     trick=1;
@@ -396,7 +396,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     MatrixXd L_Lambda = lltOfAL.matrixL();
     logdet_lambda=  2*L_Lambda.diagonal().array().log().sum();
 
-    if(isnan(logdet_lambda)){
+    if(std::isnan(logdet_lambda)){
       logdet_lambda=0;
       PartialPivLU<Matrix<double,Dynamic,Dynamic>> lu(Lambda);
       auto& LU = lu.matrixLU();
@@ -408,7 +408,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       }
       logdet_lambda += log(c);
 
-      if(isnan(logdet_lambda)){
+      if(std::isnan(logdet_lambda)){
         cout <<  " logdet_lambda=nan, diag Lambda "<< LU.diagonal()<<endl;
       }
     }
@@ -429,7 +429,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     MatrixXd P = lltOfA2.matrixL();
     double logDetP=  2*P.diagonal().array().log().sum();
 
-    if(isnan(logDetP)){
+    if(std::isnan(logDetP)){
       logDetP=0;
       PartialPivLU<Matrix<double,Dynamic,Dynamic>> lu(Prod1);
       auto& LU = lu.matrixLU();
@@ -441,14 +441,14 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       }
       logDetP += log(c);
 
-      if(isnan(logDetP)){
+      if(std::isnan(logDetP)){
         cout << " Prod1.det "<< Prod1.determinant() << " Mat.det "<< Mat.determinant() << " c "<<c<<" logDetP=nan, diag Lambda "<< LU.diagonal().transpose()<<endl<<endl;
       }
     }
 
     det=logDetP+logdet_lambda;
 
-    if(std::isnan(det) || isinf(det)){
+    if(std::isnan(det) || std::isinf(det)){
       fout << "det Get_Sigma_inv_GP_cov "<< det << " logdet_lambda "<<logdet_lambda<<
         " + logDetP:  "<< logDetP<<" grid.size() "<< grid.size()
                        << " eL0 " << eL0<< " eL1 " << eL1<<  " eL2 " << eL2<<endl <<
@@ -734,7 +734,7 @@ double Inverse_woodbury(const MatrixXd& M0_inv, const double& log_det_M0, Matrix
     //Permut back
     Permut_cov_sorted(Mat, idx);
 
-    if(std::isnan(log_DetPrecMat) || isinf(log_DetPrecMat)){
+    if(std::isnan(log_DetPrecMat) || std::isinf(log_DetPrecMat)){
       logdetA=0;
       PartialPivLU<Matrix<double,Dynamic,Dynamic>> lu(A);
       auto& LU = lu.matrixLU();
@@ -747,7 +747,7 @@ double Inverse_woodbury(const MatrixXd& M0_inv, const double& log_det_M0, Matrix
       logdetA += log(c);
       log_DetPrecMat=log_det_M0+logdetA;
 
-      if(std::isnan(log_DetPrecMat) || isinf(log_DetPrecMat)){
+      if(std::isnan(log_DetPrecMat) || std::isinf(log_DetPrecMat)){
         //fout << "in inverse_Woodbury to add: log_DetPrecMat="<<log_DetPrecMat << " = log_det_M0 "<< log_det_M0 <<" +logdetA "<< logdetA<<  " log(detA)"<< log(A.determinant())<<" ";
         log_DetPrecMat=-(std::numeric_limits<double>::max());
       }
@@ -843,7 +843,7 @@ double Inverse_woodbury(const MatrixXd& M0, const double& log_det_M0, MatrixXd& 
     double logdetA=  2*La.diagonal().array().log().sum();
     log_DetPrecMat=log_det_M0-logdetA;
 
-    if(std::isnan(logdetA) || isinf(logdetA)){
+    if(std::isnan(logdetA) || std::isinf(logdetA)){
       logdetA=0;
       PartialPivLU<Matrix<double,Dynamic,Dynamic>> lu(A);
       auto& LU = lu.matrixLU();
@@ -856,7 +856,7 @@ double Inverse_woodbury(const MatrixXd& M0, const double& log_det_M0, MatrixXd& 
       logdetA += log(c);
       log_DetPrecMat=log_det_M0+logdetA;
 
-      if(std::isnan(log_DetPrecMat) || isinf(log_DetPrecMat)){
+      if(std::isnan(log_DetPrecMat) || std::isinf(log_DetPrecMat)){
         //fout << "in inverse_Woodbury to remove: log_DetPrecMat="<<log_DetPrecMat << " = log_det_M0 "<< log_det_M0 <<" +logdetA "<< logdetA<< " log(detA)"<< log(A.determinant()) <<" ";
         log_DetPrecMat=-(std::numeric_limits<double>::max());
       }
