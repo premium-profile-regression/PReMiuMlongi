@@ -126,12 +126,12 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
       RE_LMEFileName <- file.path(directoryPath,paste(fileStem,'_RandomEffectsLME.txt',sep=''))
       RE_LMEFile<-file(RE_LMEFileName,open="r")
     }
-    if(nFixedEffects>0){
+    if(nFixedEffects[1]>0){
       # Construct the fixed effect coefficient file name
       betaFileName <-file.path(directoryPath,paste(fileStem,'_beta.txt',sep=''))
       betaFile<-file(betaFileName,open="r")
     }
-    if(nFixedEffects_clust>0){
+    if(nFixedEffects_clust[1]>0){
       # Construct the fixed effect coefficient file name
       betamixFileName <-file.path(directoryPath,paste(fileStem,'_beta_cluster-specific.txt',sep=''))
       betamixFile<-file(betamixFileName,open="r")
@@ -171,21 +171,30 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
       MVNSigmaArray<-array(0,dim=c(nSamples,nClusters,nOutcomes*(nOutcomes+1)/2))
       riskArray<-array(0,dim=c(nSamples,nClusters,nOutcomes))
     } else if(yModel=="LME"){
-      nTimes=dim(longMat)[1]
       longMat<-as.data.frame(longMat)
-      covREArray<-array(0,dim=c(nSamples,nClusters,nRandomEffects*(nRandomEffects+1)/2))
-      SigmaLMEArray<-array(0,dim=c(nSamples))
-      RE_LMEArray<-array(0,dim=c(nSamples, nSubjects,nRandomEffects))
+      covREArray<-array(0,dim=c(nSamples,nOutcomes*nRandomEffects[1]*(nRandomEffects[1]+1)/2))# common covRE fow now!
+      SigmaLMEArray<-array(0,dim=c(nSamples,nOutcomes))
+      RE_LMEArray<-array(0,dim=c(nSamples, nOutcomes*nSubjects*nRandomEffects[1]))
 
-      LME_timepoints <- seq(min(longMat$time),max(longMat$time),length.out=40)
-      LMEArray <- array(0,dim=c(nSamples,nClusters,length(LME_timepoints)))
-      riskArray<-array(0,dim=c(nSamples,nClusters))
+      LME_timepoints <- seq(min(longMat[,timevar[1]]),max(longMat[,timevar[1]]),length.out=100)
+      nTimes=length(LME_timepoints)
+      LMEArray <- array(0,dim=c(nSamples,nOutcomes, nClusters,length(LME_timepoints)))
+      riskArray<-array(0,dim=c(nSamples,nClusters,nOutcomes))
     }
-    if(nFixedEffects>0){
-      betaArray<-array(0,dim=c(nSamples,nFixedEffects,nCategoriesY))
+
+    if(nFixedEffects[1]>0){
+      if(timevar[1]%in%fixedEffectsNames[[1]])
+        nFixedEffects <- nFixedEffects+1 #add intercept
+
+      if(min(nFixedEffects)!=max(nFixedEffects))
+        browser() #take unique(FixedEffectsNames)
+      betaArray<-array(0,dim=c(nSamples,nOutcomes*nFixedEffects[1],nCategoriesY))
     }
-    if(nFixedEffects_clust>0){
-      betamixArray<-array(0,dim=c(nSamples,nClusters, nFixedEffects_clust*nCategoriesY))
+    if(nFixedEffects_clust[1]>0){
+      if(timevar[1]%in%fixedEffectsNames_clust[[1]])
+        nFixedEffects_clust <- nFixedEffects_clust+1 #add intercept
+
+      betamixArray<-array(0,dim=c(nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY))
     }
   }else{
     riskArray<-NULL
@@ -282,29 +291,49 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
           currMVNSigma<-matrix(currMVNSigmaVector,nrow=currMaxNClusters,ncol=(nOutcomes+1)*nOutcomes/2,byrow=T)
 
         } else if (yModel=="LME"){
-          currcovREVector<-scan(covREFile,what=double(),skip=skipVal,n=(nRandomEffects+1)*nRandomEffects/2,quiet=T)
-          currcovRE<-matrix(currcovREVector,nrow=1,ncol=(nRandomEffects+1)*nRandomEffects/2,byrow=T)
-          currSigmaLME<-scan(SigmaLMEFile,what=double(),skip=skipVal,n=1,quiet=T)
+          currcovRE <- c() # LLT by marker
+          currRE_LME <- c() #RE by individual, by marker
+          currSigmaLME <- rep(NA,nOutcomes) #sigma_e by marker
+          for(m in 1:nOutcomes){
+            currcovREVector<-scan(covREFile,what=double(),skip=skipVal,n=(nRandomEffects[m]+1)*nRandomEffects[m]/2,quiet=T)
+            currcovRE <- c(currcovRE, currcovREVector)
+            #mat <- matrix(0,nRandomEffects[m],nRandomEffects[m])
+            #mat[upper.tri(mat, diag=T)] <- currcovREVector #t(mat)
+            #mat <- mat + t(mat) - diag(mat)*diag(nRandomEffects[m])
+            #currcovRE[[m]] <- mat
+            currSigmaLME[m]<-scan(SigmaLMEFile,what=double(),skip=skipVal,n=1,quiet=T)
+            currRE_LMEVector<-scan(RE_LMEFile,what=double(),skip=skipVal,n=nSubjects*nRandomEffects[m],quiet=T) # per marker
+            currRE_LME<-c(currRE_LME,currRE_LMEVector)
+          }
+
+          #currcovRE<-matrix(currcovREVector,nrow=1,ncol=(nRandomEffects+1)*nRandomEffects/2,byrow=T)
           #currSigmaLME<-matrix(currSigmaLMEVector,nrow=currMaxNClusters,ncol=1,byrow=T)
-          currRE_LMEVector<-scan(RE_LMEFile,what=double(),skip=skipVal,n=nSubjects*nRandomEffects,quiet=T)
-          currRE_LME<-matrix(currRE_LMEVector,ncol=nRandomEffects,byrow=T)
+          #currRE_LMEVector<-scan(RE_LMEFile,what=double(),skip=skipVal,n=nSubjects*nRandomEffects,quiet=T)
+          #currRE_LME<-matrix(currRE_LMEVector,ncol=nRandomEffects,byrow=T)
         }
       }
-      if(nFixedEffects>0){
+      if(nFixedEffects[1]>0){
         if (yModel=="Categorical") {
-          currBetaVector<-scan(betaFile,what=double(),skip=skipVal,n=nFixedEffects*(nCategoriesY-1),quiet=T)
+          currBetaVector<-scan(betaFile,what=double(),skip=skipVal,n=nFixedEffects[1]*(nCategoriesY-1),quiet=T)
           currBeta<-matrix(currBetaVector,ncol=(nCategoriesY-1),byrow=T)
           currBeta<-cbind(rep(0,dim(currBeta)[1]),currBeta)
         } else {
-          currBetaVector<-scan(betaFile,what=double(),skip=skipVal,n=nFixedEffects*nCategoriesY,quiet=T)
-          currBeta<-matrix(currBetaVector,ncol=nCategoriesY,byrow=T)
+          currBeta <- c() #beta by marker
+          for(m in 1:nOutcomes){
+          currBetaVector<-scan(betaFile,what=double(),skip=skipVal,n=nFixedEffects[1]*nCategoriesY,quiet=T)
+          currBeta<- c(currBeta,currBetaVector)#matrix(currBetaVector,ncol=nCategoriesY,byrow=T)
+          }
         }
         betaArray[sweep-firstLine+1,,]<-currBeta
       }
 
-      if(nFixedEffects_clust>0){
-        currBetamixVector<-scan(betamixFile,what=double(),skip=skipVal,n=nFixedEffects_clust*nCategoriesY*currMaxNClusters,quiet=T)
-        currBetamix<-matrix(currBetamixVector,nrow=currMaxNClusters,ncol=nFixedEffects_clust*nCategoriesY,byrow=T)
+      if(nFixedEffects_clust[1]>0){
+        currBetamix <- matrix(0,nOutcomes,nFixedEffects_clust[1]*nCategoriesY*currMaxNClusters) #beta by marker
+
+        for(m in 1:nOutcomes){
+          currBetamixVector<-scan(betamixFile,what=double(),skip=skipVal,n=nFixedEffects_clust[1]*nCategoriesY*currMaxNClusters,quiet=T)
+          currBetamix[m,]<-currBetamixVector#matrix(currBetamixVector,nrow=currMaxNClusters,ncol=nFixedEffects_clust[1]*nCategoriesY,byrow=T)
+        }
       }
 
       # Calculate the average risk (over subjects) for each cluster
@@ -314,7 +343,7 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
           currLambdaVector<-currTheta[currZ[optAlloc[[c]]],]
           currLambda<-matrix(currLambdaVector,ncol=nCategoriesY)
         }
-        if(includeFixedEffects&&nFixedEffects>0){
+        if(includeFixedEffects&&nFixedEffects[1]>0){
           if (yModel=="Categorical"){
             for (i in 1:length(optAlloc[[c]])){
               for (k in 1:nCategoriesY) currLambda[i,k]<-currLambda[i,k]+
@@ -360,25 +389,42 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
             browser()
         }else if(yModel=="LME"){
           #covREArray[sweep-firstLine+1,c,]<-apply(matrix(currcovRE[currZ[optAlloc[[c]]],],ncol=(nRandomEffects+1)*nRandomEffects/2),2,mean)
-          covREArray[sweep-firstLine+1,c,]<-currcovRE
           if(c==1){
-            SigmaLMEArray[sweep-firstLine+1]<-currSigmaLME
-            RE_LMEArray[sweep-firstLine+1,, ]<-currRE_LME
+            covREArray[sweep-firstLine+1,]<-currcovRE #nSamples,nOutcomes*nRandomEffects*(nRandomEffects+1)/2
+            SigmaLMEArray[sweep-firstLine+1,]<-currSigmaLME
+            RE_LMEArray[sweep-firstLine+1, ]<-currRE_LME#nOutcomes*nSubjects*nRandomEffects[1]
           }
           #ind_time <- which()
           #LMEArray[sweep-firstLine+1,c,] <- apply(matrix(currBetamix[currZ[optAlloc[[c]]],],ncol=nFixedEffects_clust),2,mean)
           IDs <- unique(longMat$ID)
           currIDs <- IDs[optAlloc[[c]]]
-          currRisk<-matrix(longMat$outcome[longMat$ID%in%currIDs] + longMean)
+          currRisk<- list(nOutcomes)
+          for(m in 1:nOutcomes){
+            currRisk[[m]] <- matrix(longMat[longMat$ID%in%currIDs, outcomes[m]])
+          }
+          #currRisk<-matrix(longMat$outcome[longMat$ID%in%currIDs] )#+ longMean
         }
 
-        if(nFixedEffects_clust>0)
-          betamixArray[sweep-firstLine+1,c,] <- apply(matrix(currBetamix[currZ[optAlloc[[c]]],],ncol=nFixedEffects_clust),2,mean)
+        if(nFixedEffects_clust[1]>0)
+          #nOutcomes*nClusters*nFixedEffects_clust[1]*nCategoriesY
+          for(m in 1:nOutcomes){
+            mn <- nOutcomes*(m-1)*currMaxNClusters*nFixedEffects_clust[1]
+            nc <- length(optAlloc[[c]])
+            #matrix(0,nc,nFixedEffects_clust[m])
+            for(j in 1:nFixedEffects_clust[m]){
+              betamix <-currBetamix[m,(nFixedEffects_clust[1])*(1:currMaxNClusters)-(nFixedEffects_clust[1]-j)]
+              betamixArray[sweep-firstLine+1,m,c,j] <- mean(betamix[currZ[optAlloc[[c]]]])#c(nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY)
+            }
+          }
+            #betamixArray[sweep-firstLine+1,m,c,] <- apply(matrix(currBetamix[m,currZ[optAlloc[[c]]]],ncol=nFixedEffects_clust[1]),2,mean)
         if(!is.element(yModel,c("Longitudinal","LME"))){
           thetaArray[sweep-firstLine+1,c,]<-apply(as.matrix(currTheta[currZ[optAlloc[[c]]],],ncol=nCategoriesY),2,mean)
           riskArray[sweep-firstLine+1,c,]<-apply(currRisk,2,mean)
-        }else{
+        }else if(yModel == "Longitudinal"){
           riskArray[sweep-firstLine+1,c]<-mean(currRisk)
+        }else if(yModel == "LME"){
+          for(m in 1:nOutcomes)
+            riskArray[sweep-firstLine+1,c,]<-sapply(1:nOutcomes, function(x) mean(currRisk[[x]], na.rm=T))
         }
         if(yModel=="Survival"&&!weibullFixedShape){
           nuArray[sweep-firstLine+1,c]<-mean(currNuVector)
@@ -528,7 +574,7 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
   }
 
   # Calculate the empiricals
-  empiricals<-rep(0,nClusters)
+  empiricals<-rep(0,nClusters*nOutcomes)
   if(!is.null(yModel)){
     for(c in 1:nClusters){
       if(yModel=='Bernoulli'||yModel=='Normal'||yModel=='Survival'){
@@ -540,7 +586,8 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
         #}else if(yModel=='Categorical'){
         # no empiricals for categorical outcome
       }else if(yModel=="Longitudinal"||yModel=="LME"){##//RJ same as empirical
-        empiricals[c] <- mean(riskArray[,c])
+        for(m in 1:nOutcomes)
+          empiricals[nClusters*(m-1)+c] <- mean(riskArray[,c,m])
       }else if(yModel=="MVN"){
         empiricals[c] <- mean(riskArray[,c,1])
       }
@@ -613,11 +660,11 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
       close(RE_LMEFile)
       out$LMEArray <-LMEArray
     }
-    if(nFixedEffects>0){
+    if(nFixedEffects[1]>0){
       out$betaArray <- betaArray
       close(betaFile)
     }
-    if(nFixedEffects_clust>0){
+    if(nFixedEffects_clust[1]>0){
       out$betamixArray <- betamixArray
       close(betamixFile)
     }
