@@ -269,6 +269,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
     if(yModel=="LME"){
       if(length(which(!fixedEffectsNames[[m]]%in%timevar))>0){
+        browser()
         for(j in 1:length(which(!fixedEffectsNames[[m]]%in%timevar))){
           name <- fixedEffectsNames[[m]][which(!fixedEffectsNames[[m]]%in%timevar)][j]
           longData_FE[[name]] <- rep(fixedEffects[,j],times=nmes)
