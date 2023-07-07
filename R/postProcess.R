@@ -116,7 +116,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
 
   #Verify all participants have at least one observation for each markers
-  if(min(sapply(1:nOutcomes, function(x) length(c(table(longDat[which(!is.na(longDat[,outcome[x]])),idvar])))))<length(IDs))
+  if(min(sapply(1:nOutcomes, function(x) length(c(table(longData[which(!is.na(longData[,outcome[x]])),idvar])))))<length(IDs))
     stop('All participants should have at least one observation for each marker.')
 
 
