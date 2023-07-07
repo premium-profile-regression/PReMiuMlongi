@@ -634,7 +634,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       # Get the plot colors
       muColor<-ifelse(muLower>rep(muMean,length(muLower)),"high",
                       ifelse(muUpper<rep(muMean,length(muUpper)),"low","avg"))
-      muColor<-c("high","avg","low")
+      #muColor<-c("high","avg","low")
       for(c in whichClusters){
         plotMu<-muMat[,c]
         plotMu<-plotMu[plotMu<plotMax&plotMu>plotMin]

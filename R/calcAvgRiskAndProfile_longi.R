@@ -329,7 +329,6 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
 
       if(nFixedEffects_clust[1]>0){
         currBetamix <- matrix(0,nOutcomes,nFixedEffects_clust[1]*nCategoriesY*currMaxNClusters) #beta by marker
-
         for(m in 1:nOutcomes){
           currBetamixVector<-scan(betamixFile,what=double(),skip=skipVal,n=nFixedEffects_clust[1]*nCategoriesY*currMaxNClusters,quiet=T)
           currBetamix[m,]<-currBetamixVector#matrix(currBetamixVector,nrow=currMaxNClusters,ncol=nFixedEffects_clust[1]*nCategoriesY,byrow=T)
