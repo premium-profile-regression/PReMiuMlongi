@@ -1009,9 +1009,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   if(!is.null(timevar)){
-    browser()
-    nFixedEffects = nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames, 1, 0)
-    nFixedEffects_mix = nFixedEffects_mix + ifelse(timevar[1] %in% fixedEffectsNames_clust, 1, 0)
+    nFixedEffects = nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames[[1]], 1, 0)
+    nFixedEffects_mix = nFixedEffects_mix + ifelse(timevar[1] %in% fixedEffectsNames_clust[[1]], 1, 0)
   }
 
   liste<-list("directoryPath"=directoryPath,
