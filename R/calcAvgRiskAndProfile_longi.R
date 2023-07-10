@@ -183,16 +183,16 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
     }
 
     if(nFixedEffects[1]>0){
-      if(timevar[1]%in%fixedEffectsNames[[1]])
-        nFixedEffects <- nFixedEffects+1 #add intercept
+      #if(timevar[1]%in%fixedEffectsNames[[1]])
+        #nFixedEffects <- nFixedEffects+1 #add intercept
 
       if(min(nFixedEffects)!=max(nFixedEffects))
         browser() #take unique(FixedEffectsNames)
       betaArray<-array(0,dim=c(nSamples,nOutcomes*nFixedEffects[1],nCategoriesY))
     }
     if(nFixedEffects_clust[1]>0){
-      if(timevar[1]%in%fixedEffectsNames_clust[[1]])
-        nFixedEffects_clust <- nFixedEffects_clust+1 #add intercept
+      #if(timevar[1]%in%fixedEffectsNames_clust[[1]])
+        #nFixedEffects_clust <- nFixedEffects_clust+1 #add intercept
 
       betamixArray<-array(0,dim=c(nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY))
     }
@@ -399,7 +399,7 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
           currIDs <- IDs[optAlloc[[c]]]
           currRisk<- list(nOutcomes)
           for(m in 1:nOutcomes){
-            currRisk[[m]] <- matrix(longMat[longMat$ID%in%currIDs, outcomes[m]])
+            currRisk[[m]] <- matrix(longMat[longMat$ID%in%currIDs, outcome[m]])
           }
           #currRisk<-matrix(longMat$outcome[longMat$ID%in%currIDs] )#+ longMean
         }
@@ -410,6 +410,7 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
             mn <- nOutcomes*(m-1)*currMaxNClusters*nFixedEffects_clust[1]
             nc <- length(optAlloc[[c]])
             #matrix(0,nc,nFixedEffects_clust[m])
+
             for(j in 1:nFixedEffects_clust[m]){
               betamix <-currBetamix[m,(nFixedEffects_clust[1])*(1:currMaxNClusters)-(nFixedEffects_clust[1]-j)]
               betamixArray[sweep-firstLine+1,m,c,j] <- mean(betamix[currZ[optAlloc[[c]]]])#c(nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY)
