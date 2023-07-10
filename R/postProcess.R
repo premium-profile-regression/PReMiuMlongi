@@ -119,7 +119,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if(min(sapply(1:nOutcomes, function(x) length(c(table(longData[which(!is.na(longData[,outcome[x]])),idvar])))))<length(IDs))
     stop('All participants should have at least one observation for each marker.')
 
-  if (length(which(colnames(data)%in%outcome))<1 || excludeY==TRUE) {
+  if (yModel!="LME" & (length(which(colnames(data)%in%outcome))<1 || excludeY==TRUE)) {
     dataMatrix<-rep(0,dim(data)[1])
     yModel="Bernoulli"
   } else {

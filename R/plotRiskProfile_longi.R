@@ -876,7 +876,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     for(m in 1:nOutcomes){
       GPDF<-data.frame("time"=c(),"mu"=c(),"cluster"=c(),"sigma"=c(),"fillColor"=c())
 
-      yData <- longMat[,outcomes[m]]
+      yData <- longMat[,outcome[m]]
       tTimes <- seq(min(times),max(times),length.out=41)
 
       #times_c <- list()
@@ -887,7 +887,11 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
 
       if(nFixedEffects[m]>0){
         if(nFixedEffects[m]==1){
-          betamean <-  mean(betaArray_m[,1,]) #nSamples,nOutcomes*nFixedEffects[1],nCategoriesY
+          if(nOutcomes>1){
+            betamean <-  mean(betaArray_m[,1,]) #nSamples,nOutcomes*nFixedEffects[1],nCategoriesY
+          }else{
+            betamean <-  matrix(mean(betaArray_m),1,1)
+          }
         }else{
           betamean <-  as.vector(colMeans(betaArray_m))
         }
@@ -901,7 +905,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
         }
 
         if(nFixedEffects[m]==1){
-          mu <- mu + rep(mean(betaArray_m[,1,]) * profile_X[[1]],length(tTimes))
+          mu <- mu + rep(betamean * profile_X[[1]],length(tTimes))
         }else{
           mu <- mu + rep(t(as.matrix(colMeans(betaArray_m),1,4)) %*% t(profile_X[,sapply(fixedEffectsNames[[m]], function(x) which(names(profile_X)==x))]),length(tTimes))
         }
