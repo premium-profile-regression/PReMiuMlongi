@@ -466,7 +466,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       #   write(t(fixedEffectsNames_clust), fileName,append=T,ncolumns=1)
       #}
     }else{
-
       write(nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames, 1, 0),
             fileName,
             append = T,
@@ -1010,6 +1009,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   if(!is.null(timevar)){
+    browser()
     nFixedEffects = nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames, 1, 0)
     nFixedEffects_mix = nFixedEffects_mix + ifelse(timevar[1] %in% fixedEffectsNames_clust, 1, 0)
   }
