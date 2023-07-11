@@ -380,7 +380,6 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
   bool& includeCAR=dataset.includeCAR();
   bool wasError=false;
 
-
   // Get the number of subjects
   inputFile >> nSubjects;
 
@@ -404,6 +403,7 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
       nTimes += nTimes_m[i];
     }
   }
+
   covNames.resize(nCovariates);
   if(covariateType.compare("Mixed")==0){
     inputFile >> nDiscreteCovs;
@@ -475,134 +475,146 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
     }
   }
 
-    // Get the number of categories of outcome Y
-    if(outcomeType.compare("Categorical")==0){
-      inputFile >> nCategoriesY;
-      nCategoriesY--;
-    } else {
-      nCategoriesY=1;
+  if(nOutcomes==0){
+    nFixedEffects.resize(1);
+    nFixedEffects[0]=0;
+    nFixedEffects_mix.resize(1);
+    nFixedEffects_mix[0]=0;
+    nRandomEffects.resize(1);
+    nRandomEffects[0]=0;
+  }
+
+
+  // Get the number of categories of outcome Y
+  if(outcomeType.compare("Categorical")==0){
+    inputFile >> nCategoriesY;
+    nCategoriesY--;
+  } else {
+    nCategoriesY=1;
+  }
+
+  nCategories.resize(nCovariates);
+  if(covariateType.compare("Discrete")==0){
+    // Get the number of categories for each covariate
+    for(unsigned int j=0;j<nCovariates;j++){
+      inputFile >> nCategories[j];
     }
-
-    nCategories.resize(nCovariates);
-    if(covariateType.compare("Discrete")==0){
-      // Get the number of categories for each covariate
-      for(unsigned int j=0;j<nCovariates;j++){
-        inputFile >> nCategories[j];
-      }
-    }else if(covariateType.compare("Normal")==0){
-      for(unsigned int j=0;j<nCovariates;j++){
-        nCategories[j]=0;
-      }
-    }else if(covariateType.compare("Mixed")==0){
-      for(unsigned int j=0;j<nDiscreteCovs;j++){
-        inputFile >> nCategories[j];
-      }
-      for(unsigned int j=nDiscreteCovs;j<nCovariates;j++){
-        nCategories[j]=0;
-      }
+  }else if(covariateType.compare("Normal")==0){
+    for(unsigned int j=0;j<nCovariates;j++){
+      nCategories[j]=0;
     }
-
-    if(predictFile.is_open()){
-      predictFile >> nPredictSubjects;
+  }else if(covariateType.compare("Mixed")==0){
+    for(unsigned int j=0;j<nDiscreteCovs;j++){
+      inputFile >> nCategories[j];
     }
+    for(unsigned int j=nDiscreteCovs;j<nCovariates;j++){
+      nCategories[j]=0;
+    }
+  }
 
-    // Get the data
-    discreteY.resize(nSubjects);
-    //RJ resize Y (nTimes), and times, tStart, and tStop
-    if(outcomeType.compare("MVN")==0)
-      nOutcomes = nTimes/nSubjects;
-    continuousY.resize(nTimes);
-    times.resize(nTimes);
+  if(predictFile.is_open()){
+    predictFile >> nPredictSubjects;
+  }
 
+  // Get the data
+  discreteY.resize(nSubjects);
+  //RJ resize Y (nTimes), and times, tStart, and tStop
+  if(outcomeType.compare("MVN")==0)
+    nOutcomes = nTimes/nSubjects;
+  continuousY.resize(nTimes);
+  times.resize(nTimes);
+
+  if(outcomeType.compare("LME")!=0){
+    tStart.resize(nSubjects);
+    tStop.resize(nSubjects);
+  }else{
+    tStart.resize(nSubjects*nOutcomes);
+    tStop.resize(nSubjects*nOutcomes);
+  }
+  times_corr.resize(nTimes);
+
+  discreteX.resize(nSubjects+nPredictSubjects);
+  continuousX.resize(nSubjects+nPredictSubjects);
+  W.resize(nSubjects);
+  W_mix.resize(nSubjects);
+
+  if(outcomeType.compare("Poisson")==0){
+    logOffset.resize(nSubjects);
+  }
+  if(outcomeType.compare("Binomial")==0){
+    nTrials.resize(nSubjects);
+  }
+  if(outcomeType.compare("Survival")==0){
+    censoring.resize(nSubjects);
+  }
+  missingX.resize(nSubjects+nPredictSubjects);
+  nContinuousCovariatesNotMissing.resize(nSubjects+nPredictSubjects);
+  vector<double> meanX(nCovariates,0);
+  vector<unsigned int> nXNotMissing(nCovariates,0);
+
+
+  for(unsigned int i=0;i<nSubjects;i++){
     if(outcomeType.compare("LME")!=0){
-      tStart.resize(nSubjects);
-      tStop.resize(nSubjects);
-    }else{
-      tStart.resize(nSubjects*nOutcomes);
-      tStop.resize(nSubjects*nOutcomes);
-    }
-    times_corr.resize(nTimes);
-
-    discreteX.resize(nSubjects+nPredictSubjects);
-    continuousX.resize(nSubjects+nPredictSubjects);
-    W.resize(nSubjects);
-    W_mix.resize(nSubjects);
-
-    if(outcomeType.compare("Poisson")==0){
-      logOffset.resize(nSubjects);
-    }
-    if(outcomeType.compare("Binomial")==0){
-      nTrials.resize(nSubjects);
-    }
-    if(outcomeType.compare("Survival")==0){
-      censoring.resize(nSubjects);
-    }
-    missingX.resize(nSubjects+nPredictSubjects);
-    nContinuousCovariatesNotMissing.resize(nSubjects+nPredictSubjects);
-    vector<double> meanX(nCovariates,0);
-    vector<unsigned int> nXNotMissing(nCovariates,0);
-
-
-    for(unsigned int i=0;i<nSubjects;i++){
-      if(outcomeType.compare("LME")!=0){
-        if(outcomeType.compare("Normal")==0||outcomeType.compare("Survival")==0||outcomeType.compare("MVN")==0){
-          for(unsigned int j=0; j<nOutcomes; j++){//RJ read in MVN data
-            inputFile >> continuousY[i*nOutcomes+j];
-          }
-        }else{
-          inputFile >> discreteY[i];
+      if(outcomeType.compare("Normal")==0||outcomeType.compare("Survival")==0||outcomeType.compare("MVN")==0){
+        for(unsigned int j=0; j<nOutcomes; j++){//RJ read in MVN data
+          inputFile >> continuousY[i*nOutcomes+j];
         }
+      }else{
+        inputFile >> discreteY[i];
       }
-      if(covariateType.compare("Discrete")==0 || covariateType.compare("Normal")==0){
-        discreteX[i].resize(nCovariates);
-        continuousX[i].resize(nCovariates);
-      } else if(covariateType.compare("Mixed")==0){
-        discreteX[i].resize(nDiscreteCovs);
-        continuousX[i].resize(nContinuousCovs);
-      }
-      missingX[i].resize(nCovariates);
+    }
+    if(covariateType.compare("Discrete")==0 || covariateType.compare("Normal")==0){
+      discreteX[i].resize(nCovariates);
+      continuousX[i].resize(nCovariates);
+    } else if(covariateType.compare("Mixed")==0){
+      discreteX[i].resize(nDiscreteCovs);
+      continuousX[i].resize(nContinuousCovs);
+    }
+    missingX[i].resize(nCovariates);
 
-      for(unsigned int j=0;j<nCovariates;j++){
-        missingX[i][j]=true;
-        if(covariateType.compare("Discrete")==0){
+    for(unsigned int j=0;j<nCovariates;j++){
+      missingX[i][j]=true;
+      if(covariateType.compare("Discrete")==0){
+        inputFile >> discreteX[i][j];
+        // -999 is missing data indicator
+        if(discreteX[i][j]!=-999){
+          meanX[j]+=(double)discreteX[i][j];
+          nXNotMissing[j]+=1;
+          missingX[i][j]=false;
+        }
+      }else if(covariateType.compare("Normal")==0){
+        inputFile >> continuousX[i][j];
+        // -999 is missing data indicator
+        if(fabs(continuousX[i][j]+999)>0.00000000001){
+          nContinuousCovariatesNotMissing[i]++;
+          meanX[j]+=continuousX[i][j];
+          nXNotMissing[j]+=1;
+          missingX[i][j]=false;
+        }
+      }else if(covariateType.compare("Mixed")==0){
+        if (j < nDiscreteCovs) {
           inputFile >> discreteX[i][j];
-          // -999 is missing data indicator
           if(discreteX[i][j]!=-999){
             meanX[j]+=(double)discreteX[i][j];
             nXNotMissing[j]+=1;
             missingX[i][j]=false;
           }
-        }else if(covariateType.compare("Normal")==0){
-          inputFile >> continuousX[i][j];
-          // -999 is missing data indicator
-          if(fabs(continuousX[i][j]+999)>0.00000000001){
+        } else {
+          inputFile >> continuousX[i][j-nDiscreteCovs];
+          if(fabs(continuousX[i][j-nDiscreteCovs]+999)>0.00000000001){
             nContinuousCovariatesNotMissing[i]++;
-            meanX[j]+=continuousX[i][j];
+            meanX[j]+=continuousX[i][j-nDiscreteCovs];
             nXNotMissing[j]+=1;
             missingX[i][j]=false;
           }
-        }else if(covariateType.compare("Mixed")==0){
-          if (j < nDiscreteCovs) {
-            inputFile >> discreteX[i][j];
-            if(discreteX[i][j]!=-999){
-              meanX[j]+=(double)discreteX[i][j];
-              nXNotMissing[j]+=1;
-              missingX[i][j]=false;
-            }
-          } else {
-            inputFile >> continuousX[i][j-nDiscreteCovs];
-            if(fabs(continuousX[i][j-nDiscreteCovs]+999)>0.00000000001){
-              nContinuousCovariatesNotMissing[i]++;
-              meanX[j]+=continuousX[i][j-nDiscreteCovs];
-              nXNotMissing[j]+=1;
-              missingX[i][j]=false;
-            }
-          }
         }
       }
+    }
 
-      if(outcomeType.compare("LME")!=0){
-        //Read outcomes
+    if(outcomeType.compare("LME")!=0 ){
+      //Read outcomes
+      if(nOutcomes>0){
+
 
         W[i].resize(nFixedEffects[0]);
         //W_mix[i].resize(nFixedEffects_mix);
@@ -613,6 +625,7 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
         // for(unsigned int j=0;j<nFixedEffects_mix;j++){
         //   inputFile >> W_mix[i][j];//used only if Ymodel != LME
         // }
+
         if(outcomeType.compare("Poisson")==0){
           double tmp;
           inputFile >> tmp;
@@ -626,153 +639,153 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
         }
       }
     }
+  }
 
-    //RJ Read in timepoints and longitudinal data
-    if(outcomeType.compare("Longitudinal")==0 || outcomeType.compare("LME")==0){
+  //RJ Read in timepoints and longitudinal data
+  if(outcomeType.compare("Longitudinal")==0 || outcomeType.compare("LME")==0){
 
-      int ind=0;
-      for(unsigned int m=0; m<nOutcomes; m++){
-        for(unsigned int i=0; i<nSubjects; i++){
-          inputFile >> tStart[ind];
-          inputFile >> tStop[ind];
-          ind++;
-        }
-      }
-
-      if(outcomeType.compare("Longitudinal")==0){
-        for(unsigned int i=0; i<nTimes; i++){
-          inputFile >> times[i];
-          inputFile >> continuousY[i];
-        }
-      }else{//LME
-        int dd=0;
-        for(unsigned int m=0; m<nOutcomes; m++){
-          for(unsigned int i=0; i<nTimes_m[m]; i++){
-            inputFile >> times[dd];
-            inputFile >> continuousY[dd];
-            dd++;
-          }
-        }
-      }
-
-      int length = tStop[0] - tStart[0] + 1;
-      equalTimes = length;
-      for(unsigned int i=1; i<nSubjects; i++){
-        if(!std::equal(times.begin(),times.begin()+length,times.begin()+length*i)){
-          equalTimes = 0;
-        }
-      }
-
-      if(outcomeType.compare("LME")==0){
-        W_LME.resize(nOutcomes);
-        for(unsigned int m=0;m<nOutcomes;m++){
-          W_LME[m].setZero(nTimes_m[m],nFixedEffects[m]);
-          for(unsigned int i=0;i<nTimes_m[m];i++){
-            for(unsigned int k=0;k<nFixedEffects[m];k++){
-              inputFile >> W_LME[m](i,k);
-            }
-          }
-        }
-
-        W_LME_mix.resize(nOutcomes);
-        for(unsigned int m=0;m<nOutcomes;m++){
-          W_LME_mix[m].setZero(nTimes_m[m],nFixedEffects_mix[m]);
-          for(unsigned int i=0;i<nTimes_m[m];i++){
-            for(unsigned int k=0;k<nFixedEffects_mix[m];k++){
-              inputFile >> W_LME_mix[m](i,k);
-            }
-          }
-        }
-
-        W_RE.resize(nOutcomes);
-        for(unsigned int m=0;m<nOutcomes;m++){
-          W_RE[m].setZero(nTimes_m[m],nRandomEffects[m]);
-          for(unsigned int i=0;i<nTimes_m[m];i++){
-            for(unsigned int k=0;k<nRandomEffects[m];k++){
-              inputFile >> W_RE[m](i,k);
-            }
-          }
-        }
+    int ind=0;
+    for(unsigned int m=0; m<nOutcomes; m++){
+      for(unsigned int i=0; i<nSubjects; i++){
+        inputFile >> tStart[ind];
+        inputFile >> tStop[ind];
+        ind++;
       }
     }
 
     if(outcomeType.compare("Longitudinal")==0){
-      //AR Read in timepoints and longitudinal data
-      inputFile >> nTimes_unique;
-      times_unique.resize(nTimes_unique);
-      for(unsigned int i=0; i<nTimes_unique; i++){
-        inputFile >> times_unique[i];
-      }
       for(unsigned int i=0; i<nTimes; i++){
-        inputFile >> times_corr[i];
+        inputFile >> times[i];
+        inputFile >> continuousY[i];
+      }
+    }else{//LME
+      int dd=0;
+      for(unsigned int m=0; m<nOutcomes; m++){
+        for(unsigned int i=0; i<nTimes_m[m]; i++){
+          inputFile >> times[dd];
+          inputFile >> continuousY[dd];
+          dd++;
+        }
       }
     }
 
-    for(unsigned int i=nSubjects;i<nSubjects+nPredictSubjects;i++){
-      if(covariateType.compare("Discrete")==0 || covariateType.compare("Normal")==0){
-        discreteX[i].resize(nCovariates);
-        continuousX[i].resize(nCovariates);
-      } else if(covariateType.compare("Mixed")==0){
-        discreteX[i].resize(nDiscreteCovs);
-        continuousX[i].resize(nContinuousCovs);
+    int length = tStop[0] - tStart[0] + 1;
+    equalTimes = length;
+    for(unsigned int i=1; i<nSubjects; i++){
+      if(!std::equal(times.begin(),times.begin()+length,times.begin()+length*i)){
+        equalTimes = 0;
       }
-      missingX[i].resize(nCovariates);
-      for(unsigned int j=0;j<nCovariates;j++){
-        missingX[i][j]=true;
-        if(covariateType.compare("Discrete")==0){
+    }
+
+    if(outcomeType.compare("LME")==0){
+      W_LME.resize(nOutcomes);
+      for(unsigned int m=0;m<nOutcomes;m++){
+        W_LME[m].setZero(nTimes_m[m],nFixedEffects[m]);
+        for(unsigned int i=0;i<nTimes_m[m];i++){
+          for(unsigned int k=0;k<nFixedEffects[m];k++){
+            inputFile >> W_LME[m](i,k);
+          }
+        }
+      }
+
+      W_LME_mix.resize(nOutcomes);
+      for(unsigned int m=0;m<nOutcomes;m++){
+        W_LME_mix[m].setZero(nTimes_m[m],nFixedEffects_mix[m]);
+        for(unsigned int i=0;i<nTimes_m[m];i++){
+          for(unsigned int k=0;k<nFixedEffects_mix[m];k++){
+            inputFile >> W_LME_mix[m](i,k);
+          }
+        }
+      }
+
+      W_RE.resize(nOutcomes);
+      for(unsigned int m=0;m<nOutcomes;m++){
+        W_RE[m].setZero(nTimes_m[m],nRandomEffects[m]);
+        for(unsigned int i=0;i<nTimes_m[m];i++){
+          for(unsigned int k=0;k<nRandomEffects[m];k++){
+            inputFile >> W_RE[m](i,k);
+          }
+        }
+      }
+    }
+  }
+
+  if(outcomeType.compare("Longitudinal")==0){
+    //AR Read in timepoints and longitudinal data
+    inputFile >> nTimes_unique;
+    times_unique.resize(nTimes_unique);
+    for(unsigned int i=0; i<nTimes_unique; i++){
+      inputFile >> times_unique[i];
+    }
+    for(unsigned int i=0; i<nTimes; i++){
+      inputFile >> times_corr[i];
+    }
+  }
+
+  for(unsigned int i=nSubjects;i<nSubjects+nPredictSubjects;i++){
+    if(covariateType.compare("Discrete")==0 || covariateType.compare("Normal")==0){
+      discreteX[i].resize(nCovariates);
+      continuousX[i].resize(nCovariates);
+    } else if(covariateType.compare("Mixed")==0){
+      discreteX[i].resize(nDiscreteCovs);
+      continuousX[i].resize(nContinuousCovs);
+    }
+    missingX[i].resize(nCovariates);
+    for(unsigned int j=0;j<nCovariates;j++){
+      missingX[i][j]=true;
+      if(covariateType.compare("Discrete")==0){
+        predictFile >> discreteX[i][j];
+        // -999 is missing data indicator
+        if(discreteX[i][j]!=-999){
+          missingX[i][j]=false;
+        }
+      }else if(covariateType.compare("Normal")==0){
+        predictFile >> continuousX[i][j];
+        // -999 is missing data indicator
+        if(fabs(continuousX[i][j]+999)>0.00000000001){
+          nContinuousCovariatesNotMissing[i]++;
+          missingX[i][j]=false;
+        }
+      }else if(covariateType.compare("Mixed")==0){
+        if (j < nDiscreteCovs) {
           predictFile >> discreteX[i][j];
-          // -999 is missing data indicator
           if(discreteX[i][j]!=-999){
             missingX[i][j]=false;
           }
-        }else if(covariateType.compare("Normal")==0){
-          predictFile >> continuousX[i][j];
-          // -999 is missing data indicator
-          if(fabs(continuousX[i][j]+999)>0.00000000001){
+        } else {
+          predictFile >> continuousX[i][j-nDiscreteCovs];
+          if(fabs(continuousX[i][j-nDiscreteCovs]+999)>0.00000000001){
             nContinuousCovariatesNotMissing[i]++;
             missingX[i][j]=false;
           }
+        }
+      }
+    }
+  }
+
+  /// Initially we just replace missing values by their means
+  for(unsigned int j=0;j<nCovariates;j++){
+    meanX[j]=meanX[j]/(double)nXNotMissing[j];
+  }
+
+
+  for(unsigned int i=0;i<nSubjects+nPredictSubjects;i++){
+    for(unsigned int j=0;j<nCovariates;j++){
+      if(missingX[i][j]){
+        if(covariateType.compare("Discrete")==0){
+          discreteX[i][j]=(int)meanX[j];
+        }else if(covariateType.compare("Normal")==0){
+          continuousX[i][j]=meanX[j];
         }else if(covariateType.compare("Mixed")==0){
           if (j < nDiscreteCovs) {
-            predictFile >> discreteX[i][j];
-            if(discreteX[i][j]!=-999){
-              missingX[i][j]=false;
-            }
-          } else {
-            predictFile >> continuousX[i][j-nDiscreteCovs];
-            if(fabs(continuousX[i][j-nDiscreteCovs]+999)>0.00000000001){
-              nContinuousCovariatesNotMissing[i]++;
-              missingX[i][j]=false;
-            }
-          }
-        }
-      }
-    }
-
-
-    /// Initially we just replace missing values by their means
-    for(unsigned int j=0;j<nCovariates;j++){
-      meanX[j]=meanX[j]/(double)nXNotMissing[j];
-    }
-
-    for(unsigned int i=0;i<nSubjects+nPredictSubjects;i++){
-      for(unsigned int j=0;j<nCovariates;j++){
-        if(missingX[i][j]){
-          if(covariateType.compare("Discrete")==0){
             discreteX[i][j]=(int)meanX[j];
-          }else if(covariateType.compare("Normal")==0){
-            continuousX[i][j]=meanX[j];
-          }else if(covariateType.compare("Mixed")==0){
-            if (j < nDiscreteCovs) {
-              discreteX[i][j]=(int)meanX[j];
-            } else {
-              continuousX[i][j-nDiscreteCovs]=(double)meanX[j-nDiscreteCovs];
-            }
+          } else {
+            continuousX[i][j-nDiscreteCovs]=(double)meanX[j-nDiscreteCovs];
           }
         }
       }
     }
-
+  }
     inputFile.close();
     if(predictFile.is_open()){
       predictFile.close();
@@ -815,14 +828,14 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
       neighFile.close();
     }
 
-    // Return if there was an error
-    if(wasError){
-      Rprintf("Please use:\n");
-      Rprintf("\t profileRegression --help\n");
-      Rprintf("to get help on correct usage.\n");
-      //	exit(-1);
-    }
+  // Return if there was an error
+  if(wasError){
+    Rprintf("Please use:\n");
+    Rprintf("\t profileRegression --help\n");
+    Rprintf("to get help on correct usage.\n");
+    //	exit(-1);
   }
+}
 
 // Function to read the hyper parameters from file
 void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperParams, unsigned int nOutcomes){
@@ -2878,9 +2891,9 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
               proposalParams.lambdaAnyUpdates(false);
             }
             *(outFiles[sigmaEpsilonInd]) << 1.0/sqrt(params.tauEpsilon()) << endl;
+          }else{
+            printf("responseExtraVar not possible with yModel = LME.");
           }
-        }else{
-          printf("responseExtraVar not possible with yModel = LME.");
         }
       }
     }

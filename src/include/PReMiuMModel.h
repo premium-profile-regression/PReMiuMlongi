@@ -3578,7 +3578,7 @@ double logPYiGivenZiWiSurvival(const pReMiuMParams& params, const pReMiuMData& d
 vector<double> pReMiuMLogPost(const pReMiuMParams& params,
                               const mcmcModel<pReMiuMParams,
                                               pReMiuMOptions,
-                                               pReMiuMData>& model){
+                                              pReMiuMData>& model){
   const pReMiuMData& dataset = model.dataset();
   const string outcomeType = model.dataset().outcomeType();
   const string kernelType = model.options().kernelType(); //AR
@@ -3717,276 +3717,277 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
         logLikelihood+= temp;
       }
     }
+  }
 
-    // Now need to add in the prior (i.e. p(z,params) in above notation)
-    // Note we integrate out u and all parameters in Theta with no members
+  // Now need to add in the prior (i.e. p(z,params) in above notation)
+  // Note we integrate out u and all parameters in Theta with no members
 
-    // Prior for z
-    for(unsigned int i=0;i<nSubjects;i++){
-      int zi = params.z(i);
-      logPrior+=params.logPsi(zi);
-    }
+  // Prior for z
+  for(unsigned int i=0;i<nSubjects;i++){
+    int zi = params.z(i);
+    logPrior+=params.logPsi(zi);
+  }
 
 
-    // Prior for V (we only need to include these up to maxNCluster, but we do need
-    // to include all V, whether or not a cluster is empty, as the V themselves
-    //don't correspond to a cluster
+  // Prior for V (we only need to include these up to maxNCluster, but we do need
+  // to include all V, whether or not a cluster is empty, as the V themselves
+  //don't correspond to a cluster
+  for(unsigned int c=0;c<maxNClusters;c++){
+    logPrior+=logPdfBeta(params.v(c),1.0-params.dPitmanYor(),params.alpha()+params.dPitmanYor()*(c+1));
+  }
+
+  if(std::isinf(logPrior)){
+    //for(unsigned int c=0;c<maxNClusters;c++){
+    //  foutL <<c << " v " << params.v(c) << " pitmanyor " <<params.dPitmanYor() << " alpha "<< params.alpha()<<endl;
+    //}
+  }
+  // Prior for alpha
+  if(fixedAlpha<=-1){
+    logPrior+=logPdfGamma(params.alpha(),hyperParams.shapeAlpha(),hyperParams.rateAlpha());
+  }
+
+  // Prior for phi
+  if(covariateType.compare("Discrete")==0){
+    // If covariate type is discrete
     for(unsigned int c=0;c<maxNClusters;c++){
-      logPrior+=logPdfBeta(params.v(c),1.0-params.dPitmanYor(),params.alpha()+params.dPitmanYor()*(c+1));
-    }
-
-    if(std::isinf(logPrior)){
-      //for(unsigned int c=0;c<maxNClusters;c++){
-      //  foutL <<c << " v " << params.v(c) << " pitmanyor " <<params.dPitmanYor() << " alpha "<< params.alpha()<<endl;
-      //}
-    }
-    // Prior for alpha
-    if(fixedAlpha<=-1){
-      logPrior+=logPdfGamma(params.alpha(),hyperParams.shapeAlpha(),hyperParams.rateAlpha());
-    }
-
-    // Prior for phi
-    if(covariateType.compare("Discrete")==0){
-      // If covariate type is discrete
-      for(unsigned int c=0;c<maxNClusters;c++){
-        if(params.workNXInCluster(c)>0){
-          for(unsigned int j=0;j<nCovariates;j++){
-            // We use a Dirichlet prior
-            vector<double> dirichParams(nCategories[j]);
-            for(unsigned int k=0;k<nCategories[j];k++){
-              dirichParams[k]=hyperParams.aPhi(j);
-            }
-            logPrior+=logPdfDirichlet(params.logPhi(c,j),dirichParams,true);
-          }
-        }
-      }
-    }else if(covariateType.compare("Normal")==0){
-      // If covariate type is Normal
-      // Add in the prior for mu_c and Sigma_c for each c
-      for(unsigned int c=0;c<maxNClusters;c++){
-        if(params.workNXInCluster(c)>0){
-          if (useNormInvWishPrior){
-            logPrior+=logPdfMultivarNormal(nCovariates,params.mu(c),hyperParams.mu0(),hyperParams.nu0()*params.Tau(c),nCovariates*hyperParams.nu0()+params.workLogDetTau(c));
-          }else{
-            logPrior+=logPdfMultivarNormal(nCovariates,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
-          }
-          logPrior+= logPdfWishart(nCovariates, params.Tau(c), params.workLogDetTau(c), hyperParams.workInverseR0(), hyperParams.workLogDetR0(), (double)hyperParams.kappa0());
-        }
-      }
-
-    }else if(covariateType.compare("Mixed")==0){
-      // If covariate type is discrete
-      for(unsigned int c=0;c<maxNClusters;c++){
-        if(params.workNXInCluster(c)>0){
-          for(unsigned int j=0;j<nDiscreteCov;j++){
-            // We use a Dirichlet prior
-            vector<double> dirichParams(nCategories[j]);
-            for(unsigned int k=0;k<nCategories[j];k++){
-              dirichParams[k]=hyperParams.aPhi(j);
-            }
-            logPrior+=logPdfDirichlet(params.logPhi(c,j),dirichParams,true);
-          }
-
-          if (useNormInvWishPrior){
-            logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.nu0()*params.Tau(c),nContinuousCov*hyperParams.nu0()+params.workLogDetTau(c));
-          }else{
-            logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
-          }
-          logPrior+=logPdfWishart(nContinuousCov,params.Tau(c),params.workLogDetTau(c),hyperParams.workInverseR0(),hyperParams.workLogDetR0(),(double)hyperParams.kappa0());
-        }
-      }
-    }
-
-    // Prior for variable selection parameters
-    if(varSelectType.compare("None")!=0){
-      if(varSelectType.compare("BinaryCluster")==0){
+      if(params.workNXInCluster(c)>0){
         for(unsigned int j=0;j<nCovariates;j++){
-          if(params.rho(j)>0){
-            for(unsigned int c=0;c<maxNClusters;c++){
-              if(params.workNXInCluster(c)>0){
-                logPrior+=params.gamma(c,j)*log(params.rho(j))+(1.0-params.gamma(c,j))*log(1.0-params.rho(j));
-              }
-            }
+          // We use a Dirichlet prior
+          vector<double> dirichParams(nCategories[j]);
+          for(unsigned int k=0;k<nCategories[j];k++){
+            dirichParams[k]=hyperParams.aPhi(j);
           }
+          logPrior+=logPdfDirichlet(params.logPhi(c,j),dirichParams,true);
         }
       }
-
-      // We can add in the prior for rho and omega
-      logPrior+=log(hyperParams.atomRho());
-      for(unsigned int j=0;j<nCovariates;j++){
-        if(params.omega(j)==1){
-          logPrior+=logPdfBeta(params.rho(j),hyperParams.aRho(),hyperParams.bRho());
+    }
+  }else if(covariateType.compare("Normal")==0){
+    // If covariate type is Normal
+    // Add in the prior for mu_c and Sigma_c for each c
+    for(unsigned int c=0;c<maxNClusters;c++){
+      if(params.workNXInCluster(c)>0){
+        if (useNormInvWishPrior){
+          logPrior+=logPdfMultivarNormal(nCovariates,params.mu(c),hyperParams.mu0(),hyperParams.nu0()*params.Tau(c),nCovariates*hyperParams.nu0()+params.workLogDetTau(c));
+        }else{
+          logPrior+=logPdfMultivarNormal(nCovariates,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
         }
+        logPrior+= logPdfWishart(nCovariates, params.Tau(c), params.workLogDetTau(c), hyperParams.workInverseR0(), hyperParams.workLogDetR0(), (double)hyperParams.kappa0());
       }
-
     }
 
-    if(includeResponse){
-
-      if(outcomeType.compare("Longitudinal")!=0 && outcomeType.compare("LME")!=0){
-        // Prior for theta
-        // We use a location/scale t distribution
-        // http://www.mathworks.com/help/toolbox/stats/brn2ivz-145.html
-        // as per Molitor et al. 2008 (from Gelman et al. 2008)
-        // This is different from Papathomas who uses a normal
-        for(unsigned int c=0;c<maxNClusters;c++){
-          if(params.workNXInCluster(c)>0){
-            for (unsigned int k=0;k<nCategoriesY;k++){
-              logPrior+=logPdfLocationScaleT(params.theta(c,k),hyperParams.muTheta(),
-                                             hyperParams.sigmaTheta(),hyperParams.dofTheta());
-            }
+  }else if(covariateType.compare("Mixed")==0){
+    // If covariate type is discrete
+    for(unsigned int c=0;c<maxNClusters;c++){
+      if(params.workNXInCluster(c)>0){
+        for(unsigned int j=0;j<nDiscreteCov;j++){
+          // We use a Dirichlet prior
+          vector<double> dirichParams(nCategories[j]);
+          for(unsigned int k=0;k<nCategories[j];k++){
+            dirichParams[k]=hyperParams.aPhi(j);
           }
-        }
-      }
-
-      // Prior for beta
-      // There were no fixed effects in the Molitor paper but to be consistent with
-      // theta we use the same distribution (based on same reasoning).
-      // Note we should pre-process variables to standardise the fixed effects to
-      // have 0 mean and standard dev of 0.5
-      for (unsigned int m=0;m<nOutcomes;m++){
-        for(unsigned int j=0;j<nFixedEffects[m];j++){
-          for (unsigned int k=0;k<nCategoriesY;k++){
-            if(outcomeType.compare("LME")!=0){
-              logPrior+=logPdfLocationScaleT(params.beta(0, j, k, nCategoriesY),hyperParams.muBeta(),
-                                             hyperParams.sigmaBeta(),hyperParams.dofBeta());
-            }else{
-              logPrior+=logPdfNormal(params.beta(m, j, k, nCategoriesY),hyperParams.muBeta(),
-                                     hyperParams.sigmaBeta());
-            }
-          }
+          logPrior+=logPdfDirichlet(params.logPhi(c,j),dirichParams,true);
         }
 
-        for(unsigned int j=0;j<nFixedEffects_mix[m];j++){
-          for(unsigned int c=0;c<maxNClusters;c++){
-            for (unsigned int k=0;k<nCategoriesY;k++){
-              //if(outcomeType.compare("LME")!=0){
-              logPrior+=logPdfLocationScaleT(params.beta_mix(m, c, j, k, nCategoriesY),hyperParams.muBeta(),
-                                             hyperParams.sigmaBeta(),hyperParams.dofBeta());
-              //}else{
-              // logPrior+=logPdfNormal(params.beta_mix(c, j+k*nFixedEffects_mix),hyperParams.muBeta(),
-              //                        hyperParams.sigmaBeta());
-              //}
-            }
-          }
+        if (useNormInvWishPrior){
+          logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.nu0()*params.Tau(c),nContinuousCov*hyperParams.nu0()+params.workLogDetTau(c));
+        }else{
+          logPrior+=logPdfMultivarNormal(nContinuousCov,params.mu(c),hyperParams.mu0(),hyperParams.workSqrtTau0(),hyperParams.workLogDetTau0());
         }
-      }
-
-
-
-
-      // Take account priors for epsilon and tauEpsilon if there is extra variation
-      if(responseExtraVar){
-        double sigma = 1.0/sqrt(params.tauEpsilon());
-        for(unsigned int i=0;i<nSubjects;i++){
-          logPrior+=logPdfNormal(extraVarPriorVal[i],extraVarPriorMean[i],sigma);
-        }
-        logPrior+=logPdfGamma(params.tauEpsilon(),hyperParams.shapeTauEpsilon(),
-                              hyperParams.rateTauEpsilon());
-      }
-
-      if(outcomeType.compare("Normal")==0){
-        double tau = 1.0/params.sigmaSqY();
-        logPrior+=logPdfGamma(tau,hyperParams.shapeSigmaSqY(),hyperParams.scaleSigmaSqY());
-      }
-
-      if(outcomeType.compare("Survival")==0){
-        if (weibullFixedShape){
-          logPrior+=logPdfGamma(params.nu(0),hyperParams.shapeNu(),hyperParams.scaleNu());
-        } else {
-          for (unsigned int c=0;c<maxNClusters;c++) {
-            logPrior+=logPdfGamma(params.nu(c),hyperParams.shapeNu(),hyperParams.scaleNu());
-          }
-        }
-      }
-
-      //RJ add up prior for L
-      if(outcomeType.compare("Longitudinal")==0){
-        for(unsigned int c=0;c<maxNClusters;c++){
-          unsigned int nL;
-          if(kernelType.compare("SQexponential")==0){    //AR
-            nL=3;
-          }else{
-            nL=4;
-          }
-
-          for(unsigned int l=0;l<nL;l++){
-            if(hyperParams.sigmaL(l)>0)
-              logPrior+= logPdfNormal(params.L(c,l),hyperParams.muL(l),
-                                      hyperParams.sigmaL(l));
-          }
-
-          if(model.options().sampleGPmean()){//AR
-            double a =logPdfMultivariateNormal(params.meanGP(c),params.L(c), dataset.times_unique(), kernelType);
-            logPrior+= a;
-            //if(logPrior>pow(10,10))
-            //  foutL << c <<" logPrior7_f  "<< logPrior << " a "<< a <<endl;
-
-            if(a>pow(10,10)){
-              std::cout << c <<" writeoutput "<<endl;
-              std::cout << " p(f|L) "<< a << " logPrior "<< logPrior <<endl;
-              std::cout << "L "<<params.L(c,0) << " "<<params.L(c,1) << " "<<params.L(c,2) << " "<<endl;
-              std::cout << " meanGP "<<endl;
-              for(unsigned int l=0;l<dataset.times_unique().size();l++)
-                std::cout << params.meanGP(c,l)<<" ";
-              std::cout << endl;
-            }
-          }
-        }
-      }
-
-      if(outcomeType.compare("MVN")==0){
-        for(unsigned int c=0;c<maxNClusters;c++){
-          //logPrior+=logPdfMultivarNormal(nOutcomes,params.MVNmu(c),hyperParams.MVNmu0(),hyperParams.MVNkappa0()*params.MVNTau(c),nOutcomes*hyperParams.MVNkappa0()+params.workLogDetMVNTau(c));
-          //logPrior+=logPdfWishart(nOutcomes,params.MVNTau(c),params.workLogDetMVNTau(c),hyperParams.workInverseMVNR0(),hyperParams.workLogDetMVNR0(),(double)hyperParams.MVNnu0());
-          logPrior += logPdfNIW(nOutcomes, hyperParams.workInverseMVNR0(), hyperParams.workLogDetMVNR0(), params.MVNTau(c), -params.workLogDetMVNTau(c), hyperParams.MVNkappa0(), hyperParams.MVNnu0(), params.MVNmu(c),hyperParams.MVNmu0());
-        }
-      }
-
-      if(outcomeType.compare("LME")==0){
-        vector<unsigned int> nRandomEffects=dataset.nRandomEffects();
-        for(unsigned int m=0;m<nOutcomes;m++){
-          for(unsigned int c=0;c<maxNClusters;c++){
-            //     //logPrior+=logPdfMultivarNormal(nOutcomes,params.MVNmu(c),hyperParams.MVNmu0(),hyperParams.MVNkappa0()*params.MVNTau(c),nOutcomes*hyperParams.MVNkappa0()+params.workLogDetMVNTau(c));
-            logPrior+= logPdfInverseWishart(nRandomEffects[m], params.covRE(m,0), -params.workLogDetTauLME(m,0), hyperParams.SigmaLME_R0(m),
-                                            -hyperParams.workLogDetTauLME_R0(m),(double)hyperParams.SigmaLME_kappa0(m));
-            // double logPdfInverseWishart(const unsigned int& dimA, const MatrixXd& A, const double& logDetA, const MatrixXd& covR,
-            // const double& logDetR, const double& kappa){
-            // MatrixXd work = covR*A.inverse();
-            // return 0.5*(kappa*logDetR-(kappa+(double)dimA+1)*logDetA-work.trace())
-            //   - (0.5*kappa*(double)dimA*log(2.0)+logMultivarGammaFn(kappa/2.0,dimA));
-
-
-            //MatrixXd Tau = params.covRE(c).inverse();
-            //logPrior+=logPdfWishart(dataset.nRandomEffects(), Tau, params.workLogDetMVNTau(c)
-          }
-          logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
-                                  hyperParams.eps_scale()); //Gamma(shape,rate=1/scale)
-
-          for(unsigned int i=0;i<nSubjects;i++){
-            //unsigned int zi = params.z(i);
-            VectorXd RE=params.RandomEffects(m,i);
-            VectorXd mu;
-            mu.setZero(nRandomEffects[m]);
-            logPrior +=  logPdfMultivarNormal(RE.size(),RE,mu,params.workSqrtTauLME(m,0),params.workLogDetTauLME(m,0));
-          }
-        }
-
-        //logPrior += logPdfNormal(params.SigmaE(),hyperParams.muSigmaE(),
-        //                         hyperParams.sigmaSigmaE());
-        //logPrior += logPdfScaleInvChiSquare(params.SigmaE(),hyperParams.eps_vu(),
-        //                          hyperParams.eps_sigma2_0());
-
-
-      }
-
-      // Prior for TauCAR and UCAR
-      if (includeCAR){
-        logPrior+=logPdfGamma(params.TauCAR(),hyperParams.shapeTauCAR(),hyperParams.rateTauCAR());
-        logPrior+=logPdfIntrinsicCAR(params.uCAR(), dataset.neighbours() , params.TauCAR());
+        logPrior+=logPdfWishart(nContinuousCov,params.Tau(c),params.workLogDetTau(c),hyperParams.workInverseR0(),hyperParams.workLogDetR0(),(double)hyperParams.kappa0());
       }
     }
   }
+
+  // Prior for variable selection parameters
+  if(varSelectType.compare("None")!=0){
+    if(varSelectType.compare("BinaryCluster")==0){
+      for(unsigned int j=0;j<nCovariates;j++){
+        if(params.rho(j)>0){
+          for(unsigned int c=0;c<maxNClusters;c++){
+            if(params.workNXInCluster(c)>0){
+              logPrior+=params.gamma(c,j)*log(params.rho(j))+(1.0-params.gamma(c,j))*log(1.0-params.rho(j));
+            }
+          }
+        }
+      }
+    }
+
+    // We can add in the prior for rho and omega
+    logPrior+=log(hyperParams.atomRho());
+    for(unsigned int j=0;j<nCovariates;j++){
+      if(params.omega(j)==1){
+        logPrior+=logPdfBeta(params.rho(j),hyperParams.aRho(),hyperParams.bRho());
+      }
+    }
+
+  }
+
+  if(includeResponse){
+
+    if(outcomeType.compare("Longitudinal")!=0 && outcomeType.compare("LME")!=0){
+      // Prior for theta
+      // We use a location/scale t distribution
+      // http://www.mathworks.com/help/toolbox/stats/brn2ivz-145.html
+      // as per Molitor et al. 2008 (from Gelman et al. 2008)
+      // This is different from Papathomas who uses a normal
+      for(unsigned int c=0;c<maxNClusters;c++){
+        if(params.workNXInCluster(c)>0){
+          for (unsigned int k=0;k<nCategoriesY;k++){
+            logPrior+=logPdfLocationScaleT(params.theta(c,k),hyperParams.muTheta(),
+                                           hyperParams.sigmaTheta(),hyperParams.dofTheta());
+          }
+        }
+      }
+    }
+
+    // Prior for beta
+    // There were no fixed effects in the Molitor paper but to be consistent with
+    // theta we use the same distribution (based on same reasoning).
+    // Note we should pre-process variables to standardise the fixed effects to
+    // have 0 mean and standard dev of 0.5
+    for (unsigned int m=0;m<nOutcomes;m++){
+      for(unsigned int j=0;j<nFixedEffects[m];j++){
+        for (unsigned int k=0;k<nCategoriesY;k++){
+          if(outcomeType.compare("LME")!=0){
+            logPrior+=logPdfLocationScaleT(params.beta(0, j, k, nCategoriesY),hyperParams.muBeta(),
+                                           hyperParams.sigmaBeta(),hyperParams.dofBeta());
+          }else{
+            logPrior+=logPdfNormal(params.beta(m, j, k, nCategoriesY),hyperParams.muBeta(),
+                                   hyperParams.sigmaBeta());
+          }
+        }
+      }
+
+      for(unsigned int j=0;j<nFixedEffects_mix[m];j++){
+        for(unsigned int c=0;c<maxNClusters;c++){
+          for (unsigned int k=0;k<nCategoriesY;k++){
+            //if(outcomeType.compare("LME")!=0){
+            logPrior+=logPdfLocationScaleT(params.beta_mix(m, c, j, k, nCategoriesY),hyperParams.muBeta(),
+                                           hyperParams.sigmaBeta(),hyperParams.dofBeta());
+            //}else{
+            // logPrior+=logPdfNormal(params.beta_mix(c, j+k*nFixedEffects_mix),hyperParams.muBeta(),
+            //                        hyperParams.sigmaBeta());
+            //}
+          }
+        }
+      }
+    }
+
+
+
+
+    // Take account priors for epsilon and tauEpsilon if there is extra variation
+    if(responseExtraVar){
+      double sigma = 1.0/sqrt(params.tauEpsilon());
+      for(unsigned int i=0;i<nSubjects;i++){
+        logPrior+=logPdfNormal(extraVarPriorVal[i],extraVarPriorMean[i],sigma);
+      }
+      logPrior+=logPdfGamma(params.tauEpsilon(),hyperParams.shapeTauEpsilon(),
+                            hyperParams.rateTauEpsilon());
+    }
+
+    if(outcomeType.compare("Normal")==0){
+      double tau = 1.0/params.sigmaSqY();
+      logPrior+=logPdfGamma(tau,hyperParams.shapeSigmaSqY(),hyperParams.scaleSigmaSqY());
+    }
+
+    if(outcomeType.compare("Survival")==0){
+      if (weibullFixedShape){
+        logPrior+=logPdfGamma(params.nu(0),hyperParams.shapeNu(),hyperParams.scaleNu());
+      } else {
+        for (unsigned int c=0;c<maxNClusters;c++) {
+          logPrior+=logPdfGamma(params.nu(c),hyperParams.shapeNu(),hyperParams.scaleNu());
+        }
+      }
+    }
+
+    //RJ add up prior for L
+    if(outcomeType.compare("Longitudinal")==0){
+      for(unsigned int c=0;c<maxNClusters;c++){
+        unsigned int nL;
+        if(kernelType.compare("SQexponential")==0){    //AR
+          nL=3;
+        }else{
+          nL=4;
+        }
+
+        for(unsigned int l=0;l<nL;l++){
+          if(hyperParams.sigmaL(l)>0)
+            logPrior+= logPdfNormal(params.L(c,l),hyperParams.muL(l),
+                                    hyperParams.sigmaL(l));
+        }
+
+        if(model.options().sampleGPmean()){//AR
+          double a =logPdfMultivariateNormal(params.meanGP(c),params.L(c), dataset.times_unique(), kernelType);
+          logPrior+= a;
+          //if(logPrior>pow(10,10))
+          //  foutL << c <<" logPrior7_f  "<< logPrior << " a "<< a <<endl;
+
+          if(a>pow(10,10)){
+            std::cout << c <<" writeoutput "<<endl;
+            std::cout << " p(f|L) "<< a << " logPrior "<< logPrior <<endl;
+            std::cout << "L "<<params.L(c,0) << " "<<params.L(c,1) << " "<<params.L(c,2) << " "<<endl;
+            std::cout << " meanGP "<<endl;
+            for(unsigned int l=0;l<dataset.times_unique().size();l++)
+              std::cout << params.meanGP(c,l)<<" ";
+            std::cout << endl;
+          }
+        }
+      }
+    }
+
+    if(outcomeType.compare("MVN")==0){
+      for(unsigned int c=0;c<maxNClusters;c++){
+        //logPrior+=logPdfMultivarNormal(nOutcomes,params.MVNmu(c),hyperParams.MVNmu0(),hyperParams.MVNkappa0()*params.MVNTau(c),nOutcomes*hyperParams.MVNkappa0()+params.workLogDetMVNTau(c));
+        //logPrior+=logPdfWishart(nOutcomes,params.MVNTau(c),params.workLogDetMVNTau(c),hyperParams.workInverseMVNR0(),hyperParams.workLogDetMVNR0(),(double)hyperParams.MVNnu0());
+        logPrior += logPdfNIW(nOutcomes, hyperParams.workInverseMVNR0(), hyperParams.workLogDetMVNR0(), params.MVNTau(c), -params.workLogDetMVNTau(c), hyperParams.MVNkappa0(), hyperParams.MVNnu0(), params.MVNmu(c),hyperParams.MVNmu0());
+      }
+    }
+
+    if(outcomeType.compare("LME")==0){
+      vector<unsigned int> nRandomEffects=dataset.nRandomEffects();
+      for(unsigned int m=0;m<nOutcomes;m++){
+        for(unsigned int c=0;c<maxNClusters;c++){
+          //     //logPrior+=logPdfMultivarNormal(nOutcomes,params.MVNmu(c),hyperParams.MVNmu0(),hyperParams.MVNkappa0()*params.MVNTau(c),nOutcomes*hyperParams.MVNkappa0()+params.workLogDetMVNTau(c));
+          logPrior+= logPdfInverseWishart(nRandomEffects[m], params.covRE(m,0), -params.workLogDetTauLME(m,0), hyperParams.SigmaLME_R0(m),
+                                          -hyperParams.workLogDetTauLME_R0(m),(double)hyperParams.SigmaLME_kappa0(m));
+          // double logPdfInverseWishart(const unsigned int& dimA, const MatrixXd& A, const double& logDetA, const MatrixXd& covR,
+          // const double& logDetR, const double& kappa){
+          // MatrixXd work = covR*A.inverse();
+          // return 0.5*(kappa*logDetR-(kappa+(double)dimA+1)*logDetA-work.trace())
+          //   - (0.5*kappa*(double)dimA*log(2.0)+logMultivarGammaFn(kappa/2.0,dimA));
+
+
+          //MatrixXd Tau = params.covRE(c).inverse();
+          //logPrior+=logPdfWishart(dataset.nRandomEffects(), Tau, params.workLogDetMVNTau(c)
+        }
+        logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
+                                hyperParams.eps_scale()); //Gamma(shape,rate=1/scale)
+
+        for(unsigned int i=0;i<nSubjects;i++){
+          //unsigned int zi = params.z(i);
+          VectorXd RE=params.RandomEffects(m,i);
+          VectorXd mu;
+          mu.setZero(nRandomEffects[m]);
+          logPrior +=  logPdfMultivarNormal(RE.size(),RE,mu,params.workSqrtTauLME(m,0),params.workLogDetTauLME(m,0));
+        }
+      }
+
+      //logPrior += logPdfNormal(params.SigmaE(),hyperParams.muSigmaE(),
+      //                         hyperParams.sigmaSigmaE());
+      //logPrior += logPdfScaleInvChiSquare(params.SigmaE(),hyperParams.eps_vu(),
+      //                          hyperParams.eps_sigma2_0());
+
+
+    }
+
+    // Prior for TauCAR and UCAR
+    if (includeCAR){
+      logPrior+=logPdfGamma(params.TauCAR(),hyperParams.shapeTauCAR(),hyperParams.rateTauCAR());
+      logPrior+=logPdfIntrinsicCAR(params.uCAR(), dataset.neighbours() , params.TauCAR());
+    }
+  }
+
 
   vector<double> outVec(3);
   outVec[0]=logLikelihood+logPrior;
@@ -3994,7 +3995,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
   outVec[2]=logPrior;
 
   //std::cout << " logLikelihood "<<logLikelihood <<  " logPrior "<<logPrior<<std::endl;
-   return outVec;
+  return outVec;
 }
 
 
