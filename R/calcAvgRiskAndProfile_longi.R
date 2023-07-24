@@ -413,7 +413,8 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
 
             for(j in 1:nFixedEffects_clust[m]){
               betamix <-currBetamix[m,(nFixedEffects_clust[1])*(1:currMaxNClusters)-(nFixedEffects_clust[1]-j)]
-              betamixArray[sweep-firstLine+1,m,c,j] <- mean(betamix[currZ[optAlloc[[c]]]])#c(nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY)
+              betamixArray[sweep-firstLine+1,m,c,j] <- mean(betamix[currZ[optAlloc[[c]]]])#apply(matrix(currBetamix[m,currZ[optAlloc[[c]]]],ncol=nFixedEffects_clust[1]),2,mean)
+              #betamixArray[m,c,j] <- betamixArray[m,c,j] + sum(betamix[currZ[optAlloc[[c]]]])#c(nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY)
             }
           }
             #betamixArray[sweep-firstLine+1,m,c,] <- apply(matrix(currBetamix[m,currZ[optAlloc[[c]]]],ncol=nFixedEffects_clust[1]),2,mean)
@@ -573,6 +574,10 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
     }
   }
 
+  # for(m in 1:nOutcomes){
+  #   for(c in 1:nClusters)
+  #     betamixArray[m,c,] <- betamixArray[m,c,]/(length(optAlloc[[c]])*nSweeps)
+  # }
   # Calculate the empiricals
   empiricals<-rep(0,nClusters*nOutcomes)
   if(!is.null(yModel)){

@@ -67,6 +67,10 @@ using std::cout;
 
 RcppExport SEXP profRegr(SEXP inputString) {
 
+
+  //ofstream myfile;
+  //myfile.open ("oucacoince.txt");
+
   string inputStr = Rcpp::as<string>(inputString);
 
   /* ---------- Start the timer ------------------*/
@@ -113,10 +117,12 @@ RcppExport SEXP profRegr(SEXP inputString) {
 
     pReMiuMData dataset = pReMiuMSampler.model().dataset();
 
+
     /* ---------- Add the proposals -------- */
     // Set the proposal parameters
     pReMiuMPropParams proposalParams(options.nSweeps(), dataset.nCovariates(), //dataset.nOutcomes(),
                                      dataset.nFixedEffects(),dataset.nCategoriesY(),dataset.kernelType());
+
     pReMiuMSampler.proposalParams(proposalParams);
 
     // The gibbs update for the active V
@@ -320,7 +326,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
         pReMiuMSampler.addProposal("gibbsForMVNTauInActive",1.0,1,1,&gibbsForMVNTauInActive);
       }
       if(options.outcomeType().compare("LME")==0){
-        //pReMiuMSampler.addProposal("gibbsForCovRELMEInActive",1.0,1,1,&gibbsForCovRELMEInActive);
+        pReMiuMSampler.addProposal("gibbsForCovRELMEInActive",1.0,1,1,&gibbsForCovRELMEInActive);
         pReMiuMSampler.addProposal("gibbsForBetaInActive",1.0,1,1,&gibbsForBetaInActive);
       }
     }

@@ -37,6 +37,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # suppress scientific notation
   options(scipen=999)
 
+  longData0<-longData
+
   if (xModel=="Mixed"){
     covNames <- c(discreteCovs, continuousCovs)
     nDiscreteCovs <- length(discreteCovs)
@@ -83,8 +85,10 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     if(sum(IDs %in% data$ID)!=length(IDs)){
       stop("ID values in data and longData do not match.")
     }
-    data <- data[with(data, order(ID)), ]
-    longData <- longData[with(longData, order(ID)), ]
+    if(yModel!="LME"){
+      data <- data[with(data, order(ID)), ]
+      longData <- longData[with(longData, order(ID)), ]
+    }
   }
 
   #if(yModel == "LME" & missing(formula))
@@ -232,7 +236,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     }
 
     longData_FE <- data.frame("ID"=longData$ID)# for LME
-    nmes<- c(table(longData_FE$ID))
+    nmes<- sapply(unique(longData_FE$ID), function(x) length(which(longData_FE$ID==x)))
     # fixed effects
     if(nOutcomes == 1 )
       fixedEffectsNames <- list(fixedEffectsNames)
@@ -590,8 +594,11 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   if(!is.null(longData)){
+    order_ID <- 1:length(unique(longData$ID))
+    longData$IDADD <- sapply(longData$ID, function(x) order_ID[which(unique(longData$ID)==x)])
     longData$timeADD <- longData[[timevar[1]]]
-    longData <- longData[with(longData, order(ID, timeADD)), ]
+
+    longData <- longData[with(longData, order(IDADD, timeADD)), ]
     longData <- longData[,-dim(longData)[2]]
 
     id_YnoNA <- c()
@@ -659,7 +666,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
         for(m in 1:nOutcomes){
           wMat_RE<-data.frame("intercept"=rep(1,dim(longData)[1]))#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
-          if(length(randomEffectsNames[[m]])>1)
+          if(length(randomEffectsNames[[m]])>0)
             wMat_RE<-data.frame("intercept"=rep(1,dim(randomEffects)[1]),randomEffects)#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
           write(t(wMat_RE[id_YnoNA[[m]],]), fileName,append=T, ncolumns=dim(wMat_RE)[2])
         }

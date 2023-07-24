@@ -1625,7 +1625,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
 
     MatrixXd  workTauLME_R02 = hyperParams.workTauLME_R0(m);
-    MatrixXd workTauLME_R0inv = workTauLME_R02.inverse();
 
     MatrixXd Rc=(workTauLME_R02.inverse()+S).inverse();
     Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
@@ -1644,7 +1643,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     //std::cout << " det Tau.inv "<<Tau.determinant()<<endl;
 
       for(unsigned int c=0;c<=maxZ;c++)
-        currentParams.covRE(m,c, Tau.inverse());
+       currentParams.covRE(m,c, Tau.inverse());
 
 
     // Update Random effects
@@ -1672,6 +1671,8 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         }
       }
 
+
+
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
       MatrixXd sigmae=MatrixXd::Identity(ni, ni) * currentParams.SigmaE(m);
 
@@ -1686,6 +1687,18 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       MatrixXd cov = currentParams.covRE(m,0) - currentParams.covRE(m,0)*block.transpose()*Vi_inv*block*currentParams.covRE(m,0);
 
       ui = multivarNormalRand(rndGenerator,mu,cov);
+
+      if(i<10)
+        std::cout << i <<" yi "<<yi.transpose()<<endl
+                 << " block "<<block<<endl
+                 << " covRE "<<currentParams.covRE(m,0)<<endl
+                 << " V " << V<<endl
+                 << " Vi_inv " << Vi_inv<<endl
+                 << " mu " << mu.transpose()<<endl
+                 << " cov "<<cov <<endl
+                 << " SigmaE "<<currentParams.SigmaE(m)<<endl
+                 << " beta "<<currentParams.beta(m,0,0,nCategoriesY)<<endl
+                 <<  " zi "  << zi <<" betamix "<< currentParams.beta_mix(m,zi,0,0,nCategoriesY) << " "<< currentParams.beta_mix(m,zi,1,0,nCategoriesY)<<endl;
       currentParams.RandomEffects(m,i,ui);
 
       if(i==(nSubjects-1))
@@ -1715,8 +1728,9 @@ void gibbsForCovRELMEInActive(mcmcChain<pReMiuMParams>& chain,
   unsigned int nOutcomes = dataset.nOutcomes();
   for(unsigned int m=0;m<nOutcomes;m++){
     for(unsigned int c=maxZ+1;c<currentParams.maxNClusters();c++){
-      MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m)); //added
-      currentParams.covRE(m,c, Tau.inverse());
+      //MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m)); //added
+      MatrixXd cov=currentParams.covRE(m,0);
+      currentParams.covRE(m,c, cov);
     }
   }
 }
@@ -3219,61 +3233,59 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
     for(unsigned int b=0;b<(nFixedEffects[m] + nFixedEffects_mix[m]);b++){
 
-      unsigned int mm = 0;
-      unsigned int nT = 0;
-      while (mm<m){
-        nT += nTimes_m[mm];
-        mm++;
-      }
+      if(b<nFixedEffects[m]){
 
-      MatrixXd S2;
-      S2.setZero(1,1);
-      MatrixXd S;
-      S.setZero(1,1);
-
-      for(unsigned int i=0;i<nSubjects;i++){
-
-        int zi   = currentParams.z(i);
-        int nmes = (tStop[nSubjects*m+i] - tStart[nSubjects*m+i] + 1);
-        MatrixXd   Xi(nmes, nFixedEffects[m]+nFixedEffects_mix[m]-1); // Xi\{\beta}
-        VectorXd Xib(nmes); // Xi{\beta}
-        VectorXd Yi(nmes); // XY{\beta}
-
-        for(unsigned int j=0;j<nmes;j++){
-
-          Yi(j) = y[nT + tStart[nSubjects*m+i]-1+j];
-
-          for(unsigned int bb=0;bb<nFixedEffects[m];bb++){
-            if(bb!=b)
-              Yi(j) -= currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
-          }
-
-          for(unsigned int bb=0;bb<nFixedEffects_mix[m];bb++){
-            if((bb+nFixedEffects[m])!=b)
-              Yi(j) -= currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
-          }
-
-
-          if(b < nFixedEffects[m]){
-            Xib(j) = dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,b);
-          }else{
-            Xib(j) = dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,b-nFixedEffects[m]);
-          }
+        unsigned int mm = 0;
+        unsigned int nT = 0;
+        while (mm<m){
+          nT += nTimes_m[mm];
+          mm++;
         }
 
-        //std::cout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
-        //std::cout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
+        MatrixXd S2;
+        S2.setZero(1,1);
+        MatrixXd S;
+        S.setZero(1,1);
 
-        //std::cout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
+        for(unsigned int i=0;i<nSubjects;i++){
 
-        MatrixXd block=dataset.W_RE(m,tStart[nSubjects*m+i]-1, 0, tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1 , dataset.nRandomEffects(m));
-        Yi -= block*currentParams.RandomEffects(m,i);
+          int zi   = currentParams.z(i);
+          int nmes = (tStop[nSubjects*m+i] - tStart[nSubjects*m+i] + 1);
+          MatrixXd   Xi(nmes, nFixedEffects[m]+nFixedEffects_mix[m]-1); // Xi\{\beta}
+          VectorXd Xib(nmes); // Xi{\beta}
+          VectorXd Yi(nmes); // XY{\beta}
+
+          for(unsigned int j=0;j<nmes;j++){
+
+            Yi(j) = y[nT + tStart[nSubjects*m+i]-1+j];
+
+            for(unsigned int bb=0;bb<nFixedEffects[m];bb++){
+              if(bb!=b)
+                Yi(j) -= currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
+            }
+
+            for(unsigned int bb=0;bb<nFixedEffects_mix[m];bb++){
+              if((bb+nFixedEffects[m])!=b)
+                Yi(j) -= currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
+            }
+
+            Xib(j) = dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,b);
+
+          }
+
+          //std::cout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
+          //std::cout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
+
+          //std::cout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
+
+          MatrixXd block=dataset.W_RE(m,tStart[nSubjects*m+i]-1, 0, tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1 , dataset.nRandomEffects(m));
+          Yi -= block*currentParams.RandomEffects(m,i);
 
 
-        S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
-        S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
+          S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
+          S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
 
-      }
+        }
 
         S2(0,0) += 1/sigma2beta;
         S2(0,0) = 1 / S2(0,0);
@@ -3286,21 +3298,85 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
         double betaProp = S(0,0)+pow(S2(0,0),0.5)*normRand(rndGenerator);
 
-        if(b<nFixedEffects[m]){
-          currentParams.beta(m,b,0,nCategoriesY,betaProp);
-        }else{
 
-          for(unsigned int c=0;c<=maxZ;c++){
-            betaProp = S(0,0)+pow(S2(0,0),0.5)*normRand(rndGenerator);
-            currentParams.beta_mix(m,c,b-nFixedEffects[m],0, nCategoriesY, betaProp);
+        currentParams.beta(m,b,0,nCategoriesY,betaProp);
+
+      }else{
+
+        unsigned int mm = 0;
+        unsigned int nT = 0;
+        while (mm<m){
+          nT += nTimes_m[mm];
+          mm++;
+        }
+
+
+        for(unsigned int c=0;c<=maxZ;c++){
+
+          MatrixXd S2;
+          S2.setZero(1,1);
+          MatrixXd S;
+          S.setZero(1,1);
+
+          for(unsigned int i=0;i<nSubjects;i++){
+
+            int zi   = currentParams.z(i);
+
+            if(zi==c){
+
+              int nmes = (tStop[nSubjects*m+i] - tStart[nSubjects*m+i] + 1);
+              MatrixXd   Xi(nmes, nFixedEffects[m]+nFixedEffects_mix[m]-1); // Xi\{\beta}
+              VectorXd Xib(nmes); // Xi{\beta}
+              VectorXd Yi(nmes); // XY{\beta}
+
+              for(unsigned int j=0;j<nmes;j++)
+                Yi(j) = y[nT + tStart[nSubjects*m+i]-1+j];
+
+              for(unsigned int j=0;j<nmes;j++){
+                for(unsigned int bb=0;bb<nFixedEffects[m];bb++){
+                  if(bb!=b)
+                    Yi(j) -= currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
+                }
+              }
+
+              for(unsigned int j=0;j<nmes;j++){
+                for(unsigned int bb=0;bb<nFixedEffects_mix[m];bb++){
+                  if((bb+nFixedEffects[m])!=b)
+                    Yi(j) -= currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
+                 }
+
+
+                Xib(j) = dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,b-nFixedEffects[m]);
+
+              }
+              //std::cout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
+              //std::cout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
+
+              //std::cout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
+
+              MatrixXd block=dataset.W_RE(m,tStart[nSubjects*m+i]-1, 0, tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1 , dataset.nRandomEffects(m));
+              Yi -= block*currentParams.RandomEffects(m,i);
+
+              S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
+              S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
+            }
           }
-          for(unsigned int c=(maxZ+1);c<maxNClusters;c++){
-            double betaProp = mu_b+pow(sigma2beta,0.5)*normRand(rndGenerator);
+
+          S2(0,0) += 1/sigma2beta;
+          S2(0,0) = 1 / S2(0,0);
+
+
+
+          S(0,0) *=S2(0,0);
+
+          double betaProp = S(0,0)+pow(S2(0,0),0.5)*normRand(rndGenerator);
+
             currentParams.beta_mix(m,c,b-nFixedEffects[m],0, nCategoriesY, betaProp);
-          }
+
         }
       }
     }
+  }
 
   // for(unsigned int m=0;m<nOutcomes;m++){
   //   for(unsigned int b=0;b<nFixedEffects[m];b++)
@@ -3387,6 +3463,9 @@ void metropolisHastingsForBeta(mcmcChain<pReMiuMParams>& chain,
       }
     }
   }
+
+
+
 
   // std::cout << " nTry nFixedEffects_mix "<<nTry<<std::endl;
   // for(unsigned int j=0;j<nFixedEffects_mix;j++)
@@ -4219,22 +4298,40 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
 
       ntot += nmes;
 
-        for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
-          Yi(j) = y[ind_y + tStart[ind]-1+j];
+      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+        Yi(j) = y[ind_y + tStart[ind]-1+j];
+      }
 
-          for(unsigned int b=0;b<nFixedEffects[m];b++){
-            Yi(j) -= currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
-          }
-          for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-            Yi(j) -= currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
-          }
+      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+        for(unsigned int b=0;b<nFixedEffects[m];b++){
+          Yi(j) -= currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
         }
+      }
+
+      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+        for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
+          Yi(j) -= currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
+        }
+      }
+
+
+
+      // for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+      //   Yi(j) = y[ind_y + tStart[ind]-1+j];
+      //
+      //   for(unsigned int b=0;b<nFixedEffects[m];b++){
+      //     Yi(j) -= currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
+      //   }
+      //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
+      //     Yi(j) -= currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
+      //   }
+      // }
 
 
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, tStop[ind]-tStart[ind]+1 , dataset.nRandomEffects(m));
       Yi -= block*currentParams.RandomEffects(m,i);
-      S2 += Yi.transpose()*Yi;
 
+      S2 += Yi.transpose()*Yi;
       if(i==(nSubjects-1))
         ind_y += ntot;
 
@@ -4242,25 +4339,21 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
     }
 
 
-      S2 /=2.0;
-      double ntot2 = ntot/2.0;
-      double shape_post = currentParams.hyperParams().eps_shape() + ntot/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
+    S2 /=2.0;
+    double shape_post = currentParams.hyperParams().eps_shape() + ntot/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
 
-      //(double)((double ntot)/2.0)
-      //double scale_post = 2*currentParams.hyperParams().eps_rate()/(2 + S2*currentParams.hyperParams().eps_rate());
-      double scale_post = 1.0/(currentParams.hyperParams().eps_scale() + S2);
+    //(double)((double ntot)/2.0)
+    //double scale_post = 2*currentParams.hyperParams().eps_rate()/(2 + S2*currentParams.hyperParams().eps_rate());
+    double scale_post = 1.0/(1.0/currentParams.hyperParams().eps_scale() + S2);
 
-      randomGamma gammaRand(shape_post, scale_post); //gammaRand(shape, scale=1/rate)
-      double temp = gammaRand(rndGenerator);
+    randomGamma gammaRand(shape_post, scale_post); //gammaRand(shape, scale=1/rate)
+    double temp = gammaRand(rndGenerator);
 
-      double epsilon = 1.0/temp;
-
-      currentParams.SigmaE(m,epsilon);
-      // Define a inverse gamma random number generator
-      //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
+    double epsilon = 1.0/temp;
+    // Define a inverse gamma random number generator
+    //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
 
     currentParams.SigmaE(m,epsilon);// variance
-
   }
 }
 
@@ -5042,12 +5135,6 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
     currentParams.z(i,zi,covariateType);
 
-    // if(i<130){
-    //   currentParams.z(i,0,covariateType);
-    // }else{
-    //   currentParams.z(i,1,covariateType);
-    // }
-
     //AR Compute again sizek, yk and timeskfor z(i) and currentParams.z(i)
     if(outcomeType.compare("Longitudinal")==0 && zi!=origZi && !model.options().sampleGPmean() ){//AR change !model.options().sampleGPmean()
 
@@ -5121,7 +5208,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
 
 
-  for(unsigned int m=0;m<dataset.nOutcomes();m++){
+  //for(unsigned int m=0;m<dataset.nOutcomes();m++){
     // for(unsigned int b=0;b<nFixedEffects[m];b++)
     // std::cout << m << " b : "<< b << " beta "<<currentParams.beta(m,b, 0, dataset.nCategoriesY())<<endl;
     // std::cout << m << " covRE : "<<endl<<currentParams.covRE(m,0)<<endl;
@@ -5132,10 +5219,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
     //     std::cout << m <<  " c "<< c << " b : "<< b << " beta "<<currentParams.beta_mix(m, c,b,0,dataset.nCategoriesY())<<endl;
     // }
 
-    if(responseExtraVar)
-      std::cout<< " extraVar "<<responseExtraVar<<endl;
-
-  }
+  //}
 
 
 
