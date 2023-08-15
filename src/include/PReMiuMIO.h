@@ -786,6 +786,7 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
       }
     }
   }
+
     inputFile.close();
     if(predictFile.is_open()){
       predictFile.close();
@@ -1978,7 +1979,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
         for(unsigned int c=0;c<maxNClusters;c++){
           MatrixXd Tauinv = Tau.inverse();
           params.covRE(m,c, Tauinv);
-          MatrixXd covRE=params.covRE(m,c);
+          //MatrixXd covRE=params.covRE(m,c);
           //_workLogDetTauLME(m,c)=-log(cov.determinant());
           //_workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
 
@@ -1986,6 +1987,8 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
           LLT<MatrixXd> llt;
           params.workSqrtTauLME(m,c,(llt.compute(Tau)).matrixU());
         }
+
+
 
         // Initialise random effects
         for(unsigned int i=0;i<nSubjects;i++){
@@ -2025,6 +2028,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
           ui = multivarNormalRand(rndGenerator,mu,cov);
           params.RandomEffects(m,i,ui);
+
           ind ++;
         }
 
@@ -2176,6 +2180,146 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   //   //params.RandomEffects(m,i)
   // }
 
+  if(2<1 & nOutcomes ==1 ){
+    int zi;
+    ifstream inputFile;
+
+    string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui2_500.txt";
+
+
+    inputFile.open(fitFilename.c_str());
+    for (unsigned int i=0; i<nSubjects; i++ ){
+      if(i<251){
+        zi=0;
+      }else{
+        zi=1;
+      }
+
+      params.z(i,zi,covariateType);
+
+      VectorXd ui(2);
+      inputFile >>ui(0);
+      inputFile >>ui(1);
+      params.RandomEffects(0,i,ui);
+    }
+    inputFile.close();
+    params.beta(0,0,0,nCategoriesY,2.45);
+    params.beta_mix(0,0,0,0, nCategoriesY, 20.71);
+    params.beta_mix(0,0,1,0, nCategoriesY, -1.00 );
+    params.beta_mix(0,1,0,0, nCategoriesY, 29.39);
+    params.beta_mix(0,1,1,0, nCategoriesY, 0.13);
+
+
+    MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
+    Rfixed.setZero();
+    Rfixed(0,0)=4.50;
+    Rfixed(1,0)=0.36;
+    Rfixed(0,1)=0.36;
+    Rfixed(1,1)=0.79;
+
+    for(unsigned int c=0;c<=maxZ;c++)
+      params.covRE(0,c, Rfixed);
+
+    double epsilon=1.0;
+    // Define a inverse gamma random number generator
+    //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
+
+    params.SigmaE(0,epsilon);// variance
+
+  }else if(2<1 & nOutcomes == 2){
+
+    int zi;
+    ifstream inputFile;
+
+    string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui_M2_G2_R3_500.txt";
+
+
+    inputFile.open(fitFilename.c_str());
+    for (unsigned int i=0; i<nSubjects; i++ ){
+      if(i<253){
+        zi=0;
+      }else{
+        zi=1;
+      }
+
+      params.z(i,zi,covariateType);
+
+      for (unsigned int m=0; m<nOutcomes; m++ ){
+        VectorXd ui(3);
+        inputFile >>ui(0);
+        inputFile >>ui(1);
+        inputFile >>ui(2);
+        params.RandomEffects(m,i,ui);
+      }
+    }
+    inputFile.close();
+    params.beta(0,0,0,nCategoriesY,1);
+    params.beta_mix(0,0,0,0, nCategoriesY, 3);
+    params.beta_mix(0,0,1,0, nCategoriesY, -0.2);
+    params.beta_mix(0,0,2,0, nCategoriesY, 0.2);
+
+    params.beta_mix(0,1,0,0, nCategoriesY, -2);
+    params.beta_mix(0,1,1,0, nCategoriesY, 0.3);
+    params.beta_mix(0,1,2,0, nCategoriesY, -0.2);
+
+    params.beta(1,0,0,nCategoriesY,-1);
+    params.beta_mix(1,0,0,0, nCategoriesY, -3);
+    params.beta_mix(1,0,1,0, nCategoriesY, 0.3 );
+    params.beta_mix(1,0,2,0, nCategoriesY, -0.2);
+
+    params.beta_mix(1,1,0,0, nCategoriesY, 2);
+    params.beta_mix(1,1,1,0, nCategoriesY, -0.3);
+    params.beta_mix(1,1,2,0, nCategoriesY, 0.3);
+
+
+    MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
+    Rfixed.setZero();
+    Rfixed(0,0)=2.5;
+    Rfixed(0,1)=0.8;
+    Rfixed(0,2)=-0.29;
+    Rfixed(1,0)=0.8;
+    Rfixed(1,1)=1.1;
+    Rfixed(1,2)=0.4;
+    Rfixed(2,0)=-0.29;
+    Rfixed(2,1)=0.4;
+    Rfixed(2,2)=0.5;
+
+    for(unsigned int c=0;c<=maxZ;c++)
+      params.covRE(0,c, Rfixed);
+
+    Rfixed.setZero();
+    Rfixed(0,0)=1.5;
+    Rfixed(0,1)=-0.8;
+    Rfixed(0,2)=-0.24;
+    Rfixed(1,0)=-0.8;
+    Rfixed(1,1)=1.12;
+    Rfixed(1,2)=0.01;
+    Rfixed(2,0)=-0.24;
+    Rfixed(2,1)=0.01;
+    Rfixed(2,2)=0.1;
+
+    for(unsigned int c=0;c<=maxZ;c++)
+      params.covRE(1,c, Rfixed);
+
+    double epsilon=0.3;
+    params.SigmaE(0,epsilon);// variance
+    epsilon=0.5;
+    params.SigmaE(1,epsilon);// variance
+
+    params.mu(0,0);
+    params.mu(0,3);
+    MatrixXd Tau(1,1);
+    Tau(0,0)=1.0;
+    params.Tau(0,Tau);
+    params.Tau(1,Tau);
+
+    // cout << " params.logPhi "<<params.logPhi().size()<<endl;
+    // vector<double> phi(1);
+    // phi[0]=log(0.3);
+    // params.logPhi(0,0,phi);
+    // phi[0]=log(0.7);
+    // params.logPhi(1,0,phi);
+  }
 }
 
 

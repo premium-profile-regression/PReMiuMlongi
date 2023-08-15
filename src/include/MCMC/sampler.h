@@ -560,13 +560,13 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 				if(unifRand(_rndGenerator)<it->proposalWeight()){
 
 					// Update the chain state
+					//if( ind != 4 &ind != 5 & ind != 6  & ind != 7& ind != 16){
+					//std::cout<<"prop " << it->proposalName().c_str()<<endl;
 
-					//std::cout<<"prop " << it->proposalName().c_str();
-				  //if(ind<2){
 
 				    it->updateParameters(_chain,_model,_rndGenerator);
 				    //std::cout << " done "<<endl;
-				    //}
+				  //}
 
 					ind++;
 				}

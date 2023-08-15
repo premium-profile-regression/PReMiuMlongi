@@ -3390,6 +3390,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
 
   unsigned int sum_ind_m = 0;
   unsigned int curr_i=0;
+
   for(unsigned int m=0; m<nOutcomes; m++){
     unsigned nmes_m=0;
 
