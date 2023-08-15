@@ -541,6 +541,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     }
   }
 
+
   # Create a bar chart of cluster empiricals
   if((!is.null(yModel))){
     if(yModel!="Categorical"){
@@ -710,6 +711,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
         theme(plot.margin=unit(c(0.5,ifelse(j==nCovariates,1,0),0.5,ifelse(j==1,0.5,0)),'lines'))+
         theme(plot.margin=unit(c(0,0,0,0),'lines'))
       print(plotObj,vp=viewport(layout.pos.row=4:6,layout.pos.col=j+plotRiskFlag))
+
     }else if(xModel=='Mixed'){
       if (j<=nDiscreteCovs){
         profileDF<-data.frame("prob"=c(),"cluster"=c(),"category"=c(),"meanProb"=c(),
@@ -867,6 +869,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
   }
   dev.off()
 
+
   if(yModel=='LME'){
 
     longMat$time <- longMat[,timevar[1]]
@@ -883,15 +886,12 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       #yData_c <- list()
       mu <- rep(0,length(tTimes))
 
-      betaArray_m <-betaArray[,nFixedEffects[1]*(m-1)+1:nFixedEffects[1],]#per marker, per j
+      betaArray_m <-betaArray[,nFixedEffects[m]*(m-1)+1:nFixedEffects[m],]#per marker, per j
 
       if(nFixedEffects[m]>0){
         if(nFixedEffects[m]==1){
-          if(nOutcomes>1){
-            betamean <-  mean(betaArray_m[,1,]) #nSamples,nOutcomes*nFixedEffects[1],nCategoriesY
-          }else{
+            #betamean <-  mean(betaArray_m[,1,]) #nSamples,nOutcomes*nFixedEffects[1],nCategoriesY
             betamean <-  matrix(mean(betaArray_m),1,1)
-          }
         }else{
           betamean <-  as.vector(colMeans(betaArray_m))
         }
@@ -962,17 +962,29 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       grid.newpage()
       pushViewport(viewport(layout = plotLayout))
 
-      plotObj <- ggplot(GPDF)
+      GPDF_ind <- data.frame("id"=c(),"x"=c(), "y"=c(), "cluster"=c())
+      indi=1
       for(i in 1:nSubjects){
-        df <- (data.frame(x=times[tMat[indi,1]:tMat[indi,2]],y=yData[tMat[indi,1]:tMat[indi,2]],cluster=rep(clustering[i],tMat[indi,2]-tMat[indi,1]+1)))
-        if(bycol){
-          #  if(clustering[i]==2)
-          plotObj <- plotObj + geom_line(data=df,aes(x,y,colour=as.factor(cluster)),alpha = 0.3)#colour='azure4')
-        }else{
-          plotObj <- plotObj + geom_line(data=df,aes(x,y),colour='azure4')
-        }
+        GPDF_ind <- rbind(GPDF_ind,(data.frame(id=rep(i,tMat[indi,2]-tMat[indi,1]+1),x=times[tMat[indi,1]:tMat[indi,2]],y=yData[tMat[indi,1]:tMat[indi,2]],cluster=rep(clustering[i],tMat[indi,2]-tMat[indi,1]+1))))
         indi = indi+1
       }
+
+
+      plotObj <- ggplot(GPDF)
+      #plotObj2 <- ggplot(dsim1)
+      plotObj <- plotObj + geom_line(data = GPDF_ind, aes(x=x,y=y,group=id,colour=as.factor(cluster)))
+      #plotObj <- plotObj + geom_line(data = df, aes(x=time,y=traj),colour="blue")
+
+      # for(i in 1:nSubjects){
+      #   df <- (data.frame(x=times[tMat[indi,1]:tMat[indi,2]],y=yData[tMat[indi,1]:tMat[indi,2]],cluster=rep(clustering[i],tMat[indi,2]-tMat[indi,1]+1)))
+      #   if(bycol){
+      #     #  if(clustering[i]==2)
+      #     plotObj <- plotObj + geom_line(data=df,aes(x,y,colour=as.factor(cluster)),alpha = 0.3)#colour='azure4')
+      #   }else{
+      #     plotObj <- plotObj + geom_line(data=df,aes(x,y),colour='azure4')
+      #   }
+      #   indi = indi+1
+      # }
       plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
       plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
       plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
@@ -1102,7 +1114,6 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
         plot_p1b <- plot_grid(p1b,p2, align= 'h', axis='b', rel_widths = c(1,2))
         print(plot_p1b,vp=viewport(layout.pos.row=1,layout.pos.col=1))
         dev.off()
-        browser()
       }
     }
   }

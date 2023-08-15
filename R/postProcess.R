@@ -127,7 +127,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     nOutcomes <-0
   }
 
-
   if (yModel!="LME" & (length(which(colnames(data)%in%outcome))<1 || excludeY==TRUE)) {
     dataMatrix<-rep(0,dim(data)[1])
     yModel="Bernoulli"
@@ -136,7 +135,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     if(!(yModel %in% c("LME","Longitudinal"))){
       dataMatrix<-data[,sapply(1:length(outcome), function(x) which(colnames(data)==outcome[x]))]
     }else{
-      dataMatrix<-rep(0,dim(data)[1])
+      dataMatrix<-matrix(0,dim(data)[1], nOutcomes)
     }
   }
 

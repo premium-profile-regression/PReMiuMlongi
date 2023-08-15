@@ -320,8 +320,8 @@ calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportional
         } else {
           currBeta <- c() #beta by marker
           for(m in 1:nOutcomes){
-          currBetaVector<-scan(betaFile,what=double(),skip=skipVal,n=nFixedEffects[1]*nCategoriesY,quiet=T)
-          currBeta<- c(currBeta,currBetaVector)#matrix(currBetaVector,ncol=nCategoriesY,byrow=T)
+            currBetaVector<-scan(betaFile,what=double(),skip=skipVal,n=nFixedEffects[1]*nCategoriesY,quiet=T)
+            currBeta<- c(currBeta,currBetaVector)#matrix(currBetaVector,ncol=nCategoriesY,byrow=T)
           }
         }
         betaArray[sweep-firstLine+1,,]<-currBeta
