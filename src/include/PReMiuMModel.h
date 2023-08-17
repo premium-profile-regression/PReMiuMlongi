@@ -3403,13 +3403,14 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         yi.resize(ni_m);
         for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++){
           yi(j) = y[sum_ind_m + tStart[curr_i]-1+j];
-
+        }
+        for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++){
           for(unsigned int b=0;b<nFixedEffects[m];b++)
             yi(j)-=params.beta(m,b, 0, nCategoriesY)*dataset.W_LME(m, tStart[curr_i]-1+j,b);
-
+        }
+        for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++){
           for(unsigned int b=0;b<nFixedEffects_mix[m];b++)
             yi(j)-=params.beta_mix(m, c,b,0,nCategoriesY)*dataset.W_LME_mix(m, tStart[curr_i]-1+j,b);
-
         }
 
         //Random effects of subject i
@@ -3728,7 +3729,6 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     int zi = params.z(i);
     logPrior+=params.logPsi(zi);
   }
-
 
   // Prior for V (we only need to include these up to maxNCluster, but we do need
   // to include all V, whether or not a cluster is empty, as the V themselves

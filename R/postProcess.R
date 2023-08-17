@@ -37,8 +37,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # suppress scientific notation
   options(scipen=999)
 
-  longData0<-longData
-
   if (xModel=="Mixed"){
     covNames <- c(discreteCovs, continuousCovs)
     nDiscreteCovs <- length(discreteCovs)
@@ -118,11 +116,12 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # create outcome if excludeY=TRUE and outcome not provided
   nOutcomes <- length(outcome)
 
-
   #Verify all participants have at least one observation for each markers
   if(!excludeY){
-    if(min(sapply(1:nOutcomes, function(x) length(c(table(longData[which(!is.na(longData[,outcome[x]])),idvar])))))<length(IDs))
-      stop('All participants should have at least one observation for each marker.')
+    if(!is.null(longData)){
+      if(min(sapply(1:nOutcomes, function(x) length(c(table(longData[which(!is.na(longData[,outcome[x]])),idvar])))))<length(IDs))
+        stop('All participants should have at least one observation for each marker.')
+    }
   }else{
     nOutcomes <-0
   }
@@ -457,7 +456,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # print number of fixed effects and their names
   if(!excludeY){
     if(yModel!='LME'){
-
+      fixedEffectsNames <- fixedEffectsNames[[1]]
       write(nFixedEffects, fileName,append=T,ncolumns=nOutcomes)
 
       if (nFixedEffects>0){
@@ -588,7 +587,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     #names(d2)[1:dim(dataMatrix)[2]]<-names(as.data.frame(dataMatrix))
 
     # Write covariates X
-    d2 <- dataMatrix[,1+(1:length(covNames)),drop=F]
+    d2 <- dataMatrix[,nOutcomes+(1:length(covNames)),drop=F]
     write(t(d2), fileName,append=T,ncolumns=dim(d2)[2])
   }
 
