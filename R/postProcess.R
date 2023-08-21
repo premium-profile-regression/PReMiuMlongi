@@ -250,8 +250,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         if(length(intersect(fixedEffectsNames[[mm]],uniqFE))!=length(uniqFE))
           diff=1
       }
-      if(diff==1)
-        message("check if different cluster-spec Fixed effects per outcome")
+      #if(diff==1)
+        #message("check if different Fixed effects per outcome")
 
       uniq_FE <- unlist(unique(fixedEffectsNames))
       #FEIndeces_mix<- c()
@@ -309,8 +309,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         if(length(intersect(fixedEffectsNames_clust[[mm]],uniqFEm))!=length(uniqFEm))
           diff=1
       }
-      if(diff==1)
-        message("check if different cluster-spec Fixed effects per outcome")
+      #if(diff==1)
+      #  message("check if different cluster-spec Fixed effects per outcome")
 
       #FEIndeces_mix<- c()
       if(length(intersect(timevar,uniqFEm))>0){
@@ -383,8 +383,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
           if(length(intersect(randomEffectsNames[[mm]],uniqRE))!=length(uniqRE))
             diff=1
         }
-        if(diff==1)
-          message("check if different random effects per marker.")
+        #if(diff==1)
+        #  message("check if different random effects per marker.")
 
         for (i in 1:nRandomEffects[[m]]){
           tmpIndex_RE<-which(colnames(longData)==randomEffectsNames[[m]][i])
@@ -642,7 +642,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
           write(t(d0),fileName,append=T,ncolumns=dim(d0)[2])
         }
 
-        if(max(nFixedEffects[1])>0){
+        if(max(nFixedEffects)>0){
           for(m in 1:nOutcomes){
             d1 <- longData_FE[,which(names(longData_FE)%in%fixedEffectsNames[[m]]),drop=F]
             if(timevar[1]%in%fixedEffectsNames[[m]])
@@ -966,9 +966,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   if(!excludeY){
-    if(min(nFixedEffects)<max(nFixedEffects) || min(nFixedEffects_mix)<max(nFixedEffects_mix))
-      browser()
-
 
     if(max(nFixedEffects)>0){
       max_nFixedEffects = max(nFixedEffects)
@@ -977,7 +974,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       names(wMat)[1:(max_nFixedEffects-length(intersect(fixedEffectsNames[[1]],timevar)))]<-fixedEffectsNames[[1]]
     }
 
-    if(max(nFixedEffects_mix)>0 & (max(nFixedEffects_mix)-length(intersect(fixedEffectsNames_clust[[1]],timevar))>0)){
+    if(max(nFixedEffects_mix)>0 & (max(nFixedEffects_mix)-length(intersect(unlist(fixedEffectsNames_clust),timevar))>0)){
       #wMat_mix <- matrix(0,dim(dataMatrix)[1],nFixedEffects_mix)
       #wMat_mix[,1:(nFixedEffects_mix-length(intersect(fixedEffectsNames_clust,timevar)))]<-dataMatrix[,(1+nOutcomes+nCovariates+nFixedEffects):(nOutcomes+nCovariates+nFixedEffects+nFixedEffects_mix-length(intersect(fixedEffectsNames_clust,timevar)))]
       max_nFixedEffects_mix = max(nFixedEffects_mix)
@@ -1014,8 +1011,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   if(!is.null(timevar)){
-    nFixedEffects = nFixedEffects + ifelse(timevar[1] %in% fixedEffectsNames[[1]], 1, 0)
-    nFixedEffects_mix = nFixedEffects_mix + ifelse(timevar[1] %in% fixedEffectsNames_clust[[1]], 1, 0)
+    nFixedEffects = nFixedEffects + sapply(1:nOutcomes, function(x) ifelse(timevar[1] %in% fixedEffectsNames[[x]], 1, 0))
+    nFixedEffects_mix = nFixedEffects_mix + sapply(1:nOutcomes, function(x) ifelse(timevar[1] %in% fixedEffectsNames_clust[[x]], 1, 0))
   }
 
   liste<-list("directoryPath"=directoryPath,

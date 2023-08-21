@@ -873,20 +873,23 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
   if(yModel=='LME'){
 
     longMat$time <- longMat[,timevar[1]]
-    times <- longMat$time
+    times_all <- longMat$time
     palette <- rainbow(max(whichClusters))
     indi = 1
     for(m in 1:nOutcomes){
       GPDF<-data.frame("time"=c(),"mu"=c(),"cluster"=c(),"sigma"=c(),"fillColor"=c())
 
       yData <- longMat[,outcome[m]]
+      times <- longMat$time[which(!is.na(yData))]
+      yData <- yData[which(!is.na(yData))]
+
       tTimes <- seq(min(times),max(times),length.out=41)
 
       #times_c <- list()
       #yData_c <- list()
       mu <- rep(0,length(tTimes))
 
-      betaArray_m <-betaArray[,nFixedEffects[m]*(m-1)+1:nFixedEffects[m],]#per marker, per j
+      betaArray_m <-betaArray[,nFixedEffects[1]*(m-1)+1:nFixedEffects[m],]#per marker, per j
 
       if(nFixedEffects[m]>0){
         if(nFixedEffects[m]==1){
@@ -915,12 +918,12 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       for(c in whichClusters){
         mu <- mu0
         if(nFixedEffects_clust[m]>0)
-          betamix_mean <- colMeans(betamixArray[,m,c,]) #nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY
+          betamix_mean <- colMeans(betamixArray[,m,c,1:nFixedEffects_clust[m]]) #nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY
         jj=1
-        if(all(timevar %in% fixedEffectsNames_clust[[m]])){
+        if(any(timevar %in% fixedEffectsNames_clust[[m]])){
           ind_time <- which(fixedEffectsNames_clust[[m]] %in% c("intercept",timevar))
           mat_times <- rep(1,length(tTimes))
-          for(jjj in 1:length(timevar))
+          for(jjj in 1:length(ind_time))
             mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jjj))
           if(nFixedEffects_clust[m]>0)
             mu <- mu + mat_times %*%betamix_mean[c(1,ind_time+1)]
@@ -963,7 +966,6 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       pushViewport(viewport(layout = plotLayout))
 
       GPDF_ind <- data.frame("id"=c(),"x"=c(), "y"=c(), "cluster"=c())
-      indi=1
       for(i in 1:nSubjects){
         GPDF_ind <- rbind(GPDF_ind,(data.frame(id=rep(i,tMat[indi,2]-tMat[indi,1]+1),x=times[tMat[indi,1]:tMat[indi,2]],y=yData[tMat[indi,1]:tMat[indi,2]],cluster=rep(clustering[i],tMat[indi,2]-tMat[indi,1]+1))))
         indi = indi+1
@@ -1001,6 +1003,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       #   plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
       print(plotObj,vp=viewport(layout.pos.row=1,layout.pos.col=1))
       dev.off()
+
 
       ##//RJ data plot
       longFile <- paste(strsplit(outFile,"\\.")[[1]][1],'-outc',m,'-trajectories.png',sep="")
