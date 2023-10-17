@@ -1552,6 +1552,9 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
                                pReMiuMPropParams& propParams,
                                baseGeneratorType& rndGenerator){
 
+  nTry++;
+  nAccept++;
+
   mcmcState<pReMiuMParams>& currentState = chain.currentState();
   pReMiuMParams& currentParams = currentState.parameters();
   pReMiuMHyperParams hyperParams = currentParams.hyperParams();
@@ -1875,6 +1878,9 @@ void gibbsForCovRELMEInActive(mcmcChain<pReMiuMParams>& chain,
                             const mcmcModel<pReMiuMParams,pReMiuMOptions,pReMiuMData>& model,
                             pReMiuMPropParams& propParams,
                             baseGeneratorType& rndGenerator){
+
+  nTry++;
+  nAccept++;
 
   mcmcState<pReMiuMParams>& currentState = chain.currentState();
   pReMiuMParams& currentParams = currentState.parameters();
@@ -3003,6 +3009,9 @@ void gibbsForBetaInActive(mcmcChain<pReMiuMParams>& chain,
                                                   pReMiuMData>& model,
                                                   pReMiuMPropParams& propParams,
                                                   baseGeneratorType& rndGenerator){
+
+  nTry++;
+  nAccept++;
   // Define a normal random number generator
   randomNormal normRand(0,1);
 
@@ -3362,6 +3371,8 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
                                   pReMiuMPropParams& propParams,
                                   baseGeneratorType& rndGenerator){
 
+  nTry++;
+  nAccept++;
 
   mcmcState<pReMiuMParams>& currentState = chain.currentState();
   pReMiuMParams& currentParams = currentState.parameters();
@@ -4451,6 +4462,9 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
                              const mcmcModel<pReMiuMParams,pReMiuMOptions,pReMiuMData>& model,
                              pReMiuMPropParams& propParams,
                              baseGeneratorType& rndGenerator){
+
+  nTry++;
+  nAccept++;
 
   mcmcState<pReMiuMParams>& currentState = chain.currentState();
   pReMiuMParams& currentParams = currentState.parameters();

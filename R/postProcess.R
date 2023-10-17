@@ -29,7 +29,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
                    output="output", hyper, predict, predictType="RaoBlackwell", nSweeps=1000,
                    nBurn=1000, nProgress=500, nFilter=1, nClusInit, seed, yModel="Bernoulli",
                    xModel="Discrete", sampler="SliceDependent", alpha=-2, dPitmanYor=0, excludeY=FALSE, extraYVar=FALSE,
-                   varSelectType="None", entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs= NULL, continuousCovs= NULL,
+                   varSelectType="None", varSelectY=FALSE, entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs= NULL, continuousCovs= NULL,
                    whichLabelSwitch="123", includeCAR=FALSE, neighboursFile="Neighbours.txt",
                    weibullFixedShape=TRUE, useNormInvWishPrior=FALSE, idvar = "ID",
                    kernel="SQexponential", sampleGPmean= FALSE,  estim_ratio=F, time_grid=NULL, ngrid=0, timevar=NULL){
@@ -57,6 +57,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   }
 
   if (useNormInvWishPrior==TRUE && !varSelectType=="None") stop("Variable selection is not available for Normal-inverse-Wishart prior for Normal covariates.")
+
+  if (varSelectY==TRUE && !yModel=="LME") stop("Variable selection on the outcome variables is only available for linear mixed models (yModel = LME).")
   ##//RJ sort data sets by IDs
   if(length(longData)>0){
     if(yModel == " Longitudinal"){
@@ -93,8 +95,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   #stop("The argument formula must be specified in LME ymodel")
   if (missing(longData) & yModel %in% c("Longitudinal", "LME"))
     stop("The argument data should be specified and defined as a data.frame")
-  if(yModel == "LME")
-    print("LME : formula option")
 
   #  if (yModel == "LME" & class(formula) != "formula")
   #    stop("The argument fixed must be a formula")
@@ -115,6 +115,9 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # outcome
   # create outcome if excludeY=TRUE and outcome not provided
   nOutcomes <- length(outcome)
+
+  if (varSelectY==TRUE && nOutcomes==1) stop("Variable selection on the outcome variables is only available for multivariate linear mixed models (more than one outcome).")
+
 
   #Verify all participants have at least one observation for each markers
   if(!excludeY){
@@ -265,6 +268,12 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       FEIndeces<-vector(mode="numeric")
       #all_fixedEffectsNames <- unique(fixedEffectsNames)
       m=1
+      if(yModel=="LME"){
+        uniq_fixedEffects <- unique(unlist(fixedEffectsNames))
+        first_line <- sapply(unique(longData$ID), function(x) which(longData$ID==x)[1])
+        data <- cbind(data,longData[first_line,sapply(uniq_fixedEffects, function(x) which(names(longData)==x))])
+      }
+
       for (i in 1:max(nFixedEffects)){
         if(!(fixedEffectsNames[[m]][i]%in%timevar)){
           tmpIndex<-which(colnames(data)==fixedEffectsNames[[m]][i])
@@ -730,6 +739,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (includeCAR&file.exists(neighboursFile)==FALSE) stop("You must enter a valid file for neighbourhood structure.")
 
   inputString<-paste("PReMiuMlongi --input=",fileName," --output=",output," --xModel=",xModel," --yModel=",yModel," --varSelect=",varSelectType," --whichLabelSwitch=",whichLabelSwitch," --predType=",predictType,sep="")
+  #" --varSelectY=",varSelectY,
 
   # create hyperparameters file
   if (!missing(hyper)) {

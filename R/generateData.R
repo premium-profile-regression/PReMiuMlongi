@@ -33,13 +33,16 @@ generateSampleDataFile<-function(clusterSummary){
 	covariateType<-clusterSummary$covariateType
 	nCovariates<-clusterSummary$nCovariates
 	##//RJ add nOutcomes
-	nOutcomes<-length(clusterSummary$timepoints)
+	nOutcomes<-clusterSummary$nOutcomes
 	if (covariateType=="Mixed"){
 		nDiscreteCovs<-clusterSummary$nDiscreteCovs
 		nContinuousCovs<-clusterSummary$nContinuousCovs
 	}
 	missingDataProb<-clusterSummary$missingDataProb
 	nFixedEffects<-clusterSummary$nFixedEffects
+	if(is.null(nFixedEffects)) nFixedEffects <- 0
+	nFixedEffects_mix<-clusterSummary$nFixedEffects_mix
+	if(is.null(nFixedEffects_mix)) nFixedEffects_mix <- 0
 	nCategoriesY<-clusterSummary$nCategoriesY
 	if (is.null(nCategoriesY)) nCategoriesY<-1
 	includeCAR=clusterSummary$includeCAR
@@ -121,12 +124,90 @@ generateSampleDataFile<-function(clusterSummary){
 		}
 	}
 
-	# Fixed Effects W
-	if(nFixedEffects>0){
-		W<-matrix(rnorm(nSubjects*nFixedEffects,0,1),nSubjects,nFixedEffects)
+	# Fixed Effects W for yModel != LME
+	if(nFixedEffects>0 & nFixedEffects_mix ==0){
+	  W<-matrix(rnorm(nSubjects*nFixedEffects,0,1),nSubjects,nFixedEffects)
 	}else{
 		W<-NULL
 	}
+
+	# Cluster-spec Fixed Effects W
+	if(nFixedEffects_mix>0){
+	  N=sum(clusterSummary$clusterSizes)
+	  time_seq        <- seq(0, 10, by = 2)
+	  nT              <- length(time_seq)
+	  nRE             <- clusterSummary$nRE
+	  loglikelihood_i <- matrix(NA,N,nOutcomes)
+	  ng              <- clusterSummary$nClusters
+	  class           <- c()
+	  for (cc in 1:ng)
+	    class <- c(class, rep(cc-1, clusterSummary$clusterSizes[cc]))
+
+	  X_LME           <- rbinom(N,1,0.5)
+	  sigma           <- clusterSummary$clusterData[[1]]$theta$SigmaE #common across clusters
+
+	  cov             <- vector("list", length = nOutcomes)
+	  for (m in 1:nOutcomes){
+	    cov[[m]] <- matrix(0,nRE[m],nRE[m])
+	    cov[[m]][lower.tri(cov[[m]], diag=T)] <- clusterSummary$clusterData[[1]]$theta$covRE[3*(m-1)+1:3]
+	    cov[[m]]             <- cov[[m]] + t(cov[[m]]) - diag(cov[[m]]) * diag(nRE[m])
+	  }
+    b <- vector("list", length = nOutcomes)
+    for (m in 1:nOutcomes){
+      b[[m]] <- matrix(0,ng,nFixedEffects+nFixedEffects_mix)
+      for (g in 1:ng)
+        b[[m]][g,] <- c(clusterSummary$clusterData[[g]]$theta$betamix[(m-1)*nFixedEffects_mix+1:nFixedEffects_mix], clusterSummary$clusterData[[g]]$theta$beta[(m-1)*nFixedEffects+1:nFixedEffects])
+
+    }
+
+
+    W_mixall <- rep(0,4+sum(nRE)+nOutcomes+ifelse(sum(nRE)>nOutcomes,1,0))
+	  for (i in 1:N){
+	    Yi     <- matrix(0,nT,nOutcomes)
+	    ui     <- matrix(0,nT,sum(nRE))
+	    ti     <- time_seq + runif(nT,0,0.5)
+	    data_i <- cbind(rep(i,nT), rep(class[i],nT), rep(X[i],nT), ti,X_LME[i]* ti)
+
+	    for(m in 1:nOutcomes){
+	      eps_i  <- rnorm(nT,0,sigma[m])
+	      uii    <- rmvnorm(1,rep(0,nRE[m]),cov[[m]])
+	      for(jj in 1:nRE[m])
+	        ui[,(m-1)*nRE[1]+jj] <- uii[jj]
+
+	      Xi     <- matrix(1,nT,nRE[m]+2)
+	      Xi[,2] <- ti
+	      if(nRE[m]>2)
+	        Xi[,3] <- ti^2
+	      Xi[,nRE[m]+1] <- X_LME[i]
+	      Xi[,nRE[m]+2] <- X_LME[i]*ti
+	      Zi     <- Xi[,1:nRE[m]]
+	      Yi[,m] <- Xi%*%b[[m]][class[i]+1,] + Zi%*%t(uii) + eps_i
+	      tcens  <- runif(1,min(time_seq), max(time_seq))
+	      Yi[which(ti>tcens & ti> ti[1]),m] <- NA
+
+	      ni_m <- length(which(!is.na(Yi[,m])))
+	      Yii <- Yi[1:ni_m,m] - Xi[1:ni_m,]%*%b[[m]][class[i]+1,] -Zi[1:ni_m,]%*%t(uii)
+	      Vi <- diag(ni_m)*sigma[m]
+
+	      loglikelihood_i[i,m] <- -0.5*ni_m*log(2*pi) -0.5*t(Yii)%*%solve(Vi)%*%Yii - 0.5*ni_m*log(sigma[[m]])
+
+	      # -0.5*yi.transpose()*Vi.inverse()*yi - 0.5*ni_m*log(2.0*pi<double>()) - 0.5*ni_m*log(params.SigmaE(m));
+	    }
+	    data_i        <- cbind(data_i, Yi, ui)
+	    data_i        <- as.data.frame(data_i)
+	    W_mixall          <- rbind(W_mixall, data_i[apply(data_i[,dim(data_i)[2]-dim(ui)[2]-nOutcomes+1:nOutcomes],1,function(x) any(!is.na(x))),])
+
+	  }
+    W_mixall <- W_mixall[-1,]
+    W_mix<-W_mixall[,1:(4+ifelse(sum(nRE)>nOutcomes,1,0))]
+    W_mix_names <-  c("ID","class","X","time")
+    if(sum(nRE)>nOutcomes)
+      W_mix_names <- c(W_mix_names, "Xtime")
+    names(W_mix) <-W_mix_names
+	}else{
+	  W_mix<-NULL
+	}
+
 
 	# Spatial CAR term
 	if (includeCAR) {
@@ -145,14 +226,21 @@ generateSampleDataFile<-function(clusterSummary){
 	}
 
 	outcomeType<-clusterSummary$outcomeType
-	# Response Vector Y
-	Y<-rep(0,nSubjects)
+	if(outcomeType!='LME'){
+	  nOutcomes <- 1
+
+	  # Response Vector Y
+	  Y<-rep(0,nSubjects)
+	}else{
+    Y <- W_mixall[,4+1:nOutcomes+ifelse(sum(nRE)>nOutcomes,1,0)]
+	}
+
 	##//RJ add lists for Y, time, and ID data
 	longY <- list()
 	longYmu <- list()
 	longT <- list()
 	longIDs <- list()
-	nOutcomes <- 1
+
 	##//RJ add Y matrix for MVN
 	if(outcomeType=='MVN'){
 		nOutcomes <- length(clusterSummary$clusterData[[1]]$theta$mu)
@@ -161,7 +249,7 @@ generateSampleDataFile<-function(clusterSummary){
 	if(nFixedEffects>0){
 		if (outcomeType=='Categorical'){
 			beta<-do.call(rbind,clusterSummary$fixedEffectsCoeffs)
-		} else {
+		} else if(outcomeType!='LME'){
 			beta<-as.matrix(clusterSummary$fixedEffectsCoeffs,nrow=1)
 		}
 	}
@@ -196,89 +284,93 @@ generateSampleDataFile<-function(clusterSummary){
 	}
 	subjectsPerCluster<-clusterSummary$clusterSizes
 	k<-1
-	# Loop over subjects
-	for(i in 1:nSubjects){
 
-		if (includeCAR){
-			theta<-clusterSummary$clusterData[[VectoSample[i]]]$theta
-		}else{
-			if(i<=subjectsPerCluster[k]){
-				theta<-clusterSummary$clusterData[[k]]$theta
-				if (outcomeType=="Survival") shapeTmp<-clusterSummary$shape[k]
-			}else{
-				theta<-clusterSummary$clusterData[[k+1]]$theta
-				if (outcomeType=="Survival") shapeTmp<-clusterSummary$shape[k+1]
-				k<-k+1
-				subjectsPerCluster[k]<-subjectsPerCluster[k]+subjectsPerCluster[k-1]
-			}
-		}
-		mu<-theta
-		##//RJ set mu for longitudinal outcome
-		if(outcomeType=='Longitudinal'||outcomeType=='MVN'){
-			mu <- theta$mu
-		}
-		if(nFixedEffects>0){
-			if (outcomeType=='Categorical'){
-				for (kk in 2:nCategoriesY){
-					mu[kk]<-mu[kk]+sum(beta[kk,]*W[i,])
-				}
-			} else {
-				mu<-mu+sum(beta*W[i,])
-			}
-		}
-		if(outcomeType=='Poisson'){
-			mu<-mu+U[i]
-			mu<-mu+log(offset[i])
-			Y[i]<-rpois(1,exp(mu))
-		}else if(outcomeType=='Bernoulli'){
-			p<-1/(1+exp(-mu))
-			if(runif(1)<p){
-				Y[i]<-1
-			}else{
-				Y[i]<-0
-			}
-		}else if(outcomeType=='Binomial'){
-			p<-1/(1+exp(-mu))
-			Y[i]<-sum(runif(nTrials[i])<p)
-		}else if(outcomeType=='Normal'){
-			Y[i]<-rnorm(1,mu+U[i],sqrt(sigmaSqY))
-		}else if (outcomeType=='Categorical'){
-			p<-vector()
-			sumMu<-sum(exp(mu))
-			p[1]<-1/sumMu
-			for (kk in 2:nCategoriesY) p[kk]<-exp(mu[kk])/sumMu
-			Y[i]<-which(rmultinom(1,1,p)==1)-1
-		}else if (outcomeType == 'Survival'){
-			Y[i] <-rWEI2(1, exp(mu), shapeTmp)#rlnorm(1,exp(mu),shapeTmp)#  #rweibull(1,exp(mu),shapeTmp)         #scale = exp(mu)
-			if (Y[i] >  censorT){
-				Y[i] <- censorT
-				event[i] <- 0
-			} else {
-				Y[i] <- Y[i]
-				event[i] <- 1
-			}
-		}else if (outcomeType == 'MVN'){
-			Y[i,] <-rmvnorm(1, mu, theta$Sigma)
-		}else if(outcomeType == 'Longitudinal'){ ##//RJ generate longitudinal data
-			nOutcomes <- length(mu)
-			longYmu[[k]][[i]] <- mu
-			if(clusterSummary$randomTimes==T){
-				longT[[k]][[i]] <- rmvnorm(1,clusterSummary$timepoints,0.001*diag(nOutcomes))
-			}else{
-				longT[[k]][[i]] <- clusterSummary$timepoints
-			}
-			if(clusterSummary$timeGaps==T){
-				nTPsToRemove <- sample.int(nOutcomes-2,1)-1
-				if(nTPsToRemove > 0){
-					TPsToRemove <- sample.int(nOutcomes,nTPsToRemove,replace=F)
-					longT[[k]][[i]] <- longT[[k]][[i]][-c(TPsToRemove)]
-					longYmu[[k]][[i]] <- longYmu[[k]][[i]][-c(TPsToRemove)]
-				}
-			}
-			longIDs[[i]] <- rep(IDs[i],times=length(longT[[k]][[i]]))
+	if(outcomeType!='LME'){
+	  # Loop over subjects
+	  for(i in 1:nSubjects){
 
-		}
+	    if (includeCAR){
+	      theta<-clusterSummary$clusterData[[VectoSample[i]]]$theta
+	    }else{
+	      if(i<=subjectsPerCluster[k]){
+	        theta<-clusterSummary$clusterData[[k]]$theta
+	        if (outcomeType=="Survival") shapeTmp<-clusterSummary$shape[k]
+	      }else{
+	        theta<-clusterSummary$clusterData[[k+1]]$theta
+	        if (outcomeType=="Survival") shapeTmp<-clusterSummary$shape[k+1]
+	        k<-k+1
+	        subjectsPerCluster[k]<-subjectsPerCluster[k]+subjectsPerCluster[k-1]
+	      }
+	    }
+	    mu<-theta
+	    ##//RJ set mu for longitudinal outcome
+	    if(outcomeType=='Longitudinal'||outcomeType=='MVN'){
+	      mu <- theta$mu
+	    }
+	    if(nFixedEffects>0){
+	      if (outcomeType=='Categorical'){
+	        for (kk in 2:nCategoriesY){
+	          mu[kk]<-mu[kk]+sum(beta[kk,]*W[i,])
+	        }
+	      } else {
+	        mu<-mu+sum(beta*W[i,])
+	      }
+	    }
+	    if(outcomeType=='Poisson'){
+	      mu<-mu+U[i]
+	      mu<-mu+log(offset[i])
+	      Y[i]<-rpois(1,exp(mu))
+	    }else if(outcomeType=='Bernoulli'){
+	      p<-1/(1+exp(-mu))
+	      if(runif(1)<p){
+	        Y[i]<-1
+	      }else{
+	        Y[i]<-0
+	      }
+	    }else if(outcomeType=='Binomial'){
+	      p<-1/(1+exp(-mu))
+	      Y[i]<-sum(runif(nTrials[i])<p)
+	    }else if(outcomeType=='Normal'){
+	      Y[i]<-rnorm(1,mu+U[i],sqrt(sigmaSqY))
+	    }else if (outcomeType=='Categorical'){
+	      p<-vector()
+	      sumMu<-sum(exp(mu))
+	      p[1]<-1/sumMu
+	      for (kk in 2:nCategoriesY) p[kk]<-exp(mu[kk])/sumMu
+	      Y[i]<-which(rmultinom(1,1,p)==1)-1
+	    }else if (outcomeType == 'Survival'){
+	      Y[i] <-rWEI2(1, exp(mu), shapeTmp)#rlnorm(1,exp(mu),shapeTmp)#  #rweibull(1,exp(mu),shapeTmp)         #scale = exp(mu)
+	      if (Y[i] >  censorT){
+	        Y[i] <- censorT
+	        event[i] <- 0
+	      } else {
+	        Y[i] <- Y[i]
+	        event[i] <- 1
+	      }
+	    }else if (outcomeType == 'MVN'){
+	      Y[i,] <-rmvnorm(1, mu, theta$Sigma)
+	    }else if(outcomeType == 'Longitudinal'){ ##//RJ generate longitudinal data
+	      nOutcomes <- length(mu)
+	      longYmu[[k]][[i]] <- mu
+	      if(clusterSummary$randomTimes==T){
+	        longT[[k]][[i]] <- rmvnorm(1,clusterSummary$timepoints,0.001*diag(nOutcomes))
+	      }else{
+	        longT[[k]][[i]] <- clusterSummary$timepoints
+	      }
+	      if(clusterSummary$timeGaps==T){
+	        nTPsToRemove <- sample.int(nOutcomes-2,1)-1
+	        if(nTPsToRemove > 0){
+	          TPsToRemove <- sample.int(nOutcomes,nTPsToRemove,replace=F)
+	          longT[[k]][[i]] <- longT[[k]][[i]][-c(TPsToRemove)]
+	          longYmu[[k]][[i]] <- longYmu[[k]][[i]][-c(TPsToRemove)]
+	        }
+	      }
+	      longIDs[[i]] <- rep(IDs[i],times=length(longT[[k]][[i]]))
+
+	    }
+	  }
 	}
+
 	if(outcomeType == 'Longitudinal'){ ##//RJ generate longitudinal data
 		for(k in 1:length(clusterSummary$clusterData)){
 			Sigma <- GP_cov(unlist(as.vector(longT[[k]])),exp(theta$L),kernelType)
@@ -298,10 +390,19 @@ generateSampleDataFile<-function(clusterSummary){
 	}
 	if(outcomeType=='MVN'){
 		outData<-data.frame(cbind(IDs,Y,X))
+	}else if(outcomeType=='LME'){
+	  outData<-data.frame(cbind(IDs,rep(0,length(IDs)),X))
+	  fixEffNames<-c("X")
+	  if(sum(nRE)>nOutcomes)
+	    fixEffNames <- c(fixEffNames, "Xtime")
+	  fixEffNames_mix <- c("time")
+	  REffNames <- fixEffNames_mix
+	  timevar <- "time"
 	}else{
 		outData<-data.frame(cbind(IDs,matrix(Y),X))
 	}
 	colnamesoutData <- "outcome"
+
 	if(outcomeType=='MVN'){
 		colnamesoutData <- c()
 		for (i in 1:nOutcomes){
@@ -309,6 +410,14 @@ generateSampleDataFile<-function(clusterSummary){
 		}
 	}
 	colnames(outData) <- c("ID",colnamesoutData,covNames)
+
+	if(outcomeType=='LME'){
+	  colnamesoutData <- c()
+	  for (i in 1:nOutcomes){
+	    colnamesoutData <- c(colnamesoutData,paste('outcome',i,sep=''))
+	  }
+	}
+
 
 	out<-list(inputData=outData,covNames=covNames,outcome=colnamesoutData,xModel=covariateType,yModel=outcomeType)
 	out$nCovariates <- nCovariates
@@ -319,7 +428,15 @@ generateSampleDataFile<-function(clusterSummary){
 		colnames(outLongData) <- longNames
 		out$inputLongData <- outLongData
 	}
-	##//
+	if(outcomeType == 'LME'){
+	  outLongData<-W_mixall[,c(1,3:(4+ifelse(sum(nRE)>nOutcomes,1,0)),4+ifelse(sum(nRE)>nOutcomes,1,0)+1:nOutcomes)]
+	  longNames<-c('ID',"X",'time')
+	  if(sum(nRE)>nOutcomes)
+	    longNames<-c(longNames,"Xtime")
+	  longNames<-c(longNames,paste0('outcome',1:nOutcomes))
+	  colnames(outLongData) <- longNames
+	  out$inputLongData <- outLongData
+	}
 
 	if (covariateType=="Mixed"){
 		discreteCovs<-covNames[1:nDiscreteCovs]
@@ -330,11 +447,26 @@ generateSampleDataFile<-function(clusterSummary){
 		out$continuousCovs <- continuousCovs
 	}
 	if(nFixedEffects>0){
-		outData<-data.frame(cbind(outData,W))
-		colnames(outData) <- c("ID",colnamesoutData,covNames,fixEffNames)
-		out$inputData <- outData
-		out$fixedEffectNames <- fixEffNames
+	  if(outcomeType != 'LME'){
+	    outData<-data.frame(cbind(outData,W))
+	    colnames(outData) <- c("ID",colnamesoutData,covNames,fixEffNames)
+	    out$inputData <- outData
+	    out$fixedEffectNames <- fixEffNames
+	  }else {
+	    out$fixedEffectNames <- rep(list(fixEffNames),nOutcomes)
+	  }
 	}
+
+	if(nFixedEffects_mix>0)
+	  out$fixedEffectNames_mix <- rep(list(fixEffNames_mix),nOutcomes)
+
+	if(outcomeType == 'LME'){
+	  out$REffectNames <- rep(list(REffNames),nOutcomes)
+	  out$timevar <- timevar
+	}
+
+
+
 	if(clusterSummary$outcomeType=="Poisson"){
 		outData<-data.frame(cbind(outData,offset))
 		out$inputData <- outData
@@ -524,6 +656,234 @@ clusSummaryMVNDiscrete<-function(nOutcomes=3){##//RJ summary generation function
                       ))
 }
 
+clusSummaryLMEDiscrete <- function(ng=2, N=200){
+  # function to generate data from LME model, with 2 clusters
+  # cluster-specific time trends
+  # common effect of X at baseline and interaction with time
+  # no dropout
+  if(ng==2){
+    liste <- list(
+      'outcomeType'='LME',
+      'covariateType'='Discrete',
+      'nCovariates'=5,
+      'timeGaps'=F,
+      'randomTimes'=F,
+      'timepoints'=c(0,2,4,6,8,10,12),
+      'nCategories'=c(3,3,3,3,3),
+      'nOutcomes'=2,
+      'nRE'=c(2,2),
+      'nFixedEffects'=2, #X, slope X
+      'nFixedEffects_mix'=2, #intercept, slope,
+      'sigmaSqY'=1,
+      'missingDataProb'=0,
+      'nClusters'=ng,
+      'clusterSizes'=c(65,35),##//RJ
+      'includeCAR'=FALSE,
+      'TauCAR'=100,
+      'clusterData'=list(list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5), #X, X time : common across clusters, for 2 outcomes
+                                           'betamix'=c(0.8, -1, 1.1, -0.5),#incpt, time, for 2 outcomes
+                                           'SigmaE'=c(1,0.5),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4)),#common across clusters
+                              'covariateProbs'=list(c(0.8,0.1,0.1),
+                                                    c(0.1,0.7,0.2),
+                                                    c(0.2,0.2,0.6),
+                                                    c(0.5,0.3,0.2),
+                                                    c(0.4,0.1,0.5))),
+                         list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5), #X, X time : common across clusters, for 2 outcomes
+                                           'betamix'=c(1.1, 0.8, 0.5, -0.3),#incpt, time, for 2 outcomes
+                                           'SigmaE'=c(1,0.5),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4)),#common across clusters
+                              'covariateProbs'=list(c(0.4,0.1,0.5),
+                                                    c(0.5,0.3,0.2),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.2,0.2,0.6),
+                                                    c(0.1,0.7,0.2)
+                                                    ))
+      ))
+  }else if(ng==3){
+    liste <- list(
+      'outcomeType'='Longitudinal',
+      'covariateType'='Discrete',
+      'kernelType'="SQexponential",
+      'nCovariates'=5,
+      'timeGaps'=F,
+      'randomTimes'=F,
+      'timepoints'=c(0,2,4,6,8,10,12),
+      'nCategories'=c(3,3,3,3,3),
+      'nFixedEffects'=0,
+      'fixedEffectsCoeffs'=c(),
+      'sigmaSqY'=1,
+      'missingDataProb'=0,
+      'nClusters'=5,
+      'clusterSizes'=c(10,30,50),##//RJ
+      'includeCAR'=FALSE,
+      'TauCAR'=100,
+      'clusterData'=list(list('theta'=list('mu'=c(9,8.5,7,6,5,4,3),
+                                           'L'=c(-0.5,-0.1,-0.5)),
+                              'covariateProbs'=list(c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1))),
+                         list('theta'=list('mu'=c(9,7,6,4,2,1,0),
+                                           'L'=c(-0.6,-0.2,-0.1)),
+                              'covariateProbs'=list(c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.1,0.8))),
+                         list('theta'=list('mu'=c(7,5,8,9,10,11,9),
+                                           'L'=c(-0.1,-0.3,-0.7)),
+                              'covariateProbs'=list(c(0.4,0.5,0.1),
+                                                    c(0.5,0.4,0.1),
+                                                    c(0.1,0.4,0.5),
+                                                    c(0.5,0.1,0.4),
+                                                    c(0.5,0.3,0.2)))
+      ))
+  }else if(ng==5 & N<500){
+    liste <- list(
+      'outcomeType'='Longitudinal',
+      'covariateType'='Discrete',
+      'kernelType'="SQexponential",
+      'nCovariates'=5,
+      'timeGaps'=F,
+      'randomTimes'=F,
+      'timepoints'=c(0,2,4,6,8,10,12),
+      'nCategories'=c(3,3,3,3,3),
+      'nFixedEffects'=0,
+      'fixedEffectsCoeffs'=c(),
+      'sigmaSqY'=1,
+      'missingDataProb'=0,
+      'nClusters'=5,
+      'clusterSizes'=c(10,30,50, 70 ,40),##//RJ
+      'includeCAR'=FALSE,
+      'TauCAR'=100,
+      'clusterData'=list(list('theta'=list('mu'=c(9,8.5,8,6,5,4,3),
+                                           'L'=c(0.5,0.1,-0.7)),
+                              'covariateProbs'=list(c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1))),
+                         list('theta'=list('mu'=c(9,7,6,4,2,1,0),
+                                           'L'=c(0.6,0.2,-0.3)),
+                              'covariateProbs'=list(c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.1,0.8))),
+                         list('theta'=list('mu'=c(7,5,8,9,10,11,9),
+                                           'L'=c(0.1,0.3,-0.7)),
+                              'covariateProbs'=list(c(0.4,0.5,0.1),
+                                                    c(0.5,0.4,0.1),
+                                                    c(0.1,0.4,0.5),
+                                                    c(0.5,0.1,0.4),
+                                                    c(0.5,0.3,0.2))),
+
+                         list('theta'=list('mu'=c(8,5,8,9,10,11,9),
+                                           'L'=c(0.3,0.4,-0.5)),
+                              'covariateProbs'=list(c(0.2,0.7,0.1),
+                                                    c(0.7,0.2,0.1),
+                                                    c(0.3,0.6,0.1),
+                                                    c(0.2,0.1,0.7),
+                                                    c(0.6,0.3,0.1))),
+                         list('theta'=list('mu'=c(7,7.5,6,5,5,3,2),
+                                           'L'=c(0.1,0.5,-0.7)),
+                              'covariateProbs'=list(c(0.6,0.3,0.1),
+                                                    c(0.2,0.1,0.7),
+                                                    c(0.3,0.6,0.1),
+                                                    c(0.7,0.2,0.1),
+                                                    c(0.2,0.7,0.1)))
+      ))
+  }else if (ng==5 & N==500){
+
+    liste <- list(
+      'outcomeType'='Longitudinal',
+      'covariateType'='Discrete',
+      'kernelType'="SQexponential",
+      'nCovariates'=5,
+      'timeGaps'=F,
+      'randomTimes'=F,
+      'timepoints'=c(0,2,4,6,8,10,12),
+      'nCategories'=c(3,3,3,3,3),
+      'nFixedEffects'=0,
+      'fixedEffectsCoeffs'=c(),
+      'sigmaSqY'=1,
+      'missingDataProb'=0,
+      'nClusters'=5,
+      'clusterSizes'=c(20,30,50, 60 ,40)/200*N,##//RJ
+      'includeCAR'=FALSE,
+      'TauCAR'=100,
+      'clusterData'=list(list('theta'=list('mu'=c(9,8.5,8,6,5,4,3),
+                                           'L'=c(0.5,0.1,-0.7)),
+                              'covariateProbs'=list(c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1))),
+                         list('theta'=list('mu'=c(6,7,6,4,2,4,5),
+                                           'L'=c(0.6,0.2,-0.3)),
+                              'covariateProbs'=list(c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.8,0.1),
+                                                    c(0.1,0.1,0.8))),
+                         list('theta'=list('mu'=c(10,11,10,9,10,8,7),
+                                           'L'=c(0.1,0.3,-0.7)),
+                              'covariateProbs'=list(c(0.4,0.5,0.1),
+                                                    c(0.5,0.4,0.1),
+                                                    c(0.1,0.4,0.5),
+                                                    c(0.5,0.1,0.4),
+                                                    c(0.5,0.3,0.2))),
+
+                         list('theta'=list('mu'=c(8,5,8,9,10,11,9),
+                                           'L'=c(0.3,0.4,-0.5)),
+                              'covariateProbs'=list(c(0.2,0.7,0.1),
+                                                    c(0.7,0.2,0.1),
+                                                    c(0.3,0.6,0.1),
+                                                    c(0.2,0.1,0.7),
+                                                    c(0.6,0.3,0.1))),
+                         list('theta'=list('mu'=c(7,7.5,6,5,5,3,0),
+                                           'L'=c(0.1,0.5,-0.7)),
+                              'covariateProbs'=list(c(0.6,0.3,0.1),
+                                                    c(0.2,0.1,0.7),
+                                                    c(0.3,0.6,0.1),
+                                                    c(0.7,0.2,0.1),
+                                                    c(0.2,0.7,0.1)))
+      ))
+
+  }else if(ng==1){
+
+    liste <- list(
+      'outcomeType'='Longitudinal',
+      'covariateType'='Discrete',
+      'kernelType'="SQexponential",
+      'nCovariates'=5,
+      'timeGaps'=F,
+      'randomTimes'=F,
+      'timepoints'=c(0,2,4,6,8,10,12),
+      'nCategories'=c(3,3,3,3,3),
+      'nFixedEffects'=0,
+      'fixedEffectsCoeffs'=c(),
+      'sigmaSqY'=1,
+      'missingDataProb'=0,
+      'nClusters'=5,
+      'clusterSizes'=100,##//RJ
+      'includeCAR'=FALSE,
+      'TauCAR'=100,
+      'clusterData'=list(list('theta'=list('mu'=c(9,8.5,7,6,5,4,3),
+                                           'L'=c(-0.5,-0.1,-0.5)),
+                              'covariateProbs'=list(c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1),
+                                                    c(0.8,0.1,0.1)))
+      ))
+
+  }
+  return(liste)
+}
+
 clusSummaryLongitudinalDiscrete<-function(ng=2, N=200){##//RJ summary generation function Longitudinal
     if(ng==2){
       liste <- list(
@@ -539,7 +899,7 @@ clusSummaryLongitudinalDiscrete<-function(ng=2, N=200){##//RJ summary generation
    'fixedEffectsCoeffs'=c(),
    'sigmaSqY'=1,
    'missingDataProb'=0,
-   'nClusters'=5,
+   'nClusters'=ng,
    'clusterSizes'=c(30,30),##//RJ
    'includeCAR'=FALSE,
    'TauCAR'=100,
@@ -738,7 +1098,8 @@ clusSummaryLongitudinalDiscrete<-function(ng=2, N=200){##//RJ summary generation
                                                     c(0.8,0.1,0.1)))
       ))
 
-  }
+    }
+  liste <- c(liste,list('nOutcomes'=length(timepoints)))
   return(liste)
 }
 

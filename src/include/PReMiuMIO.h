@@ -177,6 +177,7 @@ pReMiuMOptions processCommandLine(string inputStr){
              outcomeType.compare("MVN")!=0&&outcomeType.compare("LME")!=0&&
              outcomeType.compare("Longitudinal")!=0){//RJ add Longitudinal and MVN to outcome checklist
             // Illegal outcome model entered
+            Rprintf("This yModel type is not accounted for\n");
             wasError=true;
             break;
           }
@@ -199,6 +200,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           string kernelType = inString.substr(pos,inString.size()-pos);
           if(kernelType.compare("SQexponential")!=0&&kernelType.compare("Quadratic")!=0){
             // Illegal covariate type entered
+            Rprintf("Problem with kernelType\n");
             wasError=true;
             break;
           }
@@ -212,6 +214,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           string covariateType = inString.substr(pos,inString.size()-pos);
           if(covariateType.compare("Discrete")!=0&&covariateType.compare("Normal")!=0&&covariateType.compare("Mixed")!=0){
             // Illegal covariate type entered
+            Rprintf("Problem with covariateType\n");
             wasError=true;
             break;
           }
@@ -221,6 +224,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           string whichLabelSwitch = inString.substr(pos,inString.size()-pos);
           if(whichLabelSwitch.compare("123")!=0&&whichLabelSwitch.compare("12")!=0&&whichLabelSwitch.compare("3")!=0){
             // Illegal covariate type entered
+            Rprintf("Problem with whichLabelSwitch\n");
             wasError=true;
             break;
           }
@@ -231,6 +235,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           if(samplerType.compare("SliceDependent")!=0&&samplerType.compare("SliceIndependent")!=0
                &&samplerType.compare("Truncated")!=0){
             // Illegal sampler type entered
+            Rprintf("Problem with samplerType\n");
             wasError=true;
             break;
           }
@@ -266,6 +271,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           if(varSelectType.compare("None")!=0&&
              varSelectType.compare("BinaryCluster")!=0&&varSelectType.compare("Continuous")!=0){
             // Illegal type for variable selection entered
+            Rprintf("Problem with varSelectType\n");
             wasError=true;
             break;
           }
@@ -277,6 +283,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           string predictType = inString.substr(pos,inString.size()-pos);
           if(predictType.compare("RaoBlackwell")!=0&&predictType.compare("random")!=0){
             // Illegal predictType type entered
+            Rprintf("Problem with predictType\n");
             wasError=true;
             break;
           }
@@ -2228,6 +2235,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
   }else if(2<1 & nOutcomes == 2){
 
+    std::cout<< " init "<<endl;
     int zi;
     ifstream inputFile;
 
@@ -2306,19 +2314,24 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
     epsilon=0.5;
     params.SigmaE(1,epsilon);// variance
 
-    params.mu(0,0);
-    params.mu(0,3);
+    VectorXd mu(1);
+    mu(0)=0;
+    params.mu(0,mu);
+    mu(0)=3;
+    params.mu(1,mu);
     MatrixXd Tau(1,1);
     Tau(0,0)=1.0;
     params.Tau(0,Tau);
     params.Tau(1,Tau);
 
-    // cout << " params.logPhi "<<params.logPhi().size()<<endl;
-    // vector<double> phi(1);
-    // phi[0]=log(0.3);
-    // params.logPhi(0,0,phi);
-    // phi[0]=log(0.7);
-    // params.logPhi(1,0,phi);
+    //cout << " params.logPhi "<<params.logPhi().size()<<endl;
+    vector<double> phi(2);
+    phi[0]=log(0.3);
+    phi[1]=log(0.7);
+    params.logPhi(0,0,phi);
+    phi[0]=log(0.7);
+    phi[1]=log(0.3);
+    params.logPhi(1,0,phi);
   }
 }
 
@@ -2716,7 +2729,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           maxNCategories=nCategories[j];
         }
       }
-
       for(unsigned int j=0;j<nDiscreteCovs;j++){
         for(unsigned int p=0;p<maxNCategories;p++){
           for(unsigned int c=0;c<maxNClusters;c++){
