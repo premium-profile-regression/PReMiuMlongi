@@ -3312,7 +3312,7 @@ string storeLogFileData(const pReMiuMOptions& options,
     tmpStr << " cov RE, Sigma R0: ";
     if(dataset.nRandomEffects(0)>1)
       tmpStr<<endl;
-    tmpStr << hyperParams.SigmaLME_R0(0)<< " ";
+    tmpStr << hyperParams.SigmaLME_R0(0)<<endl;
     tmpStr << " cov RE, kappa0: "<< hyperParams.SigmaLME_kappa0(0)<< endl;
 
     //tmpStr << "eps_vu: "<< hyperParams.eps_vu() << endl;

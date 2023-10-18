@@ -876,6 +876,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     times_all <- longMat$time
     palette <- rainbow(max(whichClusters))
     indi = 1
+    indi_mj = 0
     for(m in 1:nOutcomes){
       GPDF<-data.frame("time"=c(),"mu"=c(),"cluster"=c(),"sigma"=c(),"fillColor"=c())
 
@@ -889,7 +890,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       #yData_c <- list()
       mu <- rep(0,length(tTimes))
 
-      betaArray_m <-betaArray[,nFixedEffects[1]*(m-1)+1:nFixedEffects[m],]#per marker, per j
+      betaArray_m <-betaArray[,indi_mj+1:nFixedEffects[m],]#per marker, per j
+      indi_mj = indi_mj +nFixedEffects[m]
 
       if(nFixedEffects[m]>0){
         if(nFixedEffects[m]==1){
