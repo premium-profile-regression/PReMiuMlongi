@@ -3332,7 +3332,7 @@ double logPYiGivenZiWiLongitudinal_meanGP(const pReMiuMParams& params, const pRe
 
       dmvnorm += out ;
       if((dmvnorm==0) & (ii <dataset.nSubjects())){
-        cout <<  " i "<< ii  << " c "<< c <<" dmvnorm "<<dmvnorm<< " ni "<< ni << " prod "<<yi.transpose()*Vi_inv*yi
+        std::cout <<  " i "<< ii  << " c "<< c <<" dmvnorm "<<dmvnorm<< " ni "<< ni << " prod "<<yi.transpose()*Vi_inv*yi
              << " L0 "<< params.L(c,0) << " L1 "<< params.L(c,1) << " L2 "<< params.L(c,2)
              << " yi "<<yi<<endl;
 
@@ -4874,7 +4874,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
       }
       if(es.eigenvalues()(i).imag() != 0 || es.eigenvectors()(i).imag()!=0 ){
         std::cout <<"eigenvalue"<<endl;
-        cout <<"eigenvalue"<<endl;
+        std::cout <<"eigenvalue"<<endl;
         //fout << c <<" c prior eigenvalue" <<es.eigenvalues()(i).imag()<< endl;
         //fout << c <<" c prior eigenvector" <<es.eigenvectors()(i).imag()<< endl;
       }

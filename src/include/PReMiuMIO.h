@@ -3048,7 +3048,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             }
             *(outFiles[sigmaEpsilonInd]) << 1.0/sqrt(params.tauEpsilon()) << endl;
           }else{
-            printf("responseExtraVar not possible with yModel = LME.");
+            Rprintf("responseExtraVar not possible with yModel = LME.");
           }
         }
       }

@@ -63,7 +63,6 @@ using std::vector;
 using std::ostringstream;
 using std::time;
 using std::string;
-using std::cout;
 
 RcppExport SEXP profRegr(SEXP inputString) {
 
@@ -199,7 +198,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
           // Gibbs for tauEpsilon
           pReMiuMSampler.addProposal("gibbsForTauEpsilon",1.0,1,1,&gibbsForTauEpsilon);
         }else{
-          printf("Not proposed for yModel = LME.");
+          Rprintf("Not proposed for yModel = LME.");
         }
       }
 
@@ -212,7 +211,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
           //Gibbs for TauCAR
           pReMiuMSampler.addProposal("gibbsForTauCAR", 1.0,1,1,&gibbsForTauCAR);
         }else{
-          printf("Not proposed for yModel = LME.");
+          Rprintf("Not proposed for yModel = LME.");
         }
       }
 

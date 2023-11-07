@@ -409,7 +409,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       logdet_lambda += log(c);
 
       if(std::isnan(logdet_lambda)){
-        cout <<  " logdet_lambda=nan, diag Lambda "<< LU.diagonal()<<endl;
+        std::cout <<  " logdet_lambda=nan, diag Lambda "<< LU.diagonal()<<endl;
       }
     }
     //for(int i=0;i<nTimes;i++)
@@ -442,7 +442,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       logDetP += log(c);
 
       if(std::isnan(logDetP)){
-        cout << " Prod1.det "<< Prod1.determinant() << " Mat.det "<< Mat.determinant() << " c "<<c<<" logDetP=nan, diag Lambda "<< LU.diagonal().transpose()<<endl<<endl;
+        std::cout << " Prod1.det "<< Prod1.determinant() << " Mat.det "<< Mat.determinant() << " c "<<c<<" logDetP=nan, diag Lambda "<< LU.diagonal().transpose()<<endl<<endl;
       }
     }
 
@@ -754,7 +754,7 @@ double Inverse_woodbury(const MatrixXd& M0_inv, const double& log_det_M0, Matrix
     }
 
   }else{ // remove one subject i>nTimes
-    cout << " problem inverse_Woodbury !!!!!" <<endl;
+    std::cout << " problem inverse_Woodbury !!!!!" <<endl;
   }
 
   return(log_DetPrecMat);
@@ -772,7 +772,7 @@ double Inverse_woodbury(const MatrixXd& M0, const double& log_det_M0, MatrixXd& 
   int nTimes = Mat.rows();
 
   i=M0.rows();
-  if(i<nTimes){ cout << " problem Inverse_woodbury, should be removing one subject"<<endl;}else{ // remove one subject i>nTimes
+  if(i<nTimes){ std::cout << " problem Inverse_woodbury, should be removing one subject"<<endl;}else{ // remove one subject i>nTimes
 
     Knew.setZero(i-nTimes,i-nTimes);
     kno.setZero(i-nTimes,nTimes);

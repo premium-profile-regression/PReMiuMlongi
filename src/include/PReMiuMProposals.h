@@ -5104,7 +5104,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
             }
           }
         }else{
-          printf("responseExtraVar not possible with yModel = LME.");
+          Rprintf("responseExtraVar not possible with yModel = LME.");
         }
       }else{
         // In this case the Y go in directly
@@ -5200,7 +5200,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
                 }
 
                 if(std::isinf(-logPyXz[c]))
-                  cout <<" i "<<i<< " c " <<c << " u[i] "<<u[i]<< " testBound[c] "<<testBound[c]<<" sizek[c] "<<sizek[c]<<" logPyXz[c] "<<logPyXz[c]<<endl;
+                  std::cout <<" i "<<i<< " c " <<c << " u[i] "<<u[i]<< " testBound[c] "<<testBound[c]<<" sizek[c] "<<sizek[c]<<" logPyXz[c] "<<logPyXz[c]<<endl;
 
 
               }else{//RJ marginal likelihood without i
