@@ -934,7 +934,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
 
         if(length(fixedEffectsNames_clust[[m]])>=jj & nFixedEffects_clust[m]>0){
           for(other_spec_cov in jj:length(fixedEffectsNames_clust[[m]]))
-            mu <- mu + rep(betamix_mean[other_spec_cov] * profile_X[[fixedEffectsNames_clust[jj]]],length(tTimes))
+            mu <- mu + rep(betamix_mean[other_spec_cov] * profile_X[[fixedEffectsNames_clust[[m]][jj]]],length(tTimes))
         }
 
         GPDF <- rbind(GPDF,data.frame("time"=tTimes,"mu"=mu,

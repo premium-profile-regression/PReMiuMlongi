@@ -25,14 +25,13 @@ Imports: cluster,
          grid,
          mvtnorm, 
          pheatmap,
-         plotrix (>= 3.5),
          premiumPlots,
          Rcpp (>= 0.11),  
          stats,
          stringr,
          tibble
-LinkingTo: Rcpp, RcppEigen (>= 0.3), BH (>= 1.54), plotrix (>= 3.5)
-Suggests: mcclust
+LinkingTo: Rcpp, RcppEigen (>= 0.3), BH (>= 1.54)
+Suggests: mcclust, plotrix (>= 3.5)
 SystemRequirements: GNU make
 NeedsCompilation: yes
 Encoding: UTF-8
