@@ -27,11 +27,12 @@ Imports: cluster,
          mvtnorm, 
          pheatmap,
          premiumPlots,
-         Rcpp (>= 0.11),  
+         Rcpp (>= 0.11),
+         RcppEigen (>= 0.3),
          stats,
          stringr,
          tibble
-LinkingTo: Rcpp, RcppEigen (>= 0.3), BH (>= 1.54)
+LinkingTo: Rcpp, RcppEigen, BH (>= 1.54)
 Suggests: mcclust
 SystemRequirements: GNU make
 NeedsCompilation: yes
