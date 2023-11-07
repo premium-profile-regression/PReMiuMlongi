@@ -12,7 +12,7 @@ Maintainer: Rob Johnson <robert.johnson11@imperial.ac.uk> and Anais Rouanet
         <anais.rouanet@u-bordeaux.fr>
 Description: Extension of PReMiuM to longitudinal Gaussian outcomes for 
              profile regression using Bayesian clustering with a Dirichlet 
-             process mixture model. 
+             process mixture model. test
 URL: http://github.com/premium-profile-regression/PReMiuMlongi
 License: GPL-2
 LazyLoad: yes
