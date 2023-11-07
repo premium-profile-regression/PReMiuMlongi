@@ -31,7 +31,7 @@ Imports: cluster,
          stats,
          stringr,
          tibble
-LinkingTo: Rcpp, RcppEigen (>= 0.3), BH (>= 1.54)
+LinkingTo: Rcpp, RcppEigen (>= 0.3), BH (>= 1.54), plotrix
 Suggests: mcclust
 SystemRequirements: GNU make
 NeedsCompilation: yes
