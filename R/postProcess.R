@@ -239,10 +239,11 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     longData_FE <- data.frame("ID"=longData$ID)# for LME
     nmes<- sapply(unique(longData_FE$ID), function(x) length(which(longData_FE$ID==x)))
     # fixed effects
-    if(nOutcomes == 1 )
-      fixedEffectsNames <- list(fixedEffectsNames)
 
-    if (!missing(fixedEffectsNames)) {
+    if (!missing(fixedEffectsNames) || !is.null(fixedEffectsNames)) {
+      if(nOutcomes == 1)
+        fixedEffectsNames <- list(fixedEffectsNames)
+
       nFixedEffects<-sapply(1:nOutcomes, function(x) length(fixedEffectsNames[[x]])) #length(fixedEffectsNames_clust)
       #length(fixedEffectsNames)
 
@@ -274,14 +275,15 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         data <- cbind(data,longData[first_line,sapply(uniq_fixedEffects, function(x) which(names(longData)==x))])
       }
 
-      for (i in 1:max(nFixedEffects)){
-        if(!(fixedEffectsNames[[m]][i]%in%timevar)){
-          tmpIndex<-which(colnames(data)==fixedEffectsNames[[m]][i])
-          if (length(tmpIndex)==0) stop("ERROR: fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression")
-          FEIndeces<-append(FEIndeces,tmpIndex)
+        for (i in 1:max(nFixedEffects)){
+          if(!(fixedEffectsNames[[m]][i]%in%timevar)){
+            tmpIndex<-which(colnames(data)==fixedEffectsNames[[m]][i])
+            if (length(tmpIndex)==0) stop("ERROR: fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression")
+            FEIndeces<-append(FEIndeces,tmpIndex)
+          }
         }
-      }
-      fixedEffects<-data[,FEIndeces,drop=F]
+        fixedEffects<-data[,FEIndeces,drop=F]
+
 
       if(yModel=="LME"){
         if(length(which(!fixedEffectsNames[[m]]%in%timevar))>0){
@@ -305,7 +307,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     }
 
     # cluster-specific fixed effects
-    if (!missing(fixedEffectsNames_clust) & yModel=="LME") {
+    if (!is.null(fixedEffectsNames_clust) & yModel=="LME") {
 
       if(nOutcomes==1)
         fixedEffectsNames_clust <- list(fixedEffectsNames_clust)
@@ -468,7 +470,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       fixedEffectsNames <- fixedEffectsNames[[1]]
       write(nFixedEffects, fileName,append=T,ncolumns=nOutcomes)
 
-      if (nFixedEffects>0){
+      if (nFixedEffects[1]>0){
         write(t(fixedEffectsNames), fileName,append=T,ncolumns=1)
       }
       # write(nFixedEffects_mix, fileName,append=T,ncolumns=1)

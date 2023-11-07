@@ -15,6 +15,7 @@
 \alias{clusSummaryVarSelectBernoulliDiscrete}
 \alias{clusSummaryBernoulliMixed}
 \alias{clusSummaryWeibullDiscrete}
+\alias{clusSummaryLMEDiscrete}
 \title{Sample datasets for profile regression}
 \description{Definition of skeleton of sample datasets for profile regression.}
 \usage{
