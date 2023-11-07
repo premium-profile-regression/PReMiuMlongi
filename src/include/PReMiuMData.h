@@ -42,7 +42,6 @@
 #include<Eigen/Core>
 #include<Eigen/Cholesky>
 #include<Eigen/LU>
-#include<Eigen/CholmodSupport>
 #include <Eigen/Eigenvalues>
 
 using namespace Eigen;
