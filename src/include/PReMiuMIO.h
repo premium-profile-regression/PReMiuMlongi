@@ -817,7 +817,7 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
         nNeighbours.resize(nSubjects);
         neighbours.resize(nSubjects);
       }
-      int i=0;
+      //int i=0;
       while (neighFile.good()){
         string line;
         getline(neighFile, line);
@@ -831,7 +831,7 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
           streamline>>neighbours[j-1][k];
           k++;
         }
-        i++;
+        //i++;
       }
       neighFile.close();
     }

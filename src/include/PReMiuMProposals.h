@@ -3394,11 +3394,11 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
   vector<int> tStop = dataset.tStop();
   unsigned int nCategoriesY=dataset.nCategoriesY();
 
-  unsigned int maxNClusters=currentParams.maxNClusters();
+  //unsigned int maxNClusters=currentParams.maxNClusters();
   unsigned int maxZ = currentParams.workMaxZi();
   unsigned int nOutcomes = dataset.nOutcomes();
   vector<unsigned int> nTimes_m = dataset.nTimes_m();
-  double mu_b  = currentParams.hyperParams().muBeta();
+  //double mu_b  = currentParams.hyperParams().muBeta();
   double sigma2beta = currentParams.hyperParams().sigmaBeta(); //variance
 
 
@@ -3491,7 +3491,7 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
 
         double betaProp = S(0,0)+pow(S2(0,0),0.5)*normRand(rndGenerator);
-        betaProp =  S(0,0);
+        //betaProp =  S(0,0);
 
         currentParams.beta(m,b,0,nCategoriesY,betaProp);
 
