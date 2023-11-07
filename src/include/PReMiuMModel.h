@@ -52,6 +52,7 @@
 #include<Eigen/Core>
 #include<Eigen/Cholesky>
 #include<Eigen/LU>
+#include<RcppEigenCholmod.h>
 #include<Eigen/CholmodSupport>
 #include <Eigen/Eigenvalues>
 
