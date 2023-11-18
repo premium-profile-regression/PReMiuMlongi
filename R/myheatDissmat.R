@@ -12,6 +12,6 @@ if (!requireNamespace("plotrix", quietly = TRUE)) {
   heatmap(1 - dissMat, keep.dendro = FALSE, symm = TRUE, Rowv = NULL,
           labRow = FALSE, labCol = FALSE, margins = c(4.5, 4.5),
           col = colours, main = main, xlab = xlab, ylab = ylab)
-  color.legend(0.95, 0.7, 1, 1, legend = col.labels, colours,
+  plotrix::color.legend(0.95, 0.7, 1, 1, legend = col.labels, colours,
                         gradient = "y", align = "rb")
 }
