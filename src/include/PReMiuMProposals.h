@@ -3476,8 +3476,8 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
            //           << " dim ui "<< ui.rows()<< " "<< ui.cols()<<endl;
 
 
-          S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
-          S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
+          S += 1/pow(currentParams.SigmaE(m),nmes)*Xib.transpose()*Yi;
+          S2 += 1/pow(currentParams.SigmaE(m),nmes)*Xib.transpose()*Xib;
 
         }
 
@@ -3557,8 +3557,8 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
               Yi -= block*currentParams.RandomEffects(m,i);
               //Yi -= block*ui.row(i).transpose() ;
 
-              S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
-              S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
+              S += 1/pow(currentParams.SigmaE(m),nmes)*Xib.transpose()*Yi;
+              S2 += 1/pow(currentParams.SigmaE(m),nmes)*Xib.transpose()*Xib;
             }
           }
 
