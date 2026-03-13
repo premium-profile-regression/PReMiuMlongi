@@ -229,10 +229,10 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
   if(!excludeY){
     for (k in 1:nCovariates){
-      missingX<-is.na(dataMatrix[,(k+ifelse(yModel%in%c("Longitudinal","LME"),1,nOutcomes))])
+      missingX<-is.na(dataMatrix[,(k+ifelse(!yModel%in%c("Longitudinal","LME"),1,nOutcomes))])
       nMissingX<-sum(missingX)
       if (nMissingX>0) {
-        dataMatrix[missingX,(k+ifelse(yModel%in%c("Longitudinal","LME"),1,nOutcomes))]<- rep(-999,nMissingX)
+        dataMatrix[missingX,(k+ifelse(!yModel%in%c("Longitudinal","LME"),1,nOutcomes))]<- rep(-999,nMissingX)
       }
     }
 
@@ -929,7 +929,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (!missing(kernel)) inputString<-paste(inputString," --kernel=",  kernel ,sep="")
   if (sampleGPmean) inputString<-paste(inputString," --sampleGPmean=" ,sampleGPmean,sep="")
   if (estim_ratio) inputString<-paste(inputString," --estim_ratio=" ,estim_ratio,sep="")
-  if (!missing(seed)) inputString<-paste(inputString," --seed=",seed,sep="")
+  #if (!missing(seed)) inputString<-paste(inputString," --seed=",seed,sep="")
 
   if (run) .Call('profRegr', inputString, PACKAGE = 'PReMiuMlongi')
 
