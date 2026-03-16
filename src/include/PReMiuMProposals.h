@@ -1737,7 +1737,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       //MatrixXd cov = Rfixed - Rfixed*block.transpose()*Vi_inv*block*Rfixed;
       ui = multivarNormalRand(rndGenerator,mu,cov);
 
-      if(i<0)
+      if(std::isnan(ui(0)))
         std::cout << i <<" yi "<<yi.transpose()<<endl
                   << " block "<<block<<endl
                   << " covRE "<<currentParams.covRE(m,0)<<endl
@@ -1847,7 +1847,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
         ui_sum = ui_sum + ui;
 
-        if(i<0)
+        if(std::isnan(ui(0)))
           std::cout << i <<" yi "<<yi.transpose()<<endl
                     << " block "<<block<<endl
                     << " covRE "<<currentParams.covRE(m,0)<<endl

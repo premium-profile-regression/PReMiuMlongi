@@ -65,10 +65,11 @@ using std::time;
 using std::string;
 
 RcppExport SEXP profRegr(SEXP inputString) {
+//  std::ofstream myfile("pb.txt");
+//  std::ofstream myfile("pb.txt",std::ios::app);
 
 
-  //ofstream myfile;
-  //myfile.open ("oucacoince.txt");
+
 
   string inputStr = Rcpp::as<string>(inputString);
 
@@ -86,17 +87,22 @@ RcppExport SEXP profRegr(SEXP inputString) {
 
     // Set the options
     pReMiuMSampler.options(options);
+
     // Set the model
     pReMiuMSampler.model(&importPReMiuMData,&initialisePReMiuM,
                          &pReMiuMLogPost,true);
+
     // Set the missing data function
     pReMiuMSampler.updateMissingDataFn(&updateMissingPReMiuMData);
+
 
     // Add the function for writing output
     pReMiuMSampler.userOutputFn(&writePReMiuMOutput);
 
+
     // Seed the random number generator
     pReMiuMSampler.seedGenerator(options.seed());
+
     //pReMiuMSampler.seedGeneratorMult(options.seedsMult());
 
     // Set the sampler specific variables
@@ -115,7 +121,6 @@ RcppExport SEXP profRegr(SEXP inputString) {
     pReMiuMSampler.importData(options.inFileName(),options.predictFileName(),options.neighbourFileName());
 
     pReMiuMData dataset = pReMiuMSampler.model().dataset();
-
 
     /* ---------- Add the proposals -------- */
     // Set the proposal parameters
@@ -360,19 +365,15 @@ RcppExport SEXP profRegr(SEXP inputString) {
     /* ---------- Write the log file ------------- */
     // The standard log file
     pReMiuMSampler.writeLogFile();
-
     /* ---------- Initialise the chain ---- */
     pReMiuMSampler.initialiseChain();
-
     pReMiuMHyperParams hyperParams = pReMiuMSampler.chain().currentState().parameters().hyperParams();
     unsigned int nClusInit = pReMiuMSampler.chain().currentState().parameters().workNClusInit();
-
     // The following is only used if the sampler type is truncated
     unsigned int maxNClusters = pReMiuMSampler.chain().currentState().parameters().maxNClusters();
 
     /* ---------- Run the sampler --------- */
     // Note: in this function the output gets written
-
     pReMiuMSampler.run();
 
 

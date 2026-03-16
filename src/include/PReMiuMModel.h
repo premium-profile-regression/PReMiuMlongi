@@ -3431,6 +3431,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
           MatrixXd block=dataset.W_RE(m,tStart[curr_i]-1, 0, ni_m, dataset.nRandomEffects(m));
           yi -= block*params.RandomEffects(m,i);
 
+
           MatrixXd Vi=MatrixXd::Identity(ni_m, ni_m) * params.SigmaE(m);
           dmvnorm += -0.5*yi.transpose()*Vi.inverse()*yi - 0.5*ni_m*log(2.0*pi<double>()) - 0.5*ni_m*log(params.SigmaE(m));
 
@@ -3472,6 +3473,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         sum_ind_m += nmes_m;
      }
    }
+
 
   return dmvnorm;
 }

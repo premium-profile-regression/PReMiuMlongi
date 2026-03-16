@@ -243,17 +243,14 @@ template<class modelParamType,class optionType,class propParamType,class dataTyp
 
 		/// \brief Member function to initialise the MCMC chain
 		void initialiseChain(){
-
 		  modelParamType tmpModelParams;
 		  _model.initialiseParams(_rndGenerator,tmpModelParams);
-
 		  vector<double> logPostVec;
 
 		  logPostVec = _model.logPosterior(tmpModelParams);
 		  mcmcState<modelParamType> tmpState(tmpModelParams,logPostVec);
 		  _chain.currentState(tmpState);
 		  modelParamType params=_chain.currentState().parameters();
-
 		}
 
 		/// \brief Member function to initialise the proposal parameters

@@ -559,7 +559,6 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
   vector<double> meanX(nCovariates,0);
   vector<unsigned int> nXNotMissing(nCovariates,0);
 
-
   for(unsigned int i=0;i<nSubjects;i++){
     if(outcomeType.compare("LME")!=0){
       if(outcomeType.compare("Normal")==0||outcomeType.compare("Survival")==0||outcomeType.compare("MVN")==0){
@@ -1320,6 +1319,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
                        const mcmcModel<pReMiuMParams,pReMiuMOptions,pReMiuMData>& model,
                        pReMiuMParams& params){
 
+
   const pReMiuMData& dataset = model.dataset();
   const string kernelType=model.options().kernelType(); //AR
   const pReMiuMOptions& options = model.options();
@@ -1333,6 +1333,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   unsigned int nCovariates=dataset.nCovariates();
   unsigned int nDiscreteCovs=dataset.nDiscreteCovs();
   unsigned int nContinuousCovs=dataset.nContinuousCovs();
+
   vector<unsigned int> nRandomEffects=dataset.nRandomEffects();
   string outcomeType = options.outcomeType();
   vector<unsigned int> nFixedEffects=dataset.nFixedEffects();
@@ -1910,7 +1911,6 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
       }
     }
 
-
     if(outcomeType.compare("Normal")==0){
       randomGamma gammaRand(hyperParams.shapeSigmaSqY(),1.0/hyperParams.scaleSigmaSqY());
       double sigmaSqY=1.0/(gammaRand(rndGenerator));
@@ -1996,18 +1996,15 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
         }
 
 
-
         // Initialise random effects
         for(unsigned int i=0;i<nSubjects;i++){
           VectorXd yi;
           VectorXd ui(nRandomEffects[m]);
           unsigned int zi= params.z(i);
-
           unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
           yi.resize(ni);
 
           for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
-
             yi(j) = y[ind_y];//yi(j) = y[tStart[ind]-1+j];
 
             for(unsigned int b=0;b<nFixedEffects[m];b++){
@@ -2016,29 +2013,23 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
             for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
               yi(j)-=params.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
             }
-
             ind_y++;
           }
 
           MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
           MatrixXd sigmae=MatrixXd::Identity(ni, ni) * params.SigmaE(m);
-
           MatrixXd V = block *params.covRE(m,0)* block.transpose() + sigmae;
           LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
           MatrixXd L = lltOfA.matrixL();
           //double logDetPrecMat=  2*log(L.determinant());
           MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
           VectorXd mu = params.covRE(m,0)*block.transpose()*Vi_inv*yi;
-
           //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
           MatrixXd cov = params.covRE(m,0) - params.covRE(m,0)*block.transpose()*Vi_inv*block*params.covRE(m,0);
-
           ui = multivarNormalRand(rndGenerator,mu,cov);
           params.RandomEffects(m,i,ui);
-
           ind ++;
         }
-
         // for(unsigned int i=0;i<nSubjects;i++){
         //   //int zi = params.z(i);
         //   VectorXd mu(nRandomEffects[m]);
@@ -2105,7 +2096,6 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
       }
     }
   }
-
   // And also the extra variation values if necessary
   if(responseExtraVar){
     // Shape and rate parameters
