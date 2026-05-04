@@ -8,7 +8,19 @@ Plot the Risk Profiles for longitudinal outcome
 Plots the risk profiles for longitudinal outcome (yModel = "MVN" or "Longitudinal")
 }
 \usage{
-plotRiskProfile_longi(riskProfObj, outFile, showRelativeRisk = F, orderBy = NULL, whichClusters = NULL, whichCovariates = NULL, useProfileStar = F, riskLim = NULL, bycol = FALSE, profile_X = NULL, timevar = NULL, double_plot = FALSE)
+plotRiskProfile_longi(
+  riskProfObj,
+  outFile,
+  showRelativeRisk = F,
+  orderBy = NULL,
+  whichClusters = NULL,
+  whichCovariates = NULL,
+  useProfileStar = F,
+  riskLim = NULL,
+  bycol = FALSE,
+  profile_X = NULL,
+  timevar = NULL,
+  double_plot = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

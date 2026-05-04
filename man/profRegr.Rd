@@ -3,22 +3,52 @@
 \title{Profile Regression}
 \description{Fit a profile regression model.}
 \usage{
-profRegr(formula = NULL, covNames, fixedEffectsNames = NULL,
-                    fixedEffectsNames_clust = NULL, randomEffectsNames =
-                    NULL, outcome = "outcome", outcomeT = NA, data,
-                    longData = NULL, output = "output", hyper, predict,
-                    predictType = "RaoBlackwell", nSweeps = 1000, nBurn =
-                    1000, nProgress = 500, nFilter = 1, nClusInit, seed,
-                    yModel = "Bernoulli", xModel = "Discrete", sampler =
-                    "SliceDependent", alpha = -2, dPitmanYor = 0, excludeY
-                    = FALSE, extraYVar = FALSE, varSelectType = "None", varSelectTypeY = FALSE,
-                    entropy, reportBurnIn = FALSE, run = TRUE,
-                    discreteCovs, continuousCovs, whichLabelSwitch =
-                    "123", includeCAR = FALSE, neighboursFile =
-                    "Neighbours.txt", weibullFixedShape = TRUE,
-                    useNormInvWishPrior = FALSE, kernel = "SQexponential",
-                    sampleGPmean = FALSE, estim_ratio = F, time_grid =
-                    NULL, ngrid = 0, timevar = NULL)
+profRegr(
+  formula = NULL,
+  covNames,
+  fixedEffectsNames = NULL,
+  fixedEffectsNames_clust = NULL,
+  randomEffectsNames = NULL,
+  outcome = "outcome",
+  outcomeT = NA,
+  data,
+  longData = NULL,
+  output = "output",
+  hyper,
+  predict,
+  predictType = "RaoBlackwell",
+  nSweeps = 1000,
+  nBurn = 1000,
+  nProgress = 500,
+  nFilter = 1,
+  nClusInit,
+  seed,
+  yModel = "Bernoulli",
+  xModel = "Discrete",
+  sampler = "SliceDependent",
+  alpha = -2,
+  dPitmanYor = 0,
+  excludeY = FALSE,
+  extraYVar = FALSE,
+  varSelectType = "None",
+  varSelectTypeY = FALSE,
+  entropy,
+  reportBurnIn = FALSE,
+  run = TRUE,
+  discreteCovs,
+  continuousCovs,
+  whichLabelSwitch = "123",
+  includeCAR = FALSE,
+  neighboursFile = "Neighbours.txt",
+  weibullFixedShape = TRUE,
+  useNormInvWishPrior = FALSE,
+  kernel = "SQexponential",
+  sampleGPmean = FALSE,
+  estim_ratio = FALSE,
+  time_grid = NULL,
+  ngrid = 0,
+  timevar = NULL
+)
 }
 \arguments{
 \item{formula}{Formula for regression if yModel="LME".}

@@ -58,7 +58,7 @@
 #include<PReMiuMModel.h>
 #include<PReMiuMData.h>
 #include<PReMiuMArs.h>
-
+#include <Rcpp.h>
 using namespace Eigen;
 
 using std::vector;
@@ -1604,7 +1604,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     S.resize(nRandomEffects[m],nRandomEffects[m]);
     S.setZero();
 
-    //std::cout <<  m<<" dim S "<<S.rows()<<  " "<< S.cols()<<endl;
+    //Rcpp::Rcout <<  m<<" dim S "<<S.rows()<<  " "<< S.cols()<<endl;
 
     // for(unsigned int c=0;c<=maxZ;c++){
     //   Rc[c].setZero(nRandomEffects[m],nRandomEffects[m]);
@@ -1627,7 +1627,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         inputFile >>ui(0);
         inputFile >>ui(1);
         MatrixXd bibi = ui*ui.transpose();
-        //std::cout << i<<" ui "<< ui.transpose()<<endl;
+        //Rcpp::Rcout << i<<" ui "<< ui.transpose()<<endl;
         //S=S+bibi;
       }
       inputFile.close();
@@ -1651,23 +1651,23 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     MatrixXd Rc=(workTauLME_R02.inverse()+S).inverse();
     Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
 
-    // std::cout << " S "<<S << endl<< " workTauLME_R02 "<<workTauLME_R02.inverse()<< endl
+    // Rcpp::Rcout << " S "<<S << endl<< " workTauLME_R02 "<<workTauLME_R02.inverse()<< endl
     //           << " SigmaLME_kappa0 "<<hyperParams.SigmaLME_kappa0(m) << endl
     //           << " Rc0 "<<Rc0<<endl<< " Rc "<<Rc<< endl
     //           << " Tau "<<Tau<<endl<< " Sigma "<<Tau.inverse()<< endl;
 
     LLT<MatrixXd> lltOfA(Tau); // compute the Cholesky decomposition of A
     // MatrixXd L = lltOfA.matrixL();
-    // std::cout << " L "<<L<<endl;
+    // Rcpp::Rcout << " L "<<L<<endl;
     // double logDetPrecMat=  2*log(L.determinant());
-    // std::cout << " logDetPrecMat "<<logDetPrecMat<<endl;
+    // Rcpp::Rcout << " logDetPrecMat "<<logDetPrecMat<<endl;
 
 
     //MatrixXd Tau_inv = L.inverse().transpose()*L.inverse();
-    //std::cout << " Tau_inv "<<Tau_inv<<endl;
+    //Rcpp::Rcout << " Tau_inv "<<Tau_inv<<endl;
 
-    //std::cout << " Tau.inv "<<Tau.inverse()<<endl;
-    //std::cout << " det Tau.inv "<<Tau.determinant()<<endl;
+    //Rcpp::Rcout << " Tau.inv "<<Tau.inverse()<<endl;
+    //Rcpp::Rcout << " det Tau.inv "<<Tau.determinant()<<endl;
 
     if(2<1){
       MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
@@ -1703,7 +1703,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
           yi(j)-=currentParams.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
           // if(j==0)
-          //   std::cout << " betamix "<<currentParams.beta_mix(m,0,0,0,nCategoriesY) << " & " <<currentParams.beta_mix(m,1,1,0,nCategoriesY)
+          //   Rcpp::Rcout << " betamix "<<currentParams.beta_mix(m,0,0,0,nCategoriesY) << " & " <<currentParams.beta_mix(m,1,1,0,nCategoriesY)
           //             << " cl2 " << currentParams.beta_mix(m,1,0,0,nCategoriesY) << " & "<< currentParams.beta_mix(m,1,1,0,nCategoriesY)<<endl;
 
           // if(zi==0 & b==0)
@@ -1738,7 +1738,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       ui = multivarNormalRand(rndGenerator,mu,cov);
 
       if(std::isnan(ui(0)))
-        std::cout << i <<" yi "<<yi.transpose()<<endl
+        Rcpp::Rcout << i <<" yi "<<yi.transpose()<<endl
                   << " block "<<block<<endl
                   << " covRE "<<currentParams.covRE(m,0)<<endl
                   << " V " << V<<endl
@@ -1773,7 +1773,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       double sigma2epsilon = 1.0;//currentParams.SigmaE(m);
 
       double  beta=currentParams.beta(0,0,0,nCategoriesY);
-      std::cout << " beta "<<currentParams.beta(0,0,0,nCategoriesY)<<endl;
+      Rcpp::Rcout << " beta "<<currentParams.beta(0,0,0,nCategoriesY)<<endl;
       VectorXd betamix(2);
 
 
@@ -1835,12 +1835,12 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         if(i<0){
           for(unsigned int b=0;b<1000;b++){
             ui = multivarNormalRand(rndGenerator,mu,cov);
-            std::cout << ui.transpose()<<endl;
+            Rcpp::Rcout << ui.transpose()<<endl;
           }
-          std::cout << mu.transpose()<<endl;
+          Rcpp::Rcout << mu.transpose()<<endl;
         }
 
-        //std::cout << i << " mu "<<mu.transpose() << " cov "<< cov(0,0)<< " "<< cov(0,1)<< " "<<cov(1,1)<<endl;
+        //Rcpp::Rcout << i << " mu "<<mu.transpose() << " cov "<< cov(0,0)<< " "<< cov(0,1)<< " "<<cov(1,1)<<endl;
 
         ui = multivarNormalRand(rndGenerator,mu,cov);
         ui = mu;
@@ -1848,7 +1848,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         ui_sum = ui_sum + ui;
 
         if(std::isnan(ui(0)))
-          std::cout << i <<" yi "<<yi.transpose()<<endl
+          Rcpp::Rcout << i <<" yi "<<yi.transpose()<<endl
                     << " block "<<block<<endl
                     << " covRE "<<currentParams.covRE(m,0)<<endl
                     << " V " << V<<endl
@@ -1867,7 +1867,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
       for(unsigned int jj=0;jj<ui_sum.size();jj++)
         ui_sum(jj) = ui_sum(jj)/nSubjects;
-      std::cout << " ui_sum "<<ui_sum.transpose()<<endl;
+      Rcpp::Rcout << " ui_sum "<<ui_sum.transpose()<<endl;
     }
   }
 }
@@ -1878,7 +1878,6 @@ void gibbsForCovRELMEInActive(mcmcChain<pReMiuMParams>& chain,
                             const mcmcModel<pReMiuMParams,pReMiuMOptions,pReMiuMData>& model,
                             pReMiuMPropParams& propParams,
                             baseGeneratorType& rndGenerator){
-
   nTry++;
   nAccept++;
 
@@ -1889,14 +1888,15 @@ void gibbsForCovRELMEInActive(mcmcChain<pReMiuMParams>& chain,
   // Find the number of clusters
   unsigned int maxZ = currentParams.workMaxZi();
 
-
   // Find the number of subjects
   const pReMiuMData& dataset = model.dataset();
   unsigned int nOutcomes = dataset.nOutcomes();
+
   for(unsigned int m=0;m<nOutcomes;m++){
     for(unsigned int c=maxZ+1;c<currentParams.maxNClusters();c++){
       //MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m)); //added
       MatrixXd cov=currentParams.covRE(m,0);
+
       currentParams.covRE(m,c, cov);
     }
   }
@@ -2613,6 +2613,7 @@ void gibbsForVInActive(mcmcChain<pReMiuMParams>& chain,
                        pReMiuMPropParams& propParams,
                        baseGeneratorType& rndGenerator){
 
+
   mcmcState<pReMiuMParams>& currentState = chain.currentState();
   pReMiuMParams& currentParams = currentState.parameters();
   pReMiuMHyperParams hyperParams = currentParams.hyperParams();
@@ -2689,7 +2690,6 @@ void gibbsForVInActive(mcmcChain<pReMiuMParams>& chain,
       }
     }
     currentParams.maxNClusters(maxNClusters,covariateType,outcomeType,kernelType,nTimes_unique, nRandomEffects);
-
   }
   currentParams.v(vNew);
   currentParams.logPsi(logPsiNew);
@@ -3459,18 +3459,18 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
           }
 
-          //std::cout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
-          //std::cout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
+          //Rcpp::Rcout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
+          //Rcpp::Rcout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
 
-          //std::cout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
+          //Rcpp::Rcout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
 
           MatrixXd block=dataset.W_RE(m,tStart[nSubjects*m+i]-1, 0, tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1 , dataset.nRandomEffects(m));
           Yi -= block*currentParams.RandomEffects(m,i);
           //Yi -= block*ui.row(i).transpose() ;
 
-          //std::cout << i<< " ui "<<ui.row(i)<<endl
+          //Rcpp::Rcout << i<< " ui "<<ui.row(i)<<endl
             //         << " RE "<<currentParams.RandomEffects(m,i).transpose()<<endl;
-           // std::cout << i<< " block "<< block <<endl
+           // Rcpp::Rcout << i<< " block "<< block <<endl
            //           << " RandomEffects "<<currentParams.RandomEffects(m,i).transpose()<<endl
            //           << " block RE "<< block*currentParams.RandomEffects(m,i) <<endl
            //           << " ui "<<ui.row(i)<<endl
@@ -3550,10 +3550,10 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
                 Xib(j) = dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,b);
 
               }
-              //std::cout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
-              //std::cout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
+              //Rcpp::Rcout << "sigmaE  "<< currentParams.SigmaE(m)<<endl;
+              //Rcpp::Rcout << " block "<<tStart[nSubjects*m+i]-1 << " "<<0 << " "<< tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1<<endl;
 
-              //std::cout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
+              //Rcpp::Rcout << m<<"dim  "<< dataset.W_RE(m).rows() << " "<<dataset.W_RE(m).cols()<<endl;
 
               MatrixXd block=dataset.W_RE(m,tStart[nSubjects*m+i]-1, 0, tStop[nSubjects*m+i]-tStart[nSubjects*m+i]+1 , dataset.nRandomEffects(m));
               Yi -= block*currentParams.RandomEffects(m,i);
@@ -3582,13 +3582,13 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
   // for(unsigned int m=0;m<nOutcomes;m++){
   //   for(unsigned int b=0;b<nFixedEffects[m];b++)
-  //     std::cout << m << " b "<< b <<  " beta "<< currentParams.beta(m,b,0,nCategoriesY)<<endl;
+  //     Rcpp::Rcout << m << " b "<< b <<  " beta "<< currentParams.beta(m,b,0,nCategoriesY)<<endl;
   //
-  //   std::cout << " parameters betamix "<<maxNClusters<<endl;
+  //   Rcpp::Rcout << " parameters betamix "<<maxNClusters<<endl;
   //
   //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
   //     for(unsigned int c=0;c<maxNClusters;c++)
-  //       std::cout << m << " b "<< b <<  " c "<<c<< " betamix "<< currentParams.beta_mix(m,c,b,0, nCategoriesY)<<endl;
+  //       Rcpp::Rcout << m << " b "<< b <<  " c "<<c<< " betamix "<< currentParams.beta_mix(m,c,b,0, nCategoriesY)<<endl;
   //   }
   // }
 
@@ -3669,9 +3669,9 @@ void metropolisHastingsForBeta(mcmcChain<pReMiuMParams>& chain,
 
 
 
-  // std::cout << " nTry nFixedEffects_mix "<<nTry<<std::endl;
+  // Rcpp::Rcout << " nTry nFixedEffects_mix "<<nTry<<std::endl;
   // for(unsigned int j=0;j<nFixedEffects_mix;j++)
-  //   std::cout << j<<" propParams.nTryBetamix "<<propParams.nTryBetamix(j)<<std::endl;
+  //   Rcpp::Rcout << j<<" propParams.nTryBetamix "<<propParams.nTryBetamix(j)<<std::endl;
   //
   // if(nFixedEffects_mix>0){
   //   unsigned int maxZ = currentParams.workMaxZi();
@@ -3730,9 +3730,9 @@ void metropolisHastingsForBeta(mcmcChain<pReMiuMParams>& chain,
   //       //}
   //     }
   //   }
-  //   std::cout << " nTry nFixedEffects_mix "<<nTry<<std::endl;
+  //   Rcpp::Rcout << " nTry nFixedEffects_mix "<<nTry<<std::endl;
   //   for(unsigned int j=0;j<nFixedEffects_mix;j++)
-  //     std::cout << j<<" propParams.nTryBetamix "<<propParams.nTryBetamix(j)<<std::endl;
+  //     Rcpp::Rcout << j<<" propParams.nTryBetamix "<<propParams.nTryBetamix(j)<<std::endl;
   // }
 }
 
@@ -5176,8 +5176,8 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
               }
 
               if((Ana==2) & (abs(temp- clusterMarginal[c])>pow (1.0, -5.0))){
-                std::cout << i << " c "<< c << " det_M0[c]" << det_M0[c]<< endl;
-                std::cout << i << " c "<< c << " clusterMarginal " << clusterMarginal[c]<< " temp" << temp << endl<< endl;
+                Rcpp::Rcout << i << " c "<< c << " det_M0[c]" << det_M0[c]<< endl;
+                Rcpp::Rcout << i << " c "<< c << " clusterMarginal " << clusterMarginal[c]<< " temp" << temp << endl<< endl;
               }
             }
           }//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5202,7 +5202,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
                 }
 
                 if(std::isinf(-logPyXz[c]))
-                  std::cout <<" i "<<i<< " c " <<c << " u[i] "<<u[i]<< " testBound[c] "<<testBound[c]<<" sizek[c] "<<sizek[c]<<" logPyXz[c] "<<logPyXz[c]<<endl;
+                  Rcpp::Rcout <<" i "<<i<< " c " <<c << " u[i] "<<u[i]<< " testBound[c] "<<testBound[c]<<" sizek[c] "<<sizek[c]<<" logPyXz[c] "<<logPyXz[c]<<endl;
 
 
               }else{//RJ marginal likelihood without i
@@ -5224,8 +5224,8 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
                   }
 
                   if((Ana==2) & (abs(temp- denominator[c])>pow (1.0, -5.0))){
-                    std::cout << i << " c "<< c << " det_M0[c]" << det_M0[c]<< endl;
-                    std::cout << i << " c "<< c << " denominator " << denominator[c]<< " temp" << temp << endl<<endl;
+                    Rcpp::Rcout << i << " c "<< c << " det_M0[c]" << det_M0[c]<< endl;
+                    Rcpp::Rcout << i << " c "<< c << " denominator " << denominator[c]<< " temp" << temp << endl<<endl;
                   }
                 }else{
                   //take cluster marginal for denominator
@@ -5245,8 +5245,8 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
                   }
 
                   if((Ana==2) & (abs(temp- numerator[c])>pow(1.0, -5.0))){
-                    std::cout << i << " c "<< c << " det_M0[c]" << det_M0[c]<< endl;
-                    std::cout << i << " c "<< c << " numerator " << numerator[c]<< " temp" << temp << " sizeS0 "<< Sigma_inv_c_ord[c].rows()<< " sizek "<< sizek[c] << endl;
+                    Rcpp::Rcout << i << " c "<< c << " det_M0[c]" << det_M0[c]<< endl;
+                    Rcpp::Rcout << i << " c "<< c << " numerator " << numerator[c]<< " temp" << temp << " sizeS0 "<< Sigma_inv_c_ord[c].rows()<< " sizek "<< sizek[c] << endl;
                   }
                 }
                 logPyXz[c]+= numerator[c] - denominator[c];
@@ -5433,13 +5433,13 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
   //for(unsigned int m=0;m<dataset.nOutcomes();m++){
     // for(unsigned int b=0;b<nFixedEffects[m];b++)
-    // std::cout << m << " b : "<< b << " beta "<<currentParams.beta(m,b, 0, dataset.nCategoriesY())<<endl;
-    // std::cout << m << " covRE : "<<endl<<currentParams.covRE(m,0)<<endl;
-    // std::cout << m << " SigmaE : "<<currentParams.SigmaE(m)<<endl;
+    // Rcpp::Rcout << m << " b : "<< b << " beta "<<currentParams.beta(m,b, 0, dataset.nCategoriesY())<<endl;
+    // Rcpp::Rcout << m << " covRE : "<<endl<<currentParams.covRE(m,0)<<endl;
+    // Rcpp::Rcout << m << " SigmaE : "<<currentParams.SigmaE(m)<<endl;
     //
     // for(unsigned int c=0;c<maxNClusters;c++){
     //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++)
-    //     std::cout << m <<  " c "<< c << " b : "<< b << " beta "<<currentParams.beta_mix(m, c,b,0,dataset.nCategoriesY())<<endl;
+    //     Rcpp::Rcout << m <<  " c "<< c << " b : "<< b << " beta "<<currentParams.beta_mix(m, c,b,0,dataset.nCategoriesY())<<endl;
     // }
 
   //}

@@ -8,7 +8,11 @@ Make table of covariate profiles with information for plotting
 Used by \code{\link{plotProfilesByCluster_longi}}
 }
 \usage{
-tabulateCovariateProfiles_longi(riskProfObj, whichCovariates = NULL, rhoMinimum = NULL, useProfileStar = TRUE)
+tabulateCovariateProfiles_longi(
+ riskProfObj,
+ whichCovariates = NULL,
+ rhoMinimum = NULL,
+ useProfileStar = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

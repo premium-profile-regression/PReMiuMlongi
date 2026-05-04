@@ -8,7 +8,12 @@ Calculation of the average risks and profiles for longitudinal outcome data.
 Calculation of the average risks and profiles for longitudinal outcome data.
 }
 \usage{
-calcAvgRiskAndProfile_longi(clusObj, includeFixedEffects = F, proportionalHazards = F, nSweeps)
+calcAvgRiskAndProfile_longi(
+  clusObj,
+  includeFixedEffects = FALSE,
+  proportionalHazards = FALSE,
+  nSweeps
+)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

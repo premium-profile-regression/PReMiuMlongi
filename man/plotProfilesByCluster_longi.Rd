@@ -8,7 +8,12 @@ Plot longifutinal and covariate profiles by cluster
 Plots the longitudinal outcome (yModel="MVN" or "Longitudinal") and (discrete) covariate profiles, facetted vertically by cluster and (optionally) horizontally by some grouping (split) of the covariates. Covariate categories that are more common within a cluster than they are overall are shaded dark; those that are not are shaded light.
 }
 \usage{
-plotProfilesByCluster_longi(riskProfObj, whichCovariates = NULL, rhoMinimum = NULL, useProfileStar = TRUE, covariate_info = list(title = "Covariate\ncategory", levels = NULL, labels = NULL, split = NULL))
+plotProfilesByCluster_longi(
+ riskProfObj,
+ whichCovariates = NULL,
+ rhoMinimum = NULL,
+ useProfileStar = TRUE,
+ covariate_info = list(title = "Covariate\ncategory", levels = NULL, labels = NULL, split = NULL))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

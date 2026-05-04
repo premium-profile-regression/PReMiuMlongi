@@ -41,10 +41,9 @@
 #include<string>
 #include <algorithm>
 #include <iterator>
-
+#include <Rcpp.h>
 
 using std::ifstream;
-using std::cout;
 using std::endl;
 using std::max;
 using std::min;
@@ -268,7 +267,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
   int i,j;
   int nTimes = times.size();
   double det=0;
-  std::fstream fout("file_output.txt", std::ios::in | std::ios::out | std::ios::app);
+  //std::fstream fout("file_output.txt", std::ios::in | std::ios::out | std::ios::app);
 
   Mat.setZero(nTimes,nTimes);
 
@@ -409,7 +408,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       logdet_lambda += log(c);
 
       if(std::isnan(logdet_lambda)){
-        std::cout <<  " logdet_lambda=nan, diag Lambda "<< LU.diagonal()<<endl;
+        Rcpp::Rcout <<  " logdet_lambda=nan, diag Lambda "<< LU.diagonal()<<endl;
       }
     }
     //for(int i=0;i<nTimes;i++)
@@ -442,14 +441,14 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       logDetP += log(c);
 
       if(std::isnan(logDetP)){
-        std::cout << " Prod1.det "<< Prod1.determinant() << " Mat.det "<< Mat.determinant() << " c "<<c<<" logDetP=nan, diag Lambda "<< LU.diagonal().transpose()<<endl<<endl;
+        Rcpp::Rcout << " Prod1.det "<< Prod1.determinant() << " Mat.det "<< Mat.determinant() << " c "<<c<<" logDetP=nan, diag Lambda "<< LU.diagonal().transpose()<<endl<<endl;
       }
     }
 
     det=logDetP+logdet_lambda;
 
     if(std::isnan(det) || std::isinf(det)){
-      fout << "det Get_Sigma_inv_GP_cov "<< det << " logdet_lambda "<<logdet_lambda<<
+      Rcpp::Rcout << "det Get_Sigma_inv_GP_cov "<< det << " logdet_lambda "<<logdet_lambda<<
         " + logDetP:  "<< logDetP<<" grid.size() "<< grid.size()
                        << " eL0 " << eL0<< " eL1 " << eL1<<  " eL2 " << eL2<<endl <<
         " logdet Lambda "<< log(Lambda.determinant()) <<
@@ -754,7 +753,7 @@ double Inverse_woodbury(const MatrixXd& M0_inv, const double& log_det_M0, Matrix
     }
 
   }else{ // remove one subject i>nTimes
-    std::cout << " problem inverse_Woodbury !!!!!" <<endl;
+    Rcpp::Rcout << " problem inverse_Woodbury !!!!!" <<endl;
   }
 
   return(log_DetPrecMat);
@@ -772,7 +771,7 @@ double Inverse_woodbury(const MatrixXd& M0, const double& log_det_M0, MatrixXd& 
   int nTimes = Mat.rows();
 
   i=M0.rows();
-  if(i<nTimes){ std::cout << " problem Inverse_woodbury, should be removing one subject"<<endl;}else{ // remove one subject i>nTimes
+  if(i<nTimes){ Rcpp::Rcout << " problem Inverse_woodbury, should be removing one subject"<<endl;}else{ // remove one subject i>nTimes
 
     Knew.setZero(i-nTimes,i-nTimes);
     kno.setZero(i-nTimes,nTimes);

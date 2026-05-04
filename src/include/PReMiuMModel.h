@@ -70,7 +70,6 @@ using std::ofstream;
 using std::string;
 using std::accumulate;
 using std::numeric_limits;
-using std::cout;
 using std::endl;
 using std::max;
 
@@ -3055,7 +3054,7 @@ double logPYiGivenZiWiLongitudinal(const pReMiuMParams& params, const pReMiuMDat
 
   if(std::isnan(dmvnorm) || std::isinf(dmvnorm)){
 
-    std::cout << " dmvnorm  "<< dmvnorm<< " logDetMat "<<logDetMat << endl<<
+    Rcpp::Rcout << " dmvnorm  "<< dmvnorm<< " logDetMat "<<logDetMat << endl<<
       " zi "<<  params.z(ii) << " c "<< c <<endl<<
         " prod "<< yk.transpose()*precMat*yk <<
           " sizek "<<sizek<<endl;
@@ -3295,7 +3294,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
 
   if(std::isnan(dmvnorm) || std::isinf(dmvnorm)){
 
-    std::cout << " dmvnorm  "<< dmvnorm<< " logdetprecMat "<<logDetPrecMat << endl<<
+    Rcpp::Rcout << " dmvnorm  "<< dmvnorm<< " logdetprecMat "<<logDetPrecMat << endl<<
       " zi "<<  params.z(ii) << " c "<< c <<endl<<
         " prod "<< yk.transpose()*precMat*yk <<
           " sizek "<<sizek<<endl;
@@ -3352,7 +3351,7 @@ double logPYiGivenZiWiLongitudinal_meanGP(const pReMiuMParams& params, const pRe
 
       dmvnorm += out ;
       if((dmvnorm==0) & (ii <dataset.nSubjects())){
-        std::cout <<  " i "<< ii  << " c "<< c <<" dmvnorm "<<dmvnorm<< " ni "<< ni << " prod "<<yi.transpose()*Vi_inv*yi
+        Rcpp::Rcout <<  " i "<< ii  << " c "<< c <<" dmvnorm "<<dmvnorm<< " ni "<< ni << " prod "<<yi.transpose()*Vi_inv*yi
              << " L0 "<< params.L(c,0) << " L1 "<< params.L(c,1) << " L2 "<< params.L(c,2)
              << " yi "<<yi<<endl;
 
@@ -3947,13 +3946,13 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
           //  foutL << c <<" logPrior7_f  "<< logPrior << " a "<< a <<endl;
 
           if(a>pow(10,10)){
-            std::cout << c <<" writeoutput "<<endl;
-            std::cout << " p(f|L) "<< a << " logPrior "<< logPrior <<endl;
-            std::cout << "L "<<params.L(c,0) << " "<<params.L(c,1) << " "<<params.L(c,2) << " "<<endl;
-            std::cout << " meanGP "<<endl;
+            Rcpp::Rcout << c <<" writeoutput "<<endl;
+            Rcpp::Rcout << " p(f|L) "<< a << " logPrior "<< logPrior <<endl;
+            Rcpp::Rcout << "L "<<params.L(c,0) << " "<<params.L(c,1) << " "<<params.L(c,2) << " "<<endl;
+            Rcpp::Rcout << " meanGP "<<endl;
             for(unsigned int l=0;l<dataset.times_unique().size();l++)
-              std::cout << params.meanGP(c,l)<<" ";
-            std::cout << endl;
+              Rcpp::Rcout << params.meanGP(c,l)<<" ";
+            Rcpp::Rcout << endl;
           }
         }
       }
@@ -4838,8 +4837,8 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
         }
 
         if(es.eigenvalues()(i).imag() != 0 || es.eigenvectors()(i).imag()!=0 ){
-          std::cout << c <<" c post complex eigenvalue " <<es.eigenvalues()(i).imag()<< endl;
-          std::cout << c <<" c post complex eigenvector " <<es.eigenvectors()(i).imag()<< endl;
+          Rcpp::Rcout << c <<" c post complex eigenvalue " <<es.eigenvalues()(i).imag()<< endl;
+          Rcpp::Rcout << c <<" c post complex eigenvector " <<es.eigenvectors()(i).imag()<< endl;
         }
       }
 
@@ -4870,14 +4869,14 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
       GPmean = postM  +  GPSigma* random_vector;
 
       if(std::isnan(GPmean(1))){
-        std::cout << c <<" GPmean " << endl <<GPmean(0)<< endl;
-        std::cout << c <<" L " << params.L(c,0)<<" L " << params.L(c,1) <<" L " << params.L(c,2)<<endl;
-        std::cout << c <<" postM " << endl <<postM<< endl;
+        Rcpp::Rcout << c <<" GPmean " << endl <<GPmean(0)<< endl;
+        Rcpp::Rcout << c <<" L " << params.L(c,0)<<" L " << params.L(c,1) <<" L " << params.L(c,2)<<endl;
+        Rcpp::Rcout << c <<" postM " << endl <<postM<< endl;
         for(int i = 0; i < nTimes_unique; ++i){
-          std::cout << c <<" eigenvalue" <<es.eigenvalues()(i)<< endl<< endl;
+          Rcpp::Rcout << c <<" eigenvalue" <<es.eigenvalues()(i)<< endl<< endl;
         }
         for(int i = 0; i < nTimes_unique; ++i){
-          std::cout << c <<" eigenvalue2" <<es.eigenvalues()(i)<< endl<< endl;
+          Rcpp::Rcout << c <<" eigenvalue2" <<es.eigenvalues()(i)<< endl<< endl;
         }
       }
     }
@@ -4895,8 +4894,8 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
         eigenvalues(i)=0;
       }
       if(es.eigenvalues()(i).imag() != 0 || es.eigenvectors()(i).imag()!=0 ){
-        std::cout <<"eigenvalue"<<endl;
-        std::cout <<"eigenvalue"<<endl;
+        Rcpp::Rcout <<"eigenvalue"<<endl;
+        Rcpp::Rcout <<"eigenvalue"<<endl;
         //fout << c <<" c prior eigenvalue" <<es.eigenvalues()(i).imag()<< endl;
         //fout << c <<" c prior eigenvector" <<es.eigenvectors()(i).imag()<< endl;
       }

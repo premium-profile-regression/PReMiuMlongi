@@ -43,7 +43,6 @@
 #include<sstream>
 #include<algorithm>
 #include<iterator>
-
 #include<Eigen/Core>
 #include<Eigen/Cholesky>
 #include<Eigen/LU>
@@ -2225,7 +2224,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
   }else if(2<1 & nOutcomes == 2){
 
-    std::cout<< " init "<<endl;
+
     int zi;
     ifstream inputFile;
 
