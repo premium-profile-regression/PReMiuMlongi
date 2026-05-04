@@ -1,0 +1,14 @@
+utils::globalVariables(c(
+  "riskProfClusObj",
+  "clusObjRunInfoObj",
+  "xModel",
+  "profileStar",
+  "varSelect",
+  "risk",
+  "nClusters",
+  "lower",
+  "upper",
+  "fillColor",
+  "rhoMean",
+  "rhoRank"
+))

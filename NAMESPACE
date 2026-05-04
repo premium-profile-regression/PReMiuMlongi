@@ -17,5 +17,7 @@ import(ggplot2)
 import(dplyr)
 import(pheatmap)
 importFrom(stats, sd)
+importFrom("stats", "model.matrix")
+importFrom(rlang, .data)
 
 

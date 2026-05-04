@@ -299,7 +299,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       dataMatrix<-cbind(dataMatrix,fixedEffects)
       if(dim(fixedEffects)[2]>0){
         for (i in 1:dim(fixedEffects)[2])
-          if (class(fixedEffects[,i])=="character") stop("ERROR: fixed effects must be of class numeric. See help pages.")
+          if (is.character(fixedEffects[, i])) stop("ERROR: fixed effects must be of class numeric. See help pages.")
       }
     } else {
       nFixedEffects<-rep(0,nOutcomes)
@@ -371,7 +371,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       dataMatrix<-cbind(dataMatrix,fixedEffects_mix)
       if(dim(fixedEffects_mix)[2]>0){
         for (i in 1:dim(fixedEffects_mix)[2])
-          if (class(fixedEffects_mix[,i])=="character") stop("ERROR: cluster-specific fixed effects must be of class numeric. See help pages.")
+          if (is.character(fixedEffects_mix[, i])) stop("ERROR: cluster-specific fixed effects must be of class numeric. See help pages.")
       }
     } else {
       nFixedEffects_mix<-0
@@ -414,7 +414,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         if (sum(is.na(randomEffects))>0) stop("ERROR: covariates with random effects cannot have missing values. Use an imputation method before using profRegr().")
         #longData<-cbind(longData,randomEffects)
         for (i in 1:dim(randomEffects)[2]){
-          if (class(randomEffects[,i])=="character") stop("ERROR: covariates with random effects must be of class numeric. See help pages.")
+          if (is.character(randomEffects[, i])) stop("ERROR: covariates with random effects must be of class numeric. See help pages.")
         }
       } else {
         nRandomEffects<-0
