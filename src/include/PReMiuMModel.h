@@ -4259,7 +4259,7 @@ double logCondPostThetaBeta(const pReMiuMParams& params,
     //   }
     // }
   }else{
-    printf("should not use this function when outcome = LME");
+    Rprintf("should not use this function when outcome = LME");
   }
   // Prior for beta
   // There were no fixed effects in the Molitor paper but to be consistent with
