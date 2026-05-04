@@ -1017,6 +1017,7 @@ public:
       _workSqrtTauLME.resize(nOutcomes);
       _covRE.resize(nOutcomes);
       _SigmaE.resize(nOutcomes);
+
        for(unsigned int m=0;m<nOutcomes;m++){
         _SigmaE[m]=0.1;
         _RandomEffects[m].setZero(nSubjects,nRandomEffects[m]);
@@ -1219,11 +1220,13 @@ public:
       if (outcomeType.compare("LME")==0){
         _workLogDetTauLME.resize(nOcs, nClus);
         _workSqrtTauLME.resize(nOcs);
+        _covRE.resize(nOcs);
         for (unsigned int m=0;m<nOcs;m++){
           _workSqrtTauLME[m].resize(nClus);
-
+          _covRE[m].resize(nClus);
           for (unsigned int c=0;c<nClus;c++){
             _workSqrtTauLME[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
+            _covRE[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
           }
         }
       }

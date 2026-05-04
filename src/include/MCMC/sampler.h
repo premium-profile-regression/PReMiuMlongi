@@ -524,6 +524,8 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 	// This is the main function that runs the sampler
 
 
+	//std::ofstream file("sweep.txt");
+
 	// Define a uniform random number generator
 	randomUniform unifRand(0,1);
 
@@ -556,8 +558,9 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 				if(unifRand(_rndGenerator)<it->proposalWeight()){
 
 					// Update the chain state
-					//if( ind != 4 &ind != 5 & ind != 6  & ind != 7& ind != 16){
-					//std::cout<<"prop " << it->proposalName().c_str()<<endl;
+					//if( sweep == 286){
+					  //file <<"prop " << it->proposalName().c_str()<<endl;
+					//}
 
 
 				    it->updateParameters(_chain,_model,_rndGenerator);
@@ -568,7 +571,6 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 				}
 			}
 		}
-
 		// // At the end of the sweep make sure the log posterior is up to date.
 		 _chain.currentState().logPosterior(_model.logPosterior(_chain.currentState().parameters()));
 		//
@@ -576,7 +578,6 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 		 writeOutput(sweep);
 
 	}
-
 
 	 writeAcceptanceRates();
 

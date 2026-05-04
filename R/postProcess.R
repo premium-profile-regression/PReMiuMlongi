@@ -380,6 +380,14 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
     # cluster-specific fixed effects
     if (yModel== 'LME' ){
+      if(length(intersect(timevar, unique(unlist(fixedEffectsNames))))>0 && !all(timevar%in%unique(unlist(fixedEffectsNames)))){
+        stop("Time variables should all be associated with the same type of parameters (either common or cluster-specific).")
+      }
+      if(length(intersect(timevar, unique(unlist(fixedEffectsNames_clust))))>0 && !all(timevar%in%unique(unlist(fixedEffectsNames_clust)))){
+        stop("Time variables should all be associated with the same type of parameters (either common or cluster-specific).")
+      }
+
+
       if(!missing(randomEffectsNames) && max(lengths(randomEffectsNames))>0) {
 
         if(nOutcomes==1)
