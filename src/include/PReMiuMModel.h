@@ -1190,12 +1190,17 @@ public:
     // Check if we need to do a resize of the
     // number of various vectors
     unsigned int prevNClus = _logPsi.size();
+
     if(nClus>prevNClus){
       unsigned int nCov=nCovariates();
       unsigned int nDiscrCovs=nDiscreteCovs();
       unsigned int nDCovs = 0;
       unsigned int nContCovs=nContinuousCovs();
       unsigned int nOcs = nOutcomes();
+      if(outcomeType.compare("LME")==0){
+        nOcs = nOutcomesLME();
+      }
+
       vector<unsigned int> nCats=nCategories();
       unsigned int nCategoriesY = _theta[0].size();
 
@@ -1204,6 +1209,7 @@ public:
       _theta.resize(nClus);
       if (_nu.size()>1) _nu.resize(nClus);
       //RJ resize _L
+
       if (outcomeType.compare("Longitudinal")==0){
         _L.resize(nClus);
         _meanGP.resize(nClus);
@@ -1212,14 +1218,16 @@ public:
       }
       if (outcomeType.compare("LME")==0){
         _workLogDetTauLME.resize(nOcs, nClus);
-        _workSqrtTauLME.resize(nClus);
-        for (unsigned int m=0;m<nClus;m++){
+        _workSqrtTauLME.resize(nOcs);
+        for (unsigned int m=0;m<nOcs;m++){
+          _workSqrtTauLME[m].resize(nClus);
+
           for (unsigned int c=0;c<nClus;c++){
             _workSqrtTauLME[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
           }
         }
-
       }
+
       for (unsigned int c=0;c<nClus;c++){
         _theta[c].resize(nCategoriesY);
         if(outcomeType.compare("Longitudinal")==0 && kernelType.compare("SQexponential")==0){ //AR
@@ -1230,6 +1238,7 @@ public:
         if(outcomeType.compare("Longitudinal")==0 && kernelType.compare("SQexponential")==0)
           _meanGP[c].resize(nTimes_unique);
       }
+
       _workNXInCluster.resize(nClus);
       if (covariateType.compare("Discrete")==0){
         _logPhi.resize(nClus);
@@ -1261,11 +1270,14 @@ public:
         _MVNSigma.resize(nClus);
       }
       _gamma.resize(nClus);
+
       for(unsigned int c=prevNClus;c<nClus;c++){
+
         _workNXInCluster[c]=0;
         if (covariateType.compare("Discrete")==0){
           _logPhi[c].resize(nCov);
           _workLogPhiStar[c].resize(nCov);
+
         } else if (covariateType.compare("Normal")==0){
           _mu[c].setZero(nCov);
           _workMuStar[c].setZero(nCov);
@@ -1319,9 +1331,15 @@ public:
   unsigned int nSubjects() const{
     return _lambda.size();
   }
+
   unsigned int nOutcomes() const{
     return _MVNmu[0].size();
   }
+
+  unsigned int nOutcomesLME() const{
+    return _RandomEffects.size();
+  }
+
 
   /// \brief Return the number of covariates
   unsigned int nCovariates() const{

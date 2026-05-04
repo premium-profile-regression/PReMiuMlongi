@@ -122,6 +122,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
 
     pReMiuMData dataset = pReMiuMSampler.model().dataset();
 
+
     /* ---------- Add the proposals -------- */
     // Set the proposal parameters
     pReMiuMPropParams proposalParams(options.nSweeps(), dataset.nCovariates(), //dataset.nOutcomes(),

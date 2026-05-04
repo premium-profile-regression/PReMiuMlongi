@@ -2676,6 +2676,7 @@ void gibbsForVInActive(mcmcChain<pReMiuMParams>& chain,
         // We need a new sampled value of v
         double v=betaRand(rndGenerator,1.0-dPitmanYor,alpha+dPitmanYor*c);
         double logPsi=log(v)+log(1-vNew[c-1])-log(vNew[c-1])+logPsiNew[c-1];
+
         if(c>=vNew.size()){
           vNew.push_back(v);
           logPsiNew.push_back(logPsi);
@@ -2683,12 +2684,13 @@ void gibbsForVInActive(mcmcChain<pReMiuMParams>& chain,
           vNew[c]=v;
           logPsiNew[c]=logPsi;
         }
+
         cumPsi.push_back(cumPsi[c-1]+exp(logPsi));
       }
     }
     currentParams.maxNClusters(maxNClusters,covariateType,outcomeType,kernelType,nTimes_unique, nRandomEffects);
-  }
 
+  }
   currentParams.v(vNew);
   currentParams.logPsi(logPsiNew);
 }

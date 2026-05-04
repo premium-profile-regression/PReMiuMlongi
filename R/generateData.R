@@ -62,7 +62,6 @@ generateSampleDataFile<-function(clusterSummary){
 		VectoSample=sample(VectoSample,nSubjects,replace=FALSE)
 	}
 
-
 	# Loop over subjects
 	for(i in 1:nSubjects){
 		if (includeCAR){
@@ -702,43 +701,81 @@ clusSummaryLMEDiscrete <- function(ng=2, N=200){
       ))
   }else if(ng==3){
     liste <- list(
-      'outcomeType'='Longitudinal',
+      'outcomeType'='LME',
       'covariateType'='Discrete',
-      'kernelType'="SQexponential",
       'nCovariates'=5,
       'timeGaps'=F,
       'randomTimes'=F,
       'timepoints'=c(0,2,4,6,8,10,12),
       'nCategories'=c(3,3,3,3,3),
-      'nFixedEffects'=0,
-      'fixedEffectsCoeffs'=c(),
+      'nOutcomes'=3,
+      'nRE'=c(2,2,2),
+      'nFixedEffects'=2, #X, slope X
+      'nFixedEffects_mix'=2, #intercept, slope,
       'sigmaSqY'=1,
       'missingDataProb'=0,
-      'nClusters'=5,
-      'clusterSizes'=c(10,30,50),##//RJ
+      'nClusters'=ng,
+      'clusterSizes'=c(20,45,35),##//RJ
       'includeCAR'=FALSE,
       'TauCAR'=100,
-      'clusterData'=list(list('theta'=list('mu'=c(9,8.5,7,6,5,4,3),
-                                           'L'=c(-0.5,-0.1,-0.5)),
+      'clusterData'=list(list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
+                                           'betamix'=c(-1, -1, 2, 1, 0, 0.2),#incpt, time, for 3 outcomes
+                                           'SigmaE'=c(1,0.5,0.8),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
                               'covariateProbs'=list(c(0.8,0.1,0.1),
+                                                    c(0.1,0.7,0.2),
+                                                    c(0.2,0.2,0.6),
+                                                    c(0.5,0.3,0.2),
+                                                    c(0.4,0.1,0.5))),
+                         list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
+                                           'betamix'=c(0, 0.2, -2, -1, 2, 1 ),#incpt, time, for 3 outcomes
+                                           'SigmaE'=c(1,0.5,0.8),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+                              'covariateProbs'=list(c(0.4,0.1,0.5),
+                                                    c(0.5,0.3,0.2),
                                                     c(0.8,0.1,0.1),
+                                                    c(0.2,0.2,0.6),
+                                                    c(0.1,0.7,0.2)
+                              )),
+                         list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
+                                           'betamix'=c(2, 1 , 0, 0.2, -2, -1 ),#incpt, time, for 3 outcomes
+                                           'SigmaE'=c(1,0.5,0.8),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+                              'covariateProbs'=list(c(0.1,0.7,0.2),
+                                                    c(0.4,0.1,0.5),
+                                                    c(0.2,0.2,0.6),
                                                     c(0.8,0.1,0.1),
-                                                    c(0.8,0.1,0.1),
-                                                    c(0.8,0.1,0.1))),
-                         list('theta'=list('mu'=c(9,7,6,4,2,1,0),
-                                           'L'=c(-0.6,-0.2,-0.1)),
-                              'covariateProbs'=list(c(0.1,0.8,0.1),
-                                                    c(0.1,0.8,0.1),
-                                                    c(0.1,0.8,0.1),
-                                                    c(0.1,0.8,0.1),
-                                                    c(0.1,0.1,0.8))),
-                         list('theta'=list('mu'=c(7,5,8,9,10,11,9),
-                                           'L'=c(-0.1,-0.3,-0.7)),
-                              'covariateProbs'=list(c(0.4,0.5,0.1),
-                                                    c(0.5,0.4,0.1),
-                                                    c(0.1,0.4,0.5),
-                                                    c(0.5,0.1,0.4),
-                                                    c(0.5,0.3,0.2)))
+                                                    c(0.5,0.3,0.2)
+                              ))
+      # 'clusterData'=list(list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
+      #                                      'betamix'=c(0.8, -1, 1.1, -0.5, 0.3, 0.2),#incpt, time, for 2 outcomes
+      #                                      'SigmaE'=c(1,0.5,0.8),#common across clusters
+      #                                      'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+      #                         'covariateProbs'=list(c(0.8,0.1,0.1),
+      #                                               c(0.1,0.7,0.2),
+      #                                               c(0.2,0.2,0.6),
+      #                                               c(0.5,0.3,0.2),
+      #                                               c(0.4,0.1,0.5))),
+      #                    list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
+      #                                      'betamix'=c(1.1, 0.8, 0.5, -0.3, -0.4, 0.3),#incpt, time, for 2 outcomes
+      #                                      'SigmaE'=c(1,0.5,0.8),#common across clusters
+      #                                      'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+      #                         'covariateProbs'=list(c(0.4,0.1,0.5),
+      #                                               c(0.5,0.3,0.2),
+      #                                               c(0.8,0.1,0.1),
+      #                                               c(0.2,0.2,0.6),
+      #                                               c(0.1,0.7,0.2)
+      #                                               )),
+      #                    list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
+      #                                      'betamix'=c(1.1, -0.5, 0.3, 0.2, 0.8, -1),#incpt, time, for 2 outcomes
+      #                                      'SigmaE'=c(1,0.5,0.8),#common across clusters
+      #                                      'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+      #                         'covariateProbs'=list(c(0.1,0.7,0.2),
+      #                                               c(0.4,0.1,0.5),
+      #                                               c(0.2,0.2,0.6),
+      #                                               c(0.8,0.1,0.1),
+      #                                               c(0.5,0.3,0.2)
+      #                                               ))
       ))
   }else if(ng==5 & N<500){
     liste <- list(
@@ -880,6 +917,8 @@ clusSummaryLMEDiscrete <- function(ng=2, N=200){
                                                     c(0.8,0.1,0.1)))
       ))
 
+  }else{
+    stop("case to develop")
   }
   return(liste)
 }

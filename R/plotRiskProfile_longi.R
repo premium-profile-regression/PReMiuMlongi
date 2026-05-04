@@ -1,5 +1,6 @@
 plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=NULL,whichClusters=NULL,whichCovariates=NULL,
-                                useProfileStar=F,riskLim=NULL,bycol=FALSE, profile_X=NULL, timevar=NULL, double_plot = FALSE){
+                                useProfileStar=F,riskLim=NULL,bycol=FALSE, profile_X=NULL, time=NULL, double_plot = FALSE,
+                                form_fixedEffectNames=NULL, form_fixedEffectNames_mix=NULL, form_RE=NULL){
 
   riskProfClusObj=NULL
   clusObjRunInfoObj=NULL
@@ -45,9 +46,14 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       stop("Error: Names of profile_X do not correspond to fixedEffectsNames nor fixedEffectsNames_clust")
   }
 
-  if(is.null(profile_X) && yModel == "LME" && length(which(!c(fixedEffectsNames[[1]],fixedEffectsNames_clust[[1]])%in%c("intercept",timevar)))>0){
-    stop("Error: profile_X should be defined as a dataframe with the same name as fixedEffectsNames (and/or fixedEffectsNames_clust) if yModel = LME.")
+  if(yModel == "LME" && is.null(profile_X)){
+    stop("Error: profile_X should be defined as a dataframe including the same column names as fixedEffectsNames and fixedEffectsNames_clust, if yModel = LME.")
+  }else if(yModel == "LME" && length(which(!c(unique(unlist(fixedEffectsNames)),unique(unlist(fixedEffectsNames_clust)))%in%names(profile_X)))>0){
+    stop("Error: profile_X should be defined as a dataframe including the same column names as fixedEffectsNames and fixedEffectsNames_clust, if yModel = LME.")
   }
+  if(yModel == "LME" && is.null(time))
+    stop("Error: time should be defined as a vector of times for longitudinal predictions, if yModel = LME.")
+
 
   if (nClusters==1) stop("Cannot produce plots because only one cluster has been found.")
 
@@ -250,11 +256,11 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       MVNSigmaDim<-dim(MVNSigmaArray)
       MVNmuArray<-array(MVNmuArray[,meanSortIndex,],dim=MVNmuDim)
       MVNSigmaArray<-array(MVNSigmaArray[,meanSortIndex,],dim=MVNSigmaDim)
-    }#else if (yModel=="LME"){
+    }else if (yModel=="LME"){
       #covREArray<-array(covREArray[,meanSortIndex,],dim=dim(covREArray)) # common over clusters
       #RE_LMEArray<-array(RE_LMEArray[,meanSortIndex,],dim=dim(RE_LMEArray)) # allocated to one single cluster
-      #SigmaLMEArray<-array(RE_LMEArray[,meanSortIndex,],dim=dim(RE_LMEArray)) #not cluster-specific
-    #}
+      #SigmaLMEArray<-array(SigmaLMEArray[,meanSortIndex,],dim=dim(SigmaLMEArray)) #not cluster-specific
+    }
     if(nFixedEffects_clust[1]>0){
       betamixArray<-array(betamixArray[,,meanSortIndex,],dim=dim(betamixArray))#nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY
     }
@@ -362,8 +368,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     if (yModel=="LME"){
       # LMeans <- matrix(0,ncol=3,nrow=dim(LArray)[2])
       #
-      # covREArray<-array(0,dim=c(nSamples,nClusters,nRandomEffects*(nRandomEffects+1)/2))
-      # SigmaLMEArray<-array(0,dim=c(nSamples))
+       #covREArray<-array(0,dim=c(nSamples,nClusters,nRandomEffects*(nRandomEffects+1)/2))
+       #SigmaLMEArray<-array(0,dim=c(nSamples))
       # RE_LMEArray<-array(0,dim=c(nSamples, nSubjects,nRandomEffects))
       #
       # LMEmuMean
@@ -877,6 +883,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     palette <- rainbow(max(whichClusters))
     indi = 1
     indi_mj = 0
+    indi_RE=0
     for(m in 1:nOutcomes){
       GPDF<-data.frame("time"=c(),"mu"=c(),"cluster"=c(),"sigma"=c(),"fillColor"=c())
 
@@ -884,66 +891,86 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       times <- longMat$time[which(!is.na(yData))]
       yData <- yData[which(!is.na(yData))]
 
-      tTimes <- seq(min(times),max(times),length.out=41)
+      tTimes <- time#seq(min(times),max(times),length.out=41)
 
       #times_c <- list()
       #yData_c <- list()
       mu <- rep(0,length(tTimes))
-
-      betaArray_m <-betaArray[,indi_mj+1:nFixedEffects[m],]#per marker, per j
-      indi_mj = indi_mj +nFixedEffects[m]
-
       if(nFixedEffects[m]>0){
-        if(nFixedEffects[m]==1){
-            #betamean <-  mean(betaArray_m[,1,]) #nSamples,nOutcomes*nFixedEffects[1],nCategoriesY
-            betamean <-  matrix(mean(betaArray_m),1,1)
-        }else{
-          betamean <-  as.vector(colMeans(betaArray_m))
-        }
+        betaArray_m <-betaArray[,indi_mj+1:nFixedEffects[m], ]#per marker, per j
 
-        if(all(timevar %in% fixedEffectsNames[[m]])){
-          ind_time <- which(fixedEffectsNames[[m]] %in% c("intercept",timevar))
-          mat_times <- rep(1,length(tTimes))
-          for(jj in 1:length(timevar))
-            mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jj))
-          mu <- betamean[c(1,ind_time)] %*% mat_times
-        }
+          if(nFixedEffects[m]==1){
+              #betamean <-  mean(betaArray_m[,1,]) #nSamples,nOutcomes*nFixedEffects[1],nCategoriesY
+              betamean <-  matrix(mean(betaArray_m),1,1)
+          }else{
+            betamean <-  as.vector(colMeans(betaArray_m))
+          }
+        #betamean <- colMeans(betaArray_m[,,1])
+        profile <- model.matrix(form_fixedEffectNames[[m]], profile_X)
+        mu <- mu + as.vector(betamean %*% t(profile))
 
-        if(nFixedEffects[m]==1){
-          mu <- mu + rep(betamean * profile_X[[1]],length(tTimes))
+        Zi <- model.matrix(form_RE[[m]], profile_X)
+        B <- matrix(0,dim(Zi)[2],dim(Zi)[2])
+        if(dim(Zi)[2]>1){
+          covRE = colMeans(covREArray[,indi_RE +(1:(dim(Zi)[2]*(dim(Zi)[2]+1)/2))])
+          B[lower.tri(B,diag=T)] <- covRE
+          B[upper.tri(B)] <- t(B)[upper.tri(B)]
         }else{
-          mu <- mu + rep(t(as.matrix(colMeans(betaArray_m),1,4)) %*% t(profile_X[,sapply(fixedEffectsNames[[m]], function(x) which(names(profile_X)==x))]),length(tTimes))
+          B[1] = mean(covREArray[,indi_RE +(1:(dim(Zi)[2]*(dim(Zi)[2]+1)/2))])
         }
+        indi_RE = indi_RE +(dim(Zi)[2]*(dim(Zi)[2]+1)/2)
+
+        sigmaLME = mean(SigmaLMEArray[,m])
+
+        # if(all(timevar %in% fixedEffectsNames[[m]])){
+        #   ind_time <- which(fixedEffectsNames[[m]] %in% c("intercept",timevar))
+        #   mat_times <- rep(1,length(tTimes))
+        #   for(jj in 1:length(timevar))
+        #     mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jj))
+        #   mu <- betamean[c(1,ind_time)] %*% mat_times
+        # }
+        # if(nFixedEffects[m]==1){
+        #   mu <- mu + rep(betamean * profile_X[[1]],length(tTimes))
+        # }else{
+        #   mu <- mu + rep(t(as.matrix(colMeans(betaArray_m),1,4)) %*% t(profile_X[,sapply(fixedEffectsNames[[m]], function(x) which(names(profile_X)==x))]),length(tTimes))
+        # }
       }
 
       mu0 <- mu
       for(c in whichClusters){
         mu <- mu0
         if(nFixedEffects_clust[m]>0)
-          betamix_mean <- colMeans(betamixArray[,m,c,1:nFixedEffects_clust[m]]) #nSamples,nOutcomes,nClusters,nFixedEffects_clust[1]*nCategoriesY
-        jj=1
-        if(any(timevar %in% fixedEffectsNames_clust[[m]])){
-          ind_time <- which(fixedEffectsNames_clust[[m]] %in% c("intercept",timevar))
-          mat_times <- rep(1,length(tTimes))
-          for(jjj in 1:length(ind_time))
-            mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jjj))
-          if(nFixedEffects_clust[m]>0)
-            mu <- mu + mat_times %*%betamix_mean[c(1,ind_time+1)]
-          jj = jj + length(ind_time)
-        }
+          if(nFixedEffects_clust[m]==1){
+            betamix_mean <-  matrix(mean(betamixArray),1,1)
+          }else{
+            betamix_mean <-  as.vector(colMeans(betamixArray[,m,c,1:nFixedEffects_clust[m]]))
+          }
 
-        if(length(fixedEffectsNames_clust[[m]])>=jj & nFixedEffects_clust[m]>0){
-          for(other_spec_cov in jj:length(fixedEffectsNames_clust[[m]]))
-            mu <- mu + rep(betamix_mean[other_spec_cov] * profile_X[[fixedEffectsNames_clust[[m]][jj]]],length(tTimes))
-        }
+        profile <- model.matrix(form_fixedEffectNames_mix[[m]], profile_X)
+        mu <- mu + as.vector(betamix_mean %*% t(profile))
+
+        # jj=1
+        # if(any(timevar %in% fixedEffectsNames_clust[[m]])){
+        #   ind_time <- which(fixedEffectsNames_clust[[m]] %in% c("intercept",timevar))
+        #   mat_times <- rep(1,length(tTimes))
+        #   for(jjj in 1:length(ind_time))
+        #     mat_times<- cbind(mat_times, sapply(tTimes, function(x) x^jjj))
+        #   if(nFixedEffects_clust[m]>0)
+        #     mu <- mu + mat_times %*%betamix_mean[c(1,ind_time+1)]
+        #   jj = jj + length(ind_time)
+        # }
+        #
+        # if(length(fixedEffectsNames_clust[[m]])>=jj & nFixedEffects_clust[m]>0){
+        #   for(other_spec_cov in jj:length(fixedEffectsNames_clust[[m]]))
+        #     mu <- mu + rep(betamix_mean[other_spec_cov] * profile_X[[fixedEffectsNames_clust[[m]][jj]]],length(tTimes))
+        # }
 
         GPDF <- rbind(GPDF,data.frame("time"=tTimes,"mu"=mu,
                                       "cluster"=rep(c,times=length(tTimes)),
                                       "sigma"=mu,#1.645*sqrt(diag(params$GPSigma)),
-                                      "inf"=mu,#params$mu+longMean-1.645*sqrt(diag(params$GPSigma)),
-                                      "sup"=mu,#params$mu+longMean+1.645*sqrt(diag(params$GPSigma)),
+                                      "inf"=mu-sqrt(diag(Zi%*%B%*%t(Zi))),#params$mu+longMean-1.645*sqrt(diag(params$GPSigma)),
+                                      "sup"=mu+sqrt(diag(Zi%*%B%*%t(Zi))),#params$mu+longMean+1.645*sqrt(diag(params$GPSigma)),
                                       "fillColor"=riskColor[c]))
-
         #       dev.off()
         #       par(mfrow=c(1,1))
         #       c=1
@@ -960,7 +987,6 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       }
 
       rownames(GPDF)<-seq(1,nrow(GPDF),1)
-
       longFile <- paste(strsplit(outFile,"\\.")[[1]][1],'-outc',m,'-trajectories-data.png',sep="")
       png(longFile,width=1200,height=800)
       plotLayout<-grid.layout(ncol = 1, nrow = 1)
@@ -989,23 +1015,22 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       #   }
       #   indi = indi+1
       # }
-      plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
+      plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
       plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
       plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
-      plotObj <- plotObj + labs(color="Cluster")
+      plotObj <- plotObj + labs(color="Cluster", title=paste0("Spaghetti plot ", outcome[m]))
       plotObj <- plotObj + labs(y=outcome[m])+theme(axis.title.y=element_text(size=30,angle=90))
       plotObj <- plotObj + labs(x="\nTime")+theme(axis.title.x=element_text(size=30))
       plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf,yData),max(GPDF$sup,yData)))
       plotObj <- plotObj + theme(axis.text.x=element_text(size=30)) + theme(axis.text.y=element_text(size=30))
-      plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=2),
-                                 axis.line.y = element_line(colour="black",size=2))
+      plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=2),
+                                 axis.line.y = element_line(colour="black",linewidth=2))
       plotObj <- plotObj + theme(legend.title=element_text(size=30)) + theme(legend.text=element_text(size=25))
       plotObj <- plotObj + theme(plot.title=element_text(size=30))
       #   plotObj <- plotObj + coord_cartesian(ylim = c(0,max(GPDF$mu+GPDF$sigma)))#min(GPDF$mu-GPDF$sigma),max(GPDF$mu+GPDF$sigma)))
       #   plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
       print(plotObj,vp=viewport(layout.pos.row=1,layout.pos.col=1))
       dev.off()
-
 
       ##//RJ data plot
       longFile <- paste(strsplit(outFile,"\\.")[[1]][1],'-outc',m,'-trajectories.png',sep="")
@@ -1014,7 +1039,9 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       grid.newpage()
       pushViewport(viewport(layout = plotLayout))
       plotObj <- ggplot(GPDF)
-      plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
+      plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
+      plotObj <- plotObj + geom_ribbon(aes(x = time, ymin = inf, ymax = sup,group=cluster,fill=as.factor(cluster)), alpha=0.2, show.legend = F)
+
       #plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
       #plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
       plotObj <- plotObj + labs(color="Cluster")
@@ -1022,8 +1049,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       plotObj <- plotObj + labs(x="Time")+theme(axis.title.x=element_text(size=40))
       plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
       plotObj <- plotObj + theme(axis.text.x=element_text(size=30)) + theme(axis.text.y=element_text(size=30))
-      plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=2),
-                                 axis.line.y = element_line(colour="black",size=2))
+      plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=2),
+                                 axis.line.y = element_line(colour="black",linewidth=2))
       plotObj <- plotObj + theme(legend.title=element_text(size=30)) + theme(legend.text=element_text(size=30))
       plotObj <- plotObj + theme(plot.title=element_text(size=30))
       #plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
@@ -1035,17 +1062,17 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
         longFile <- paste(strsplit(outFile,"\\.")[[1]][1],'-outc',m,'-all_trajectories.png',sep="")
         png(longFile,width=1200,height=800)
         plotObj <- ggplot(GPDF) + theme_bw()
-        plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
-        #plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
-        #plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
+        plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
+        plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
+        plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
         plotObj <- plotObj + labs(color="Cluster")
         plotObj <- plotObj + labs(y="Cluster-specific outcome")+theme(axis.title.y=element_text(size=30,angle=90))
         plotObj <- plotObj + labs(x="Time") + theme(axis.title.x=element_text(size=30))
         plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
         plotObj <- plotObj + theme(axis.text.x=element_text(size=20, color = "black"), axis.text.y=element_text(size=20, color = "black"))
 
-        plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=1),
-                                   axis.line.y = element_line(colour="black",size=1))
+        plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=1),
+                                   axis.line.y = element_line(colour="black",linewidth=1))
         #plotObj <- plotObj + theme(legend.title=element_text(size=10)) + theme(legend.text=element_text(size=20))
         #plotObj <- plotObj + theme(plot.title=element_text(size=10))
 
@@ -1192,7 +1219,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
         plotObj <- plotObj + geom_line(data=df,aes(x,y),colour='azure4')
       }
     }
-    plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
+    plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
     plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
     plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
     plotObj <- plotObj + labs(color="Cluster")
@@ -1200,8 +1227,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     plotObj <- plotObj + labs(x="\nTime")+theme(axis.title.x=element_text(size=30))
     plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf,yData),max(GPDF$sup,yData)))
     plotObj <- plotObj + theme(axis.text.x=element_text(size=30)) + theme(axis.text.y=element_text(size=30))
-    plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=2),
-                               axis.line.y = element_line(colour="black",size=2))
+    plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=2),
+                               axis.line.y = element_line(colour="black",linewidth=2))
     plotObj <- plotObj + theme(legend.title=element_text(size=30)) + theme(legend.text=element_text(size=25))
     plotObj <- plotObj + theme(plot.title=element_text(size=30))
     #   plotObj <- plotObj + coord_cartesian(ylim = c(0,max(GPDF$mu+GPDF$sigma)))#min(GPDF$mu-GPDF$sigma),max(GPDF$mu+GPDF$sigma)))
@@ -1216,7 +1243,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     grid.newpage()
     pushViewport(viewport(layout = plotLayout))
     plotObj <- ggplot(GPDF)
-    plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
+    plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
     #plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
     #plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
     plotObj <- plotObj + labs(color="Cluster")
@@ -1224,8 +1251,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
     plotObj <- plotObj + labs(x="Time")+theme(axis.title.x=element_text(size=40))
     plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
     plotObj <- plotObj + theme(axis.text.x=element_text(size=30)) + theme(axis.text.y=element_text(size=30))
-    plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=2),
-                               axis.line.y = element_line(colour="black",size=2))
+    plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=2),
+                               axis.line.y = element_line(colour="black",linewidth=2))
     plotObj <- plotObj + theme(legend.title=element_text(size=30)) + theme(legend.text=element_text(size=30))
     plotObj <- plotObj + theme(plot.title=element_text(size=30))
     #plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
@@ -1237,7 +1264,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       longFile <- paste(strsplit(outFile,"\\.")[[1]][1],'-all_trajectories.png',sep="")
       png(longFile,width=1200,height=800)
       plotObj <- ggplot(GPDF) + theme_bw()
-      plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
+      plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
       #plotObj <- plotObj + geom_line(aes(x=time,y=sup,group=cluster,colour=as.factor(cluster)))
       #plotObj <- plotObj + geom_line(aes(x=time,y=inf,group=cluster,colour=as.factor(cluster)))
       plotObj <- plotObj + labs(color="Cluster")
@@ -1246,8 +1273,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       plotObj <- plotObj + coord_cartesian(ylim = c(min(GPDF$inf),max(GPDF$sup)))
       plotObj <- plotObj + theme(axis.text.x=element_text(size=20, color = "black"), axis.text.y=element_text(size=20, color = "black"))
 
-      plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=1),
-                                 axis.line.y = element_line(colour="black",size=1))
+      plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=1),
+                                 axis.line.y = element_line(colour="black",linewidth=1))
       #plotObj <- plotObj + theme(legend.title=element_text(size=10)) + theme(legend.text=element_text(size=20))
       #plotObj <- plotObj + theme(plot.title=element_text(size=10))
 
@@ -1456,15 +1483,15 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
 
     png(longFile,width=1200,height=800)
     plotObj <- ggplot(profileDFmean) + theme_bw()
-    plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),size=2)
+    plotObj <- plotObj + geom_line(aes(x=time,y=mu,group=cluster,colour=as.factor(cluster)),linewidth=2)
     plotObj <- plotObj + labs(color="Cluster")
     plotObj <- plotObj + labs(y="Cluster-specific outcome")+theme(axis.title.y=element_text(size=30,angle=90))
     plotObj <- plotObj + labs(x="Time") + theme(axis.title.x=element_text(size=30))
     plotObj <- plotObj + coord_cartesian(ylim = c(min(profileDFmean$mu),max(profileDFmean$mu)))
     plotObj <- plotObj + theme(axis.text.x=element_text(size=20, color = "black"), axis.text.y=element_text(size=20, color = "black"))
 
-    plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",size=1),
-                               axis.line.y = element_line(colour="black",size=1))
+    plotObj <- plotObj + theme(axis.line.x = element_line(colour="black",linewidth=1),
+                               axis.line.y = element_line(colour="black",linewidth=1))
 
     p1<- plotObj + facet_wrap(~cluster,ncol=1, strip.position="left")+theme(legend.position = "none")
     ##!! varSelect
