@@ -1,4 +1,4 @@
-calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=F,proportionalHazards=F,nSweeps){
+calcAvgRiskAndProfile_longi<-function(clusObj,includeFixedEffects=FALSE,proportionalHazards=FALSE,nSweeps){
 
   clusObjRunInfoObj=NULL
   directoryPath=NULL

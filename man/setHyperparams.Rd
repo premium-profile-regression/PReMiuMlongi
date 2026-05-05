@@ -21,7 +21,8 @@ setHyperparams(shapeAlpha = NULL, rateAlpha = NULL, aPhi = NULL, mu0
                     NULL, initL = NULL, muLSignal = 0, sigmaLSignal = 0,
                     muLLengthscale = 0, sigmaLLengthscale = 0, muLNoise =
                     0, sigmaLNoise = 0, MVNmu0 = NULL, MVNTau0 = NULL,
-                    MVNR0 = NULL, MVNkappa0 = NULL, MVNnu0 = NULL)
+                    MVNR0 = NULL, MVNkappa0 = NULL, MVNnu0 = NULL,
+                    eps_shape = NULL, eps_scale = NULL)
 }
 \arguments{
 

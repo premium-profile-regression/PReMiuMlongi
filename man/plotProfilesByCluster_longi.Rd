@@ -14,7 +14,7 @@ plotProfilesByCluster_longi(
  rhoMinimum = NULL,
  useProfileStar = TRUE,
  covariate_info = list(title = "Covariate\ncategory",
-  levels = NULL, labels = NULL, split = NULL))
+ levels = NULL, labels = NULL, split = NULL))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

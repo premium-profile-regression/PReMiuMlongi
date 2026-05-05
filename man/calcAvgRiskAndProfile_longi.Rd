@@ -11,8 +11,7 @@ Calculation of the average risks and profiles for longitudinal outcome data.
 calcAvgRiskAndProfile_longi(
   clusObj,
   includeFixedEffects = FALSE,
-  proportionalHazards = FALSE,
-  nSweeps
+  proportionalHazards = FALSE
 )
 }
 %- maybe also 'usage' for other objects documented here.
@@ -25,9 +24,6 @@ By default this is set to FALSE. If it is set to FALSE then the risk profile is 
 }
   \item{proportionalHazards}{
 Whether the risk matrix should include lambda only for the yModel="Survival" case so that the proportional hazards can be computed in the plotting function. The default is the average survival time.
-}
-  \item{nSweeps}{
-Number of MCMC iterations.
 }
 }
 \details{
