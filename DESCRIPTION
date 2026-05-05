@@ -31,8 +31,7 @@ Imports: cluster,
          RcppEigen (>= 0.3),
          stats,
          stringr,
-         tibble,
-         rlang
+         tibble
 LinkingTo: Rcpp, RcppEigen, BH (>= 1.54)
 Suggests: mcclust
 SystemRequirements: GNU make
