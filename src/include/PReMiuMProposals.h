@@ -1582,7 +1582,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
   // In the following it is useful to have the rows of X as
   // Get individual random effects
 
-
   int ind=0;//tstart
   int ind_y=0;//y and t
   for(unsigned int m=0;m<nOutcomes;m++){
@@ -1610,27 +1609,9 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     //   Rc[c].setZero(nRandomEffects[m],nRandomEffects[m]);
     // }
 
-
     for(unsigned int i=0;i<nSubjects;i++){
       MatrixXd bibi = bi.row(i).transpose()*bi.row(i);
       S=S+bibi;
-    }
-
-    if(2<1){
-      ifstream inputFile;
-      string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui2_500.txt";
-      inputFile.open(fitFilename.c_str());
-      //S.setZero();
-
-      for(unsigned int i=0;i<nSubjects;i++){
-        VectorXd ui(2);
-        inputFile >>ui(0);
-        inputFile >>ui(1);
-        MatrixXd bibi = ui*ui.transpose();
-        //Rcpp::Rcout << i<<" ui "<< ui.transpose()<<endl;
-        //S=S+bibi;
-      }
-      inputFile.close();
     }
 
 
@@ -1644,7 +1625,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     // currentParams.covRE(covv);
 
     //currentParams.covRE(Tau.inverse());
-
 
     MatrixXd  workTauLME_R02 = hyperParams.workTauLME_R0(m);
     //MatrixXd Rc0=workTauLME_R02.inverse()+S;
@@ -1669,20 +1649,12 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     //Rcpp::Rcout << " Tau.inv "<<Tau.inverse()<<endl;
     //Rcpp::Rcout << " det Tau.inv "<<Tau.determinant()<<endl;
 
-    if(2<1){
-      MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
-      Rfixed.setZero();
-      Rfixed(0,0)=4.50;
-      Rfixed(1,0)=0.36;
-      Rfixed(0,1)=0.36;
-      Rfixed(1,1)=0.79;
-    }
-
 
     for(unsigned int c=0;c<=maxZ;c++)
       currentParams.covRE(m,c, Tau.inverse());
 
     for(unsigned int i=0;i<nSubjects;i++){
+
       VectorXd yi;
       VectorXd ui(nRandomEffects[m]);
       unsigned int zi= currentParams.z(i);
@@ -1754,8 +1726,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
           ind_y += ntot;
         ind ++;
     }
-
-
 
 
 
