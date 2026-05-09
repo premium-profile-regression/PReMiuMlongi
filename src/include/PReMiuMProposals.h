@@ -1629,29 +1629,31 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     MatrixXd  workTauLME_R02 = hyperParams.workTauLME_R0(m);
     //MatrixXd Rc0=workTauLME_R02.inverse()+S;
     MatrixXd Rc=(workTauLME_R02.inverse()+S).inverse();
-    Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
 
-    // Rcpp::Rcout << " S "<<S << endl<< " workTauLME_R02 "<<workTauLME_R02.inverse()<< endl
-    //           << " SigmaLME_kappa0 "<<hyperParams.SigmaLME_kappa0(m) << endl
-    //           << " Rc0 "<<Rc0<<endl<< " Rc "<<Rc<< endl
-    //           << " Tau "<<Tau<<endl<< " Sigma "<<Tau.inverse()<< endl;
+    for(unsigned int c=0;c<=maxZ;c++){
 
-    LLT<MatrixXd> lltOfA(Tau); // compute the Cholesky decomposition of A
-    // MatrixXd L = lltOfA.matrixL();
-    // Rcpp::Rcout << " L "<<L<<endl;
-    // double logDetPrecMat=  2*log(L.determinant());
-    // Rcpp::Rcout << " logDetPrecMat "<<logDetPrecMat<<endl;
+      Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
 
+      // Rcpp::Rcout << " S "<<S << endl<< " workTauLME_R02 "<<workTauLME_R02.inverse()<< endl
+      //           << " SigmaLME_kappa0 "<<hyperParams.SigmaLME_kappa0(m) << endl
+      //           << " Rc0 "<<Rc0<<endl<< " Rc "<<Rc<< endl
+      //           << " Tau "<<Tau<<endl<< " Sigma "<<Tau.inverse()<< endl;
 
-    //MatrixXd Tau_inv = L.inverse().transpose()*L.inverse();
-    //Rcpp::Rcout << " Tau_inv "<<Tau_inv<<endl;
-
-    //Rcpp::Rcout << " Tau.inv "<<Tau.inverse()<<endl;
-    //Rcpp::Rcout << " det Tau.inv "<<Tau.determinant()<<endl;
+      LLT<MatrixXd> lltOfA(Tau); // compute the Cholesky decomposition of A
+      // MatrixXd L = lltOfA.matrixL();
+      // Rcpp::Rcout << " L "<<L<<endl;
+      // double logDetPrecMat=  2*log(L.determinant());
+      // Rcpp::Rcout << " logDetPrecMat "<<logDetPrecMat<<endl;
 
 
-    for(unsigned int c=0;c<=maxZ;c++)
+      //MatrixXd Tau_inv = L.inverse().transpose()*L.inverse();
+      //Rcpp::Rcout << " Tau_inv "<<Tau_inv<<endl;
+
+      //Rcpp::Rcout << " Tau.inv "<<Tau.inverse()<<endl;
+      //Rcpp::Rcout << " det Tau.inv "<<Tau.determinant()<<endl;
       currentParams.covRE(m,c, Tau.inverse());
+
+    }
 
     for(unsigned int i=0;i<nSubjects;i++){
 
@@ -1694,7 +1696,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
       MatrixXd sigmae=MatrixXd::Identity(ni, ni) * currentParams.SigmaE(m);
 
-      MatrixXd V = block *currentParams.covRE(m,0)* block.transpose() + sigmae;
+      MatrixXd V = block *currentParams.covRE(m,zi)* block.transpose() + sigmae;
       //MatrixXd V = block * Rfixed* block.transpose() + sigmae;
 
       LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
@@ -1702,17 +1704,17 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       //double logDetPrecMat=  2*log(L.determinant());
       MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
 
-      VectorXd mu = currentParams.covRE(m,0)*block.transpose()*Vi_inv*yi;
+      VectorXd mu = currentParams.covRE(m,zi)*block.transpose()*Vi_inv*yi;
       //VectorXd mu = Rfixed*block.transpose()*Vi_inv*yi;
       //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-      MatrixXd cov = currentParams.covRE(m,0) - currentParams.covRE(m,0)*block.transpose()*Vi_inv*block*currentParams.covRE(m,0);
+      MatrixXd cov = currentParams.covRE(m,zi) - currentParams.covRE(m,zi)*block.transpose()*Vi_inv*block*currentParams.covRE(m,zi);
       //MatrixXd cov = Rfixed - Rfixed*block.transpose()*Vi_inv*block*Rfixed;
       ui = multivarNormalRand(rndGenerator,mu,cov);
 
       if(std::isnan(ui(0)))
         Rcpp::Rcout << i <<" yi "<<yi.transpose()<<endl
                   << " block "<<block<<endl
-                  << " covRE "<<currentParams.covRE(m,0)<<endl
+                  << " covRE "<<currentParams.covRE(m,zi)<<endl
                   << " V " << V<<endl
                   << " Vi_inv " << Vi_inv<<endl
                   << " mu " << mu.transpose()<<endl
@@ -1820,7 +1822,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         if(std::isnan(ui(0)))
           Rcpp::Rcout << i <<" yi "<<yi.transpose()<<endl
                     << " block "<<block<<endl
-                    << " covRE "<<currentParams.covRE(m,0)<<endl
+                    << " covRE "<<currentParams.covRE(m,zi)<<endl
                     << " V " << V<<endl
                     << " Vi_inv " << Vi_inv<<endl
                     << " mu " << mu.transpose()<<endl
@@ -1865,7 +1867,7 @@ void gibbsForCovRELMEInActive(mcmcChain<pReMiuMParams>& chain,
   for(unsigned int m=0;m<nOutcomes;m++){
     for(unsigned int c=maxZ+1;c<currentParams.maxNClusters();c++){
       //MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m)); //added
-      MatrixXd cov=currentParams.covRE(m,0);
+      MatrixXd cov=currentParams.covRE(m,c);
 
       currentParams.covRE(m,c, cov);
     }
