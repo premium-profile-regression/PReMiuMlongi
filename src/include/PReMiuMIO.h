@@ -2017,14 +2017,14 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
           MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
           MatrixXd sigmae=MatrixXd::Identity(ni, ni) * params.SigmaE(m);
-          MatrixXd V = block *params.covRE(m,0)* block.transpose() + sigmae;
+          MatrixXd V = block *params.covRE(m,zi)* block.transpose() + sigmae;
           LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
           MatrixXd L = lltOfA.matrixL();
           //double logDetPrecMat=  2*log(L.determinant());
           MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
-          VectorXd mu = params.covRE(m,0)*block.transpose()*Vi_inv*yi;
+          VectorXd mu = params.covRE(m,zi)*block.transpose()*Vi_inv*yi;
           //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-          MatrixXd cov = params.covRE(m,0) - params.covRE(m,0)*block.transpose()*Vi_inv*block*params.covRE(m,0);
+          MatrixXd cov = params.covRE(m,zi) - params.covRE(m,zi)*block.transpose()*Vi_inv*block*params.covRE(m,zi);
           ui = multivarNormalRand(rndGenerator,mu,cov);
           params.RandomEffects(m,i,ui);
           ind ++;
@@ -2873,10 +2873,10 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           vector<unsigned int> nRandomEffects = dataset.nRandomEffects();
 
           for(unsigned int m=0;m<nOutcomes;m++){
-            //for(unsigned int c=0;c< maxNClusters;c++){
+            for(unsigned int c=0;c< maxNClusters;c++){
               for(unsigned int l=0;l<nRandomEffects[m];l++){
                 for(unsigned int l2=0;l2<=l;l2++){
-                  *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,0,l,l2);
+                  *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,c,l,l2);
                   if( l2<(nRandomEffects[m]-1)){
                     *(outFiles[CovRELMEInd]) << " ";
                   }else{
@@ -2884,7 +2884,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
                   }
                 }
               }
-            //}
+            }
 
             *(outFiles[EpsilonLMEInd]) << params.SigmaE(m) << endl; //params.sigmakInd(c);
           }

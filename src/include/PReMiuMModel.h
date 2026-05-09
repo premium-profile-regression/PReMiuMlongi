@@ -3437,7 +3437,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         if(!cond_RE){
           MatrixXd block=dataset.W_RE(m, tStart[curr_i]-1, 0, ni_m, dataset.nRandomEffects(m));
 
-          MatrixXd Vi=block*params.covRE(m,0)*block.transpose()+MatrixXd::Identity(ni_m, ni_m) * params.SigmaE(m);
+          MatrixXd Vi=block*params.covRE(m,c)*block.transpose()+MatrixXd::Identity(ni_m, ni_m) * params.SigmaE(m);
 
           LLT<MatrixXd> lltOfA(Vi);
           MatrixXd L = lltOfA.matrixL();
@@ -3971,7 +3971,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
       for(unsigned int m=0;m<nOutcomes;m++){
         for(unsigned int c=0;c<maxNClusters;c++){
           //     //logPrior+=logPdfMultivarNormal(nOutcomes,params.MVNmu(c),hyperParams.MVNmu0(),hyperParams.MVNkappa0()*params.MVNTau(c),nOutcomes*hyperParams.MVNkappa0()+params.workLogDetMVNTau(c));
-          logPrior+= logPdfInverseWishart(nRandomEffects[m], params.covRE(m,0), -params.workLogDetTauLME(m,0), hyperParams.SigmaLME_R0(m),
+          logPrior+= logPdfInverseWishart(nRandomEffects[m], params.covRE(m,c), -params.workLogDetTauLME(m,c), hyperParams.SigmaLME_R0(m),
                                           -hyperParams.workLogDetTauLME_R0(m),(double)hyperParams.SigmaLME_kappa0(m));
           // double logPdfInverseWishart(const unsigned int& dimA, const MatrixXd& A, const double& logDetA, const MatrixXd& covR,
           // const double& logDetR, const double& kappa){
