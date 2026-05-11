@@ -377,16 +377,14 @@ RcppExport SEXP profRegr(SEXP inputString) {
     // Note: in this function the output gets written
     pReMiuMSampler.run();
 
-
     /* -- End the clock time and write the full run details to log file --*/
     currTime = time(NULL);
     double timeInSecs=(double)currTime-(double)beginTime;
     string tmpStr = storeLogFileData(options,dataset,hyperParams,nClusInit,maxNClusters,timeInSecs);
     pReMiuMSampler.appendToLogFile(tmpStr);
-
     /* ---------- Clean Up ---------------- */
     pReMiuMSampler.closeOutputFiles();
-
+    pReMiuMSampler.chain().currentState().parameters().freeCovRE();
     //int err = 0;
     return Rcpp::wrap(0);
     // alternative output

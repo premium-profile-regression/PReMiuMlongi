@@ -558,8 +558,8 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 				if(unifRand(_rndGenerator)<it->proposalWeight()){
 
 					// Update the chain state
-					//if( sweep == 286){
-					  //file <<"prop " << it->proposalName().c_str()<<endl;
+					//if( sweep > 490){
+					  //file <<sweep<< "prop " << it->proposalName().c_str()<<endl;
 					//}
 
 
@@ -573,14 +573,11 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 		}
 		// // At the end of the sweep make sure the log posterior is up to date.
 		 _chain.currentState().logPosterior(_model.logPosterior(_chain.currentState().parameters()));
-		//
 		// // Now write the output (this is controlled by the user defined function
 		 writeOutput(sweep);
-
 	}
-
 	 writeAcceptanceRates();
-
+	 //file.close();
 }
 
 #endif /* SAMPLER_H_ */

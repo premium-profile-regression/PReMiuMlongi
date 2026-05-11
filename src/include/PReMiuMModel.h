@@ -1748,6 +1748,9 @@ public:
     _workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
   }
 
+  void freeCovRE() const {
+    vector<vector<MatrixXd>>().swap(_covRE);
+  }
 
   const vector<MatrixXd>& RandomEffects() const{
     return _RandomEffects;
@@ -2763,7 +2766,7 @@ private:
   vector<MatrixXd> _MVNSigma;
 
   vector<MatrixXd> _RandomEffects;
-  vector<vector<MatrixXd>> _covRE;
+  mutable vector<vector<MatrixXd>> _covRE;
 
   /// \brief A vector of Eigen dynamic vectors containing covariate precision
   /// matrices for the case of Normal covariates
