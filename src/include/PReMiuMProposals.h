@@ -1628,11 +1628,23 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
     MatrixXd  workTauLME_R02 = hyperParams.workTauLME_R0(m);
     //MatrixXd Rc0=workTauLME_R02.inverse()+S;
-    MatrixXd Rc=(workTauLME_R02.inverse()+S).inverse();
+
 
     for(unsigned int c=0;c<=maxZ;c++){
 
-      Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
+      int nSubjects_c=0;
+      S.setZero();
+
+      for(unsigned int i=0;i<nSubjects;i++){
+        if(currentParams.z(i)==c){
+        MatrixXd bibi = bi.row(i).transpose()*bi.row(i);
+        S=S+bibi;
+        nSubjects_c++;
+        }
+      }
+
+      MatrixXd Rc=(workTauLME_R02.inverse()+S).inverse();
+      Tau = wishartRand(rndGenerator,Rc,nSubjects_c+hyperParams.SigmaLME_kappa0(m));
 
       // Rcpp::Rcout << " S "<<S << endl<< " workTauLME_R02 "<<workTauLME_R02.inverse()<< endl
       //           << " SigmaLME_kappa0 "<<hyperParams.SigmaLME_kappa0(m) << endl
@@ -1728,119 +1740,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
           ind_y += ntot;
         ind ++;
     }
-
-
-
-    if(2<1){
-
-
-      MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
-      Rfixed.setZero();
-      Rfixed(0,0)=4.50;
-      Rfixed(1,0)=0.36;
-      Rfixed(0,1)=0.36;
-      Rfixed(1,1)=0.79;
-      //Rfixed = Tau.inverse();
-
-      double sigma2epsilon = 1.0;//currentParams.SigmaE(m);
-
-      double  beta=currentParams.beta(0,0,0,nCategoriesY);
-      Rcpp::Rcout << " beta "<<currentParams.beta(0,0,0,nCategoriesY)<<endl;
-      VectorXd betamix(2);
-
-
-
-
-      // Update Random effects
-      // Mean B*Z^T V^{-1}(Yi-Xi beta)
-      // Variance B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-
-      VectorXd ui_sum(nRandomEffects[0]);
-      ui_sum.setZero();
-
-      for(unsigned int i=0;i<nSubjects;i++){
-        VectorXd yi;
-        VectorXd ui(nRandomEffects[m]);
-        unsigned int zi= currentParams.z(i);
-
-        unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
-        yi.resize(ni);
-        ntot += ni;
-
-        betamix(0)=currentParams.beta_mix(0,zi,0,0,nCategoriesY);//
-        betamix(1)=currentParams.beta_mix(0,zi,1,0,nCategoriesY);
-
-        if(zi==0){
-          betamix(0)=20.71;//
-          betamix(1)=-1;
-        }else{
-          betamix(0)=29.39;//
-          betamix(1)=0.13;
-        }
-        for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
-
-          yi(j) = y[ind_y + tStart[ind]-1+j];//yi(j) = y[tStart[ind]-1+j];
-
-          for(unsigned int b=0;b<nFixedEffects[m];b++){
-            yi(j)-=beta*dataset.W_LME(m,tStart[ind]-1+j,b);
-          }
-          for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-            yi(j)-=betamix(b)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
-          }
-        }
-
-
-
-        MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
-        MatrixXd sigmae=MatrixXd::Identity(ni, ni) * sigma2epsilon;
-
-        MatrixXd V = block *Rfixed* block.transpose() + sigmae;
-        LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
-        MatrixXd L = lltOfA.matrixL();
-        //double logDetPrecMat=  2*log(L.determinant());
-        MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
-        VectorXd mu = Rfixed*block.transpose()*Vi_inv*yi;
-
-        //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-        MatrixXd cov = Rfixed - Rfixed*block.transpose()*Vi_inv*block*Rfixed;
-
-        if(i<0){
-          for(unsigned int b=0;b<1000;b++){
-            ui = multivarNormalRand(rndGenerator,mu,cov);
-            Rcpp::Rcout << ui.transpose()<<endl;
-          }
-          Rcpp::Rcout << mu.transpose()<<endl;
-        }
-
-        //Rcpp::Rcout << i << " mu "<<mu.transpose() << " cov "<< cov(0,0)<< " "<< cov(0,1)<< " "<<cov(1,1)<<endl;
-
-        ui = multivarNormalRand(rndGenerator,mu,cov);
-        ui = mu;
-
-        ui_sum = ui_sum + ui;
-
-        if(std::isnan(ui(0)))
-          Rcpp::Rcout << i <<" yi "<<yi.transpose()<<endl
-                    << " block "<<block<<endl
-                    << " covRE "<<currentParams.covRE(m,zi)<<endl
-                    << " V " << V<<endl
-                    << " Vi_inv " << Vi_inv<<endl
-                    << " mu " << mu.transpose()<<endl
-                    << " cov "<<cov <<endl
-                    << " SigmaE "<<currentParams.SigmaE(m)<<endl
-                    << " beta "<<currentParams.beta(m,0,0,nCategoriesY)<<endl
-                    <<  " zi "  << zi <<" betamix "<< currentParams.beta_mix(m,zi,0,0,nCategoriesY) << " "<< currentParams.beta_mix(m,zi,1,0,nCategoriesY)<<endl;
-          currentParams.RandomEffects(m,i,ui);
-
-          if(i==(nSubjects-1))
-            ind_y += ntot;
-          ind ++;
-      }
-
-      for(unsigned int jj=0;jj<ui_sum.size();jj++)
-        ui_sum(jj) = ui_sum(jj)/nSubjects;
-      Rcpp::Rcout << " ui_sum "<<ui_sum.transpose()<<endl;
-    }
   }
 }
 
@@ -1866,10 +1765,10 @@ void gibbsForCovRELMEInActive(mcmcChain<pReMiuMParams>& chain,
 
   for(unsigned int m=0;m<nOutcomes;m++){
     for(unsigned int c=maxZ+1;c<currentParams.maxNClusters();c++){
-      //MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m)); //added
-      MatrixXd cov=currentParams.covRE(m,c);
+      MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m)); //added
+      //MatrixXd cov=currentParams.covRE(m,c);
 
-      currentParams.covRE(m,c, cov);
+      currentParams.covRE(m,c, Tau.inverse());
     }
   }
 }
