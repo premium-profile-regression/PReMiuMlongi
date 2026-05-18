@@ -1981,18 +1981,20 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
       int ind_y=0;
       for(unsigned int m=0;m<nOutcomes;m++){
         MatrixXd Tau = wishartRand(rndGenerator,hyperParams.workTauLME_R0(m),hyperParams.SigmaLME_kappa0(m));
+        params.covRE(m,Tau.inverse());
 
-        for(unsigned int c=0;c<maxNClusters;c++){
-          MatrixXd Tauinv = Tau.inverse();
-          params.covRE(m,c, Tauinv);
-          //MatrixXd covRE=params.covRE(m,c);
-          //_workLogDetTauLME(m,c)=-log(cov.determinant());
-          //_workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
-
-          params.workLogDetTauLME(m,c,log(Tau.determinant()));
-          LLT<MatrixXd> llt;
-          params.workSqrtTauLME(m,c,(llt.compute(Tau)).matrixU());
-        }
+        //change if covRE cluster-spec
+        // for(unsigned int c=0;c<maxNClusters;c++){
+        //   MatrixXd Tauinv = Tau.inverse();
+        //   params.covRE(m,c, Tauinv);
+        //   //MatrixXd covRE=params.covRE(m,c);
+        //   //_workLogDetTauLME(m,c)=-log(cov.determinant());
+        //   //_workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
+        //
+        //   params.workLogDetTauLME(m,c,log(Tau.determinant()));
+        //   LLT<MatrixXd> llt;
+        //   params.workSqrtTauLME(m,c,(llt.compute(Tau)).matrixU());
+        // }
 
 
         // Initialise random effects
@@ -2017,14 +2019,14 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
 
           MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
           MatrixXd sigmae=MatrixXd::Identity(ni, ni) * params.SigmaE(m);
-          MatrixXd V = block *params.covRE(m,zi)* block.transpose() + sigmae;
+          MatrixXd V = block *params.covRE(m)* block.transpose() + sigmae;
           LLT<MatrixXd> lltOfA(V); // compute the Cholesky decomposition of A
           MatrixXd L = lltOfA.matrixL();
           //double logDetPrecMat=  2*log(L.determinant());
           MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
-          VectorXd mu = params.covRE(m,zi)*block.transpose()*Vi_inv*yi;
+          VectorXd mu = params.covRE(m)*block.transpose()*Vi_inv*yi;
           //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-          MatrixXd cov = params.covRE(m,zi) - params.covRE(m,zi)*block.transpose()*Vi_inv*block*params.covRE(m,zi);
+          MatrixXd cov = params.covRE(m) - params.covRE(m)*block.transpose()*Vi_inv*block*params.covRE(m);
           ui = multivarNormalRand(rndGenerator,mu,cov);
           params.RandomEffects(m,i,ui);
           ind ++;
@@ -2176,152 +2178,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   //   //params.RandomEffects(m,i)
   // }
 
-  if(2<1 & nOutcomes ==1 ){
-    int zi;
-    ifstream inputFile;
-
-    string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui2_500.txt";
-
-
-    inputFile.open(fitFilename.c_str());
-    for (unsigned int i=0; i<nSubjects; i++ ){
-      if(i<251){
-        zi=0;
-      }else{
-        zi=1;
-      }
-
-      params.z(i,zi,covariateType);
-
-      VectorXd ui(2);
-      inputFile >>ui(0);
-      inputFile >>ui(1);
-      params.RandomEffects(0,i,ui);
-    }
-    inputFile.close();
-    params.beta(0,0,0,nCategoriesY,2.45);
-    params.beta_mix(0,0,0,0, nCategoriesY, 20.71);
-    params.beta_mix(0,0,1,0, nCategoriesY, -1.00 );
-    params.beta_mix(0,1,0,0, nCategoriesY, 29.39);
-    params.beta_mix(0,1,1,0, nCategoriesY, 0.13);
-
-
-    MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
-    Rfixed.setZero();
-    Rfixed(0,0)=4.50;
-    Rfixed(1,0)=0.36;
-    Rfixed(0,1)=0.36;
-    Rfixed(1,1)=0.79;
-
-    for(unsigned int c=0;c<=maxZ;c++)
-      params.covRE(0,c, Rfixed);
-
-    double epsilon=1.0;
-    // Define a inverse gamma random number generator
-    //randomGamma gammaRand(shape_post, 1/scale_rate); //gammaRand(shape, scale=1/rate)
-
-    params.SigmaE(0,epsilon);// variance
-
-  }else if(2<1 & nOutcomes == 2){
-
-
-    int zi;
-    ifstream inputFile;
-
-    string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui_M2_G2_R3_500.txt";
-
-
-    inputFile.open(fitFilename.c_str());
-    for (unsigned int i=0; i<nSubjects; i++ ){
-      if(i<253){
-        zi=0;
-      }else{
-        zi=1;
-      }
-
-      params.z(i,zi,covariateType);
-
-      for (unsigned int m=0; m<nOutcomes; m++ ){
-        VectorXd ui(3);
-        inputFile >>ui(0);
-        inputFile >>ui(1);
-        inputFile >>ui(2);
-        params.RandomEffects(m,i,ui);
-      }
-    }
-    inputFile.close();
-    params.beta(0,0,0,nCategoriesY,1);
-    params.beta_mix(0,0,0,0, nCategoriesY, 3);
-    params.beta_mix(0,0,1,0, nCategoriesY, -0.2);
-    params.beta_mix(0,0,2,0, nCategoriesY, 0.2);
-
-    params.beta_mix(0,1,0,0, nCategoriesY, -2);
-    params.beta_mix(0,1,1,0, nCategoriesY, 0.3);
-    params.beta_mix(0,1,2,0, nCategoriesY, -0.2);
-
-    params.beta(1,0,0,nCategoriesY,-1);
-    params.beta_mix(1,0,0,0, nCategoriesY, -3);
-    params.beta_mix(1,0,1,0, nCategoriesY, 0.3 );
-    params.beta_mix(1,0,2,0, nCategoriesY, -0.2);
-
-    params.beta_mix(1,1,0,0, nCategoriesY, 2);
-    params.beta_mix(1,1,1,0, nCategoriesY, -0.3);
-    params.beta_mix(1,1,2,0, nCategoriesY, 0.3);
-
-
-    MatrixXd Rfixed(nRandomEffects[0],nRandomEffects[0]);
-    Rfixed.setZero();
-    Rfixed(0,0)=2.5;
-    Rfixed(0,1)=0.8;
-    Rfixed(0,2)=-0.29;
-    Rfixed(1,0)=0.8;
-    Rfixed(1,1)=1.1;
-    Rfixed(1,2)=0.4;
-    Rfixed(2,0)=-0.29;
-    Rfixed(2,1)=0.4;
-    Rfixed(2,2)=0.5;
-
-    for(unsigned int c=0;c<=maxZ;c++)
-      params.covRE(0,c, Rfixed);
-
-    Rfixed.setZero();
-    Rfixed(0,0)=1.5;
-    Rfixed(0,1)=-0.8;
-    Rfixed(0,2)=-0.24;
-    Rfixed(1,0)=-0.8;
-    Rfixed(1,1)=1.12;
-    Rfixed(1,2)=0.01;
-    Rfixed(2,0)=-0.24;
-    Rfixed(2,1)=0.01;
-    Rfixed(2,2)=0.1;
-
-    for(unsigned int c=0;c<=maxZ;c++)
-      params.covRE(1,c, Rfixed);
-
-    double epsilon=0.3;
-    params.SigmaE(0,epsilon);// variance
-    epsilon=0.5;
-    params.SigmaE(1,epsilon);// variance
-
-    VectorXd mu(1);
-    mu(0)=0;
-    params.mu(0,mu);
-    mu(0)=3;
-    params.mu(1,mu);
-    MatrixXd Tau(1,1);
-    Tau(0,0)=1.0;
-    params.Tau(0,Tau);
-    params.Tau(1,Tau);
-
-    //cout << " params.logPhi "<<params.logPhi().size()<<endl;
-    vector<double> phi(2);
-    phi[0]=log(0.3);
-    phi[1]=log(0.7);
-    params.logPhi(0,0,phi);
-    phi[0]=log(0.7);
-    phi[1]=log(0.3);
-    params.logPhi(1,0,phi);
-  }
+//
 }
 
 
@@ -2873,10 +2730,10 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           vector<unsigned int> nRandomEffects = dataset.nRandomEffects();
 
           for(unsigned int m=0;m<nOutcomes;m++){
-            for(unsigned int c=0;c< maxNClusters;c++){
+            //for(unsigned int c=0;c< maxNClusters;c++){
               for(unsigned int l=0;l<nRandomEffects[m];l++){
                 for(unsigned int l2=0;l2<=l;l2++){
-                  *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,c,l,l2);
+                  *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,l,l2);
                   if( l2<(nRandomEffects[m]-1)){
                     *(outFiles[CovRELMEInd]) << " ";
                   }else{
@@ -2884,7 +2741,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
                   }
                 }
               }
-            }
+            //}
 
             *(outFiles[EpsilonLMEInd]) << params.SigmaE(m) << endl; //params.sigmakInd(c);
           }

@@ -721,7 +721,7 @@ clusSummaryLMEDiscrete <- function(ng=2, N=200){
       'clusterData'=list(list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
                                            'betamix'=c(-1, -1, 2, 1, 0, 0.2),#incpt, time, for 3 outcomes
                                            'SigmaE'=c(1,0.5,0.8),#common across clusters
-                                           'covRE'=1.1*c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
                               'covariateProbs'=list(c(0.8,0.1,0.1),
                                                     c(0.1,0.7,0.2),
                                                     c(0.2,0.2,0.6),
@@ -740,7 +740,7 @@ clusSummaryLMEDiscrete <- function(ng=2, N=200){
                          list('theta'=list('beta'=c(1.3, -0.3, 0.5, 0.5, -0.5, 0.1), #X, X time : common across clusters, for 2 outcomes
                                            'betamix'=c(2, 1 , 0, 0.2, -2, -1 ),#incpt, time, for 3 outcomes
                                            'SigmaE'=c(1,0.5,0.8),#common across clusters
-                                           'covRE'=0.8*c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
+                                           'covRE'=c(1.3,-0.3,0.3, 0.9,-0.2,0.4, 1,-0.1,0.5)),#common across clusters
                               'covariateProbs'=list(c(0.1,0.7,0.2),
                                                     c(0.4,0.1,0.5),
                                                     c(0.2,0.2,0.6),

@@ -1012,7 +1012,8 @@ public:
 
     if (outcomeType.compare("LME")==0) {
       _RandomEffects.resize(nOutcomes);
-      _workLogDetTauLME.resize(nOutcomes, maxNClusters);
+      //_workLogDetTauLME.resize(nOutcomes, maxNClusters);
+      _workLogDetTauLME.resize(nOutcomes);
       _workSqrtTauLME.resize(nOutcomes);
       _covRE.resize(nOutcomes);
       _SigmaE.resize(nOutcomes);
@@ -1020,16 +1021,18 @@ public:
        for(unsigned int m=0;m<nOutcomes;m++){
         _SigmaE[m]=0.1;
         _RandomEffects[m].setZero(nSubjects,nRandomEffects[m]);
-        _workSqrtTauLME[m].resize(maxNClusters);
-        _covRE[m].resize(maxNClusters);
-
-        for(unsigned int c=0;c<maxNClusters;c++){
-          _covRE[m][c]=MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
-          //LLT<MatrixXd> llt;
-          //MatrixXd mat = 0.1*MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
-          //_covRE[m][c] = mat;
-          _workSqrtTauLME[m][c]=MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);// = (llt.compute(mat)).matrixU();
-        }
+        //_workSqrtTauLME[m].resize(maxNClusters);
+        //_covRE[m].resize(maxNClusters);
+        _covRE[m]= MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
+        _workSqrtTauLME[m]= MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
+        _workLogDetTauLME[m]=1.0;
+        // for(unsigned int c=0;c<maxNClusters;c++){
+        //   _covRE[m][c]=MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
+        //   //LLT<MatrixXd> llt;
+        //   //MatrixXd mat = 0.1*MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);
+        //   //_covRE[m][c] = mat;
+        //   _workSqrtTauLME[m][c]=MatrixXd::Identity(nRandomEffects[m], nRandomEffects[m]);// = (llt.compute(mat)).matrixU();
+        // }
        }
     }
 
@@ -1217,17 +1220,17 @@ public:
         _pdf_meanGP.resize(nClus);
       }
       if (outcomeType.compare("LME")==0){
-        _workLogDetTauLME.resize(nOcs, nClus);
-        _workSqrtTauLME.resize(nOcs);
-        _covRE.resize(nOcs);
-        for (unsigned int m=0;m<nOcs;m++){
-          _workSqrtTauLME[m].resize(nClus);
-          _covRE[m].resize(nClus);
-          for (unsigned int c=0;c<nClus;c++){
-            _workSqrtTauLME[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
-            _covRE[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
-          }
-        }
+        //_workLogDetTauLME.resize(nOcs, nClus);
+        //_workSqrtTauLME.resize(nOcs);
+        //_covRE.resize(nOcs);
+        // for (unsigned int m=0;m<nOcs;m++){
+        //   _workSqrtTauLME[m].resize(nClus);
+        //   _covRE[m].resize(nClus);
+        //   for (unsigned int c=0;c<nClus;c++){
+        //     _workSqrtTauLME[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
+        //     _covRE[m][c].resize(nRandomEffects[m],nRandomEffects[m]);
+        //   }
+        // }
       }
 
       for (unsigned int c=0;c<nClus;c++){
@@ -1725,32 +1728,52 @@ public:
     return _MVNSigma[c](j1,j2);
   }
 
-  const MatrixXd& covRE(const unsigned int& m, const unsigned int& c) const{
-    return _covRE[m][c];
-  }
-
-  const vector<vector<MatrixXd>>& covRE() const{
-    return _covRE;
-  }
-
-  const vector<MatrixXd>& covRE(const unsigned int& m) const{
+  // const MatrixXd& covRE(const unsigned int& m, const unsigned int& c) const{
+  //   return _covRE[m][c];
+  // }
+  const MatrixXd& covRE(const unsigned int& m) const{
     return _covRE[m];
   }
 
-  double covRE(const unsigned int& m, const unsigned int& c, const unsigned int& i, const unsigned int& j) const{
-    return _covRE[m][c](i,j);
+  // const vector<vector<MatrixXd>>& covRE() const{
+  //   return _covRE;
+  // }
+  const vector<MatrixXd>& covRE() const{
+    return _covRE;
   }
 
-  void covRE(const unsigned int& m, const unsigned int& c, const MatrixXd& cov) {
-    _covRE[m][c]=cov;
+  // const vector<MatrixXd>& covRE(const unsigned int& m) const{
+  //   return _covRE[m];
+  // }
+
+  // double covRE(const unsigned int& m, const unsigned int& c, const unsigned int& i, const unsigned int& j) const{
+  //   return _covRE[m][c](i,j);
+  // }
+  //
+  // void covRE(const unsigned int& m, const unsigned int& c, const MatrixXd& cov) {
+  //   _covRE[m][c]=cov;
+  //   LLT<MatrixXd> llt;
+  //   _workLogDetTauLME(m,c)=-log(cov.determinant());
+  //   _workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
+  // }
+
+  double covRE(const unsigned int& m, const unsigned int& i, const unsigned int& j) const{
+    return _covRE[m](i,j);
+  }
+
+  void covRE(const unsigned int& m,  const MatrixXd& cov) {
+    _covRE[m]=cov;
     LLT<MatrixXd> llt;
-    _workLogDetTauLME(m,c)=-log(cov.determinant());
-    _workSqrtTauLME[m][c]=(llt.compute(cov.inverse())).matrixU();
+    _workLogDetTauLME[m]=-log(cov.determinant());
+    _workSqrtTauLME[m]=(llt.compute(cov.inverse())).matrixU();
   }
 
-  void freeCovRE() const {
-    vector<vector<MatrixXd>>().swap(_covRE);
-  }
+
+  // void freeCovRE() const {
+  //   vector<vector<MatrixXd>>().swap(_covRE);
+  //   vector<vector<MatrixXd>>().swap(_workSqrtTauLME);
+  // }
+
 
   const vector<MatrixXd>& RandomEffects() const{
     return _RandomEffects;
@@ -2477,12 +2500,20 @@ public:
     _workSqrtTau[c] = sqrtTau;
   }
 
-  const MatrixXd& workSqrtTauLME(const unsigned int& m, const unsigned int& c) const{
-    return _workSqrtTauLME[m][c];
+  // const MatrixXd& workSqrtTauLME(const unsigned int& m, const unsigned int& c) const{
+  //   return _workSqrtTauLME[m][c];
+  // }
+  //
+  // void workSqrtTauLME(const unsigned int& m, const unsigned int& c, const MatrixXd& sqrtTau){
+  //   _workSqrtTauLME[m][c] = sqrtTau;
+  // }
+
+  const MatrixXd& workSqrtTauLME(const unsigned int& m) const{
+    return _workSqrtTauLME[m];
   }
 
-  void workSqrtTauLME(const unsigned int& m, const unsigned int& c, const MatrixXd& sqrtTau){
-    _workSqrtTauLME[m][c] = sqrtTau;
+  void workSqrtTauLME(const unsigned int& m, const MatrixXd& sqrtTau){
+    _workSqrtTauLME[m] = sqrtTau;
   }
 
   const vector<double>& workLogDetTau() const{
@@ -2517,22 +2548,50 @@ public:
     _workLogDetMVNTau[c] = logDetTau;
   }
 
-  const MatrixXd& workLogDetTauLME() const{
+  // const MatrixXd& workLogDetTauLME() const{
+  //   return _workLogDetTauLME;
+  // }
+  //
+  // const double workLogDetTauLME(const unsigned int& m, const unsigned int& c) const{
+  //   return _workLogDetTauLME(m,c);
+  // }
+  //
+  // double workLogDetTauLME(const unsigned int& m, const unsigned int& c){
+  //   return _workLogDetTauLME(m,c);
+  // }
+  //
+  // void workLogDetTauLME(const unsigned int& m, const unsigned int& c, const double& logDetTau){
+  //   _workLogDetTauLME(m,c) = logDetTau;
+  // }
+
+  const vector<double>& workLogDetTauLME() const{
     return _workLogDetTauLME;
   }
 
-  const double workLogDetTauLME(const unsigned int& m, const unsigned int& c) const{
-    return _workLogDetTauLME(m,c);
+  // const double workLogDetTauLME(const unsigned int& m, const unsigned int& c) const{
+  //   return _workLogDetTauLME(m,c);
+  // }
+  //
+  // double workLogDetTauLME(const unsigned int& m, const unsigned int& c){
+  //   return _workLogDetTauLME(m,c);
+  // }
+  //
+  // void workLogDetTauLME(const unsigned int& m, const unsigned int& c, const double& logDetTau){
+  //   _workLogDetTauLME(m,c) = logDetTau;
+  // }
+
+
+  const double workLogDetTauLME(const unsigned int& m) const{
+    return _workLogDetTauLME[m];
   }
 
-  double workLogDetTauLME(const unsigned int& m, const unsigned int& c){
-    return _workLogDetTauLME(m,c);
+  double workLogDetTauLME(const unsigned int& m){
+    return _workLogDetTauLME[m];
   }
 
-  void workLogDetTauLME(const unsigned int& m, const unsigned int& c, const double& logDetTau){
-    _workLogDetTauLME(m,c) = logDetTau;
+  void workLogDetTauLME(const unsigned int& m, const double& logDetTau){
+    _workLogDetTauLME[m] = logDetTau;
   }
-
 
 
   void switchLabels(const unsigned int& c1,const unsigned int& c2,
@@ -2766,8 +2825,8 @@ private:
   vector<MatrixXd> _MVNSigma;
 
   vector<MatrixXd> _RandomEffects;
-  mutable vector<vector<MatrixXd>> _covRE;
-
+  //mutable vector<vector<MatrixXd>> _covRE;
+  vector<MatrixXd> _covRE;
   /// \brief A vector of Eigen dynamic vectors containing covariate precision
   /// matrices for the case of Normal covariates
   vector<MatrixXd> _Tau;
@@ -2869,11 +2928,13 @@ private:
   /// \brief Working vector of matrices containing matrix square root of Tau
   vector<MatrixXd> _workSqrtTau;
   vector<MatrixXd> _workSqrtMVNTau;
-  vector<vector<MatrixXd>> _workSqrtTauLME;
+  //mutable vector<vector<MatrixXd>> _workSqrtTauLME;
+  vector<MatrixXd> _workSqrtTauLME;
   /// \brief Working vector containing the log determinants of Tau
   vector<double> _workLogDetTau;
   vector<double> _workLogDetMVNTau;
-  MatrixXd _workLogDetTauLME;
+  //MatrixXd _workLogDetTauLME;
+  vector<double> _workLogDetTauLME;
   /// \brief vector of CAR spatial random term U
   vector<double> _uCAR;
 
@@ -3440,7 +3501,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         if(!cond_RE){
           MatrixXd block=dataset.W_RE(m, tStart[curr_i]-1, 0, ni_m, dataset.nRandomEffects(m));
 
-          MatrixXd Vi=block*params.covRE(m,c)*block.transpose()+MatrixXd::Identity(ni_m, ni_m) * params.SigmaE(m);
+          MatrixXd Vi=block*params.covRE(m)*block.transpose()+MatrixXd::Identity(ni_m, ni_m) * params.SigmaE(m);
 
           LLT<MatrixXd> lltOfA(Vi);
           MatrixXd L = lltOfA.matrixL();
@@ -3972,9 +4033,9 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
     if(outcomeType.compare("LME")==0){
       vector<unsigned int> nRandomEffects=dataset.nRandomEffects();
       for(unsigned int m=0;m<nOutcomes;m++){
-        for(unsigned int c=0;c<maxNClusters;c++){
+        //for(unsigned int c=0;c<maxNClusters;c++){
           //     //logPrior+=logPdfMultivarNormal(nOutcomes,params.MVNmu(c),hyperParams.MVNmu0(),hyperParams.MVNkappa0()*params.MVNTau(c),nOutcomes*hyperParams.MVNkappa0()+params.workLogDetMVNTau(c));
-          logPrior+= logPdfInverseWishart(nRandomEffects[m], params.covRE(m,c), -params.workLogDetTauLME(m,c), hyperParams.SigmaLME_R0(m),
+          logPrior+= logPdfInverseWishart(nRandomEffects[m], params.covRE(m), -params.workLogDetTauLME(m), hyperParams.SigmaLME_R0(m),
                                           -hyperParams.workLogDetTauLME_R0(m),(double)hyperParams.SigmaLME_kappa0(m));
           // double logPdfInverseWishart(const unsigned int& dimA, const MatrixXd& A, const double& logDetA, const MatrixXd& covR,
           // const double& logDetR, const double& kappa){
@@ -3985,7 +4046,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
 
           //MatrixXd Tau = params.covRE(c).inverse();
           //logPrior+=logPdfWishart(dataset.nRandomEffects(), Tau, params.workLogDetMVNTau(c)
-        }
+        //}
         logPrior += logPdfGamma(1.0/params.SigmaE(m),hyperParams.eps_shape(),
                                 hyperParams.eps_scale()); //Gamma(shape,rate=1/scale)
 
@@ -3994,7 +4055,7 @@ vector<double> pReMiuMLogPost(const pReMiuMParams& params,
           VectorXd RE=params.RandomEffects(m,i);
           VectorXd mu;
           mu.setZero(nRandomEffects[m]);
-          logPrior +=  logPdfMultivarNormal(RE.size(),RE,mu,params.workSqrtTauLME(m,0),params.workLogDetTauLME(m,0));
+          logPrior +=  logPdfMultivarNormal(RE.size(),RE,mu,params.workSqrtTauLME(m),params.workLogDetTauLME(m));
         }
       }
 

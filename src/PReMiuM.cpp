@@ -331,7 +331,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
         pReMiuMSampler.addProposal("gibbsForMVNTauInActive",1.0,1,1,&gibbsForMVNTauInActive);
       }
       if(options.outcomeType().compare("LME")==0){
-        pReMiuMSampler.addProposal("gibbsForCovRELMEInActive",1.0,1,1,&gibbsForCovRELMEInActive);
+        //pReMiuMSampler.addProposal("gibbsForCovRELMEInActive",1.0,1,1,&gibbsForCovRELMEInActive);
         pReMiuMSampler.addProposal("gibbsForBetaInActive",1.0,1,1,&gibbsForBetaInActive);
       }
     }
@@ -384,7 +384,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
     pReMiuMSampler.appendToLogFile(tmpStr);
     /* ---------- Clean Up ---------------- */
     pReMiuMSampler.closeOutputFiles();
-    pReMiuMSampler.chain().currentState().parameters().freeCovRE();
+    //pReMiuMSampler.chain().currentState().parameters().freeCovRE();
     //int err = 0;
     return Rcpp::wrap(0);
     // alternative output
