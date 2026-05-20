@@ -109,6 +109,7 @@ pReMiuMOptions processCommandLine(string inputStr){
       Rprintf("--excludeY\n\tIf included only the covariate data X is modelled (not included)\n");
       Rprintf("--extraYVar\n\tIf included extra Gaussian variance is included in the\n\tresponse model (not included).\n");
       Rprintf("--varSelect=<string>\n\tThe type of variable selection to be used 'None',\n\t'BinaryCluster' or 'Continuous' (None)\n");
+      Rprintf("--varSelectY=<string>\n\tWhether a variable selection is to be used.\n");
       Rprintf("--entropy\n\tIf included then we compute allocation entropy (not included)\n");
       Rprintf("--predictType=<string>\n\tThe type of predictions to be used 'RaoBlackwell' or 'random' (RaoBlackwell)\n");
       Rprintf("--weibullFixedShape=<bool>\n\tWhether the shape parameter of the Weibull distribution is fixed.\n");
@@ -264,7 +265,7 @@ pReMiuMOptions processCommandLine(string inputStr){
             Rprintf("Response extra variation not permitted with Normal response\n");
           }
           if(options.outcomeType().compare("Survival")==0) Rprintf("Response extra variation not permitted with Survival response\n");
-        }else if(inString.find("--varSelect")!=string::npos){
+        }else if(inString.find("--varSelectType")!=string::npos){
           size_t pos = inString.find("=")+1;
           string varSelectType = inString.substr(pos,inString.size()-pos);
           if(varSelectType.compare("None")!=0&&
@@ -275,6 +276,8 @@ pReMiuMOptions processCommandLine(string inputStr){
             break;
           }
           options.varSelectType(varSelectType);
+        }else if(inString.find("--varSelectY")!=string::npos){
+          options.varSelectY(true);
         }else if(inString.find("--entropy")!=string::npos){
           options.computeEntropy(true);
         }else if(inString.find("--predType")!=string::npos){
@@ -293,6 +296,7 @@ pReMiuMOptions processCommandLine(string inputStr){
           options.useNormInvWishPrior(true);
 
         }else{
+          std::cout << currArg<<endl;
           Rprintf("Unknown command line option.\n");
           wasError=true;
           break;
@@ -1210,7 +1214,29 @@ void readHyperParamsFromFile(const string& filename,pReMiuMHyperParams& hyperPar
         wasError=true;
         break;
       }
-    }else if(inString.find("shapeSigmaSqY")==0){
+    }
+    else if(inString.find("aZetaY")==0){
+      size_t pos = inString.find("=")+1;
+      string tmpStr = inString.substr(pos,inString.size()-pos);
+      double aZetaY = (double)atof(tmpStr.c_str());
+      hyperParams.aZetaY(aZetaY);
+    }else if(inString.find("bZetaY")==0){
+      size_t pos = inString.find("=")+1;
+      string tmpStr = inString.substr(pos,inString.size()-pos);
+      double bZetaY = (double)atof(tmpStr.c_str());
+      hyperParams.bZetaY(bZetaY);
+    }else if(inString.find("atomZetaY")==0){
+      size_t pos = inString.find("=")+1;
+      string tmpStr = inString.substr(pos,inString.size()-pos);
+      double atomZetaY = (double)atof(tmpStr.c_str());
+      hyperParams.atomZetaY(atomZetaY);
+      if(hyperParams.atomZetaY()<=0 || hyperParams.atomZetaY()>1){
+        // Illegal atomZetaY value entered - it must be in (0,1] where 1 corresponds to the non-sparsity inducing var selection
+        wasError=true;
+        break;
+      }
+    }
+    else if(inString.find("shapeSigmaSqY")==0){
       size_t pos = inString.find("=")+1;
       string tmpStr = inString.substr(pos,inString.size()-pos);
       double shapeSigmaSqY = (double)atof(tmpStr.c_str());
@@ -1343,6 +1369,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
   string covariateType = options.covariateType();
   string hyperParamFileName = options.hyperParamFileName();
   string varSelectType = options.varSelectType();
+  bool varSelectY = options.varSelectY();
   string samplerType = options.samplerType();
   bool includeResponse = options.includeResponse();
   bool responseExtraVar = options.responseExtraVar();
@@ -2096,7 +2123,31 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
         }
       }
     }
+
+    if(outcomeType.compare("LME")==0){
+      if(varSelectY){
+        vector<unsigned int> vY(nOutcomes);
+        vector<double> zetaY(nOutcomes);
+        for(unsigned int j=0;j<nOutcomes;j++){
+          if((unifRand(rndGenerator)<0.01) && (hyperParams.atomZetaY()!=1)){
+            // We are in the point mass at 0 case - variable is switched off
+            vY[j]=0;
+            zetaY[j]=0;
+          }else{
+            vY[j]=1;
+            zetaY[j]=0.75+0.25*unifRand(rndGenerator);
+          }
+
+          params.vY(j,vY[j]);
+          params.zetaY(j,zetaY[j]);
+          // Note in the case of the continuous variable selection indicators
+          // gamma is deterministically equal to rho, and so is set in the method
+          // for rho so we do nothing here.
+        }
+      }
+    }
   }
+
   // And also the extra variation values if necessary
   if(responseExtraVar){
     // Shape and rate parameters
@@ -2214,6 +2265,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
     vector<unsigned int> nFixedEffects = sampler.model().dataset().nFixedEffects();
     vector<unsigned int> nFixedEffects_mix = sampler.model().dataset().nFixedEffects_mix();
     string varSelectType = sampler.model().options().varSelectType();
+    bool varSelectY = sampler.model().options().varSelectY();
     string predictType = sampler.model().options().predictType();
     bool weibullFixedShape = sampler.model().options().weibullFixedShape();
 
@@ -2341,6 +2393,14 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           fileName = fileStem + "_uCAR.txt";
           outFiles.push_back(new ofstream(fileName.c_str()));
         }
+        if(varSelectY){
+          fileName = fileStem + "_vY.txt";
+          outFiles.push_back(new ofstream(fileName.c_str()));
+          fileName = fileStem + "_zeta.txt";
+          outFiles.push_back(new ofstream(fileName.c_str()));
+          fileName = fileStem + "_zetaProp.txt";
+          outFiles.push_back(new ofstream(fileName.c_str()));
+        }
       }
       if(varSelectType.compare("None")!=0){
         fileName = fileStem + "_omega.txt";
@@ -2380,7 +2440,8 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
     int sigmaEpsilonInd=-1,epsilonPropInd=-1,omegaInd=-1,rhoInd=-1;
     int rhoOmegaPropInd=-1,gammaInd=-1,nullPhiInd=-1,nullMuInd=-1;
     int predictThetaRaoBlackwellInd=-1;
-    int TauCARInd=-1,uCARInd=-1;
+    int TauCARInd=-1,uCARInd=-1, zetaYInd=-1, vYInd=-1, zetaYPropInd=-1;
+
 
     int r=0;
     nClustersInd=r++;
@@ -2451,8 +2512,12 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
         TauCARInd=r++;
         uCARInd=r++;
       }
+      if(varSelectY){
+        zetaYInd=r++;
+        zetaYPropInd=r++;
+        vYInd=r++;
+      }
     }
-
     if(varSelectType.compare("None")!=0){
       omegaInd=r++;
       rhoInd=r++;
@@ -2909,6 +2974,55 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
         proposalParams.alphaAnyUpdates(false);
       }
     }
+
+    if(varSelectY){
+      // Print variable selection related quantities
+      for(unsigned int j=0;j<nOutcomes;j++){
+        *(outFiles[vYInd]) << params.vY(j);
+        *(outFiles[zetaYInd]) << params.zetaY(j);
+        if(j<nOutcomes-1){
+          *(outFiles[omegaInd]) << " ";
+          *(outFiles[rhoInd]) << " ";
+
+        }else{
+          *(outFiles[omegaInd]) << endl;
+          *(outFiles[rhoInd]) << endl;
+        }
+        if(sweep==0){ // this was "==0", it might be worth double checking
+          //   if(covariateType.compare("Discrete")==0){
+          //     for(unsigned int p=0;p<maxNCategories;p++){
+          //       if(p<nCategories[j]){
+          //         *(outFiles[nullPhiInd]) << exp(params.logNullPhi(j,p));
+          //       }else{
+          //         *(outFiles[nullPhiInd]) << -999;
+          //       }
+          //
+          //       if(p<(maxNCategories-1)||j<(nCovariates-1)){
+          //         *(outFiles[nullPhiInd]) << " ";
+          //       }else{
+          //         *(outFiles[nullPhiInd]) << endl;
+          //       }
+          //     }
+          // }
+        }
+
+        // anyUpdates = proposalParams.rhoAnyUpdates();
+        // if(anyUpdates){
+        //   for(unsigned int j=0;j<nCovariates;j++){
+        //     *(outFiles[rhoOmegaPropInd]) << sampler.proposalParams().rhoAcceptRate(j) <<
+        //       " " << sampler.proposalParams().rhoStdDev(j);
+        //     if(j<(nCovariates-1)){
+        //       *(outFiles[rhoOmegaPropInd]) << " ";
+        //     }else{
+        //       *(outFiles[rhoOmegaPropInd]) << endl;
+        //     }
+        //   }
+        //   proposalParams.rhoAnyUpdates(false);
+        // }
+      }
+    }
+
+
     if(varSelectType.compare("None")!=0){
       // Print variable selection related quantities
       for(unsigned int j=0;j<nCovariates;j++){

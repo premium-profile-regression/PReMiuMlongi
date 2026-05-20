@@ -748,8 +748,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   #check entries for spatial CAR term
   if (includeCAR&file.exists(neighboursFile)==FALSE) stop("You must enter a valid file for neighbourhood structure.")
 
-  inputString<-paste("PReMiuMlongi --input=",fileName," --output=",output," --xModel=",xModel," --yModel=",yModel," --varSelect=",varSelectType," --whichLabelSwitch=",whichLabelSwitch," --predType=",predictType,sep="")
-  #" --varSelectY=",varSelectY,
+  inputString<-paste("PReMiuMlongi --input=",fileName," --output=",output," --xModel=",xModel," --yModel=",yModel," --varSelectType=",varSelectType," --whichLabelSwitch=",whichLabelSwitch," --predType=",predictType,sep="")
+
 
   # create hyperparameters file
   if (!missing(hyper)) {
@@ -879,6 +879,16 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       if (hyper$atomRho<=0 || hyper$atomRho >1) stop("Hyperparameter atomRho must be in (0,1]. See ?setHyperparams for help.")
       write(paste("atomRho=",hyper$atomRho,sep=""),hyperFile,append=T)
     }
+    if (!is.null(hyper$aZetaY)){
+      write(paste("aZetaY=",hyper$aZetaY,sep=""),hyperFile,append=T)
+    }
+    if (!is.null(hyper$bZetaY)){
+      write(paste("bZetaY=",hyper$bZetaY,sep=""),hyperFile,append=T)
+    }
+    if (!is.null(hyper$atomZetaY)){
+      if (hyper$atomZetaY<=0 || hyper$atomZetaY >1) stop("Hyperparameter atomZetaY must be in (0,1]. See ?setHyperparams for help.")
+      write(paste("atomZetaY=",hyper$atomZetaY,sep=""),hyperFile,append=T)
+    }
     if (!is.null(hyper$shapeSigmaSqY)){
       write(paste("shapeSigmaSqY=",hyper$shapeSigmaSqY,sep=""),hyperFile,append=T)
     }
@@ -932,6 +942,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (excludeY) inputString<-paste(inputString," --excludeY",sep="")
   if (extraYVar) inputString<-paste(inputString," --extraYVar",sep="")
   if (!missing(entropy)) inputString<-paste(inputString," --entropy",sep="")
+  if (varSelectY) inputString<-paste(inputString," --varSelectY",sep="")
   if (includeCAR) inputString<-paste(inputString," --includeCAR", " --neighbours=", neighboursFile ,sep="")
   if (useNormInvWishPrior) inputString<-paste(inputString," --useNormInvWishPrior", sep="")
   if (!missing(kernel)) inputString<-paste(inputString," --kernel=",  kernel ,sep="")
@@ -959,6 +970,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
     varSelect <- TRUE
     varSelType <- varSelectType
   }
+
+
   # covariate matrix
   xMat <- dataMatrix[,(nOutcomes+1):(nCovariates+nOutcomes)]
   # outcome and fixed effect matrix
@@ -1059,6 +1072,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
               "yModel"=yModel,
               "varSelect"=varSelect,
               "varSelectType"=varSelType,
+              "varSelectY"=varSelectY,
               "nCovariates"=nCovariates,
               "nDiscreteCovs"=ifelse(xModel=="Mixed",nDiscreteCovs,NA),
               "nContinuousCovs"=ifelse(xModel=="Mixed",nContinuousCovs,NA),
@@ -3589,7 +3603,8 @@ margModelPosterior<-function(runInfoObj,allocation){
 }
 
 setHyperparams<-function(shapeAlpha=NULL,rateAlpha=NULL,aPhi=NULL,mu0=NULL,Tau0=NULL,R0=NULL,kappa0=NULL,nu0=NULL,muTheta=NULL,sigmaTheta=NULL,dofTheta=NULL,
-                         muBeta=NULL,sigmaBeta=NULL,dofBeta=NULL,shapeTauEpsilon=NULL,rateTauEpsilon=NULL,aRho=NULL,bRho=NULL,atomRho=NULL,shapeSigmaSqY=NULL,
+                         muBeta=NULL,sigmaBeta=NULL,dofBeta=NULL,shapeTauEpsilon=NULL,rateTauEpsilon=NULL,aRho=NULL,bRho=NULL,atomRho=NULL,
+                         aZetaY=NULL,bZetaY=NULL,atomZetaY=NULL, shapeSigmaSqY=NULL,
                          scaleSigmaSqY=NULL,rSlice=NULL,truncationEps=NULL,shapeTauCAR=NULL,rateTauCAR=NULL,shapeNu=NULL,scaleNu=NULL,initAlloc=NULL,initL=NULL,
                          muLSignal=0,sigmaLSignal=0,muLLengthscale=0,sigmaLLengthscale=0,muLNoise=0,sigmaLNoise=0,MVNmu0=NULL,MVNTau0=NULL,MVNR0=NULL,
                          MVNkappa0=NULL,MVNnu0=NULL){
@@ -3651,6 +3666,16 @@ setHyperparams<-function(shapeAlpha=NULL,rateAlpha=NULL,aPhi=NULL,mu0=NULL,Tau0=
   if (!is.null(atomRho)){
     out$atomRho<-atomRho
   }
+  if (!is.null(aZetaY)){
+    out$aZetaY<-aZetaY
+  }
+  if (!is.null(bZetaY)){
+    out$bZetaY<-bZetaY
+  }
+  if (!is.null(atomZetaY)){
+    out$atomZetaY<-atomZetaY
+  }
+
   if (!is.null(shapeSigmaSqY)){
     out$shapeSigmaSqY<-shapeSigmaSqY
   }

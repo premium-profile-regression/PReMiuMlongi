@@ -82,6 +82,7 @@ class pReMiuMOptions{
 			_responseExtraVar = false;
 			_doPrediction = false;
 			_varSelectType ="None";
+			_varSelectY=false;
 			_fixedAlpha=-2;
 			_dPitmanYor=0;
 			_samplerType="SliceDependent";
@@ -336,6 +337,16 @@ class pReMiuMOptions{
 		}
 
 		/// \brief Return whether we are computing the entropy
+		bool varSelectY() const{
+		  return _varSelectY;
+		}
+
+		/// \brief Set whether we are computing the entropy
+		void varSelectY(const bool& compEntr){
+		  _varSelectY=compEntr;
+		}
+
+		/// \brief Return whether we are computing the entropy
 		bool computeEntropy() const{
 			return _computeEntropy;
 		}
@@ -422,6 +433,7 @@ class pReMiuMOptions{
 			_doPrediction=options.doPrediction();
 			_responseExtraVar=options.responseExtraVar();
 			_varSelectType=options.varSelectType();
+			_varSelectY=options.varSelectY();
 			_computeEntropy=options.computeEntropy();
 			_includeCAR=options.includeCAR();
 			_neighbourFileName=options.neighbourFileName();
@@ -481,6 +493,8 @@ class pReMiuMOptions{
 		bool _responseExtraVar;
 		// The type of extra variation in the response
 		string _varSelectType;
+		// The type of extra variation in the response
+		bool _varSelectY;
 		// This notes whether we are computing entropy
 		bool _computeEntropy;
 		// This notes whether we are including CAR random term

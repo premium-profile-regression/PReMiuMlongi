@@ -329,6 +329,10 @@ public:
     _bRho = 0.5;
     _atomRho= 0.5;
 
+    _aZetaY = 0.5;
+    _bZetaY = 0.5;
+    _atomZetaY= 0.5;
+
     _shapeSigmaSqY = 2.5;
     _scaleSigmaSqY = 2.5;
 
@@ -630,6 +634,22 @@ public:
     _bRho = b;
   }
 
+  double aZetaY() const{
+    return _aZetaY;
+  }
+
+  void aZetaY(const double& a){
+    _aZetaY = a;
+  }
+
+  double bZetaY() const{
+    return _bZetaY;
+  }
+
+  void bZetaY(const double& b){
+    _bZetaY = b;
+  }
+
   double aRatio() const{
     return _aRatio;
   }
@@ -652,6 +672,14 @@ public:
 
   void atomRho(const double& atom){
     _atomRho = atom;
+  }
+
+  double atomZetaY() const{
+    return _atomZetaY;
+  }
+
+  void atomZetaY(const double& atom){
+    _atomZetaY = atom;
   }
 
   double shapeSigmaSqY() const{
@@ -897,11 +925,19 @@ private:
   double _shapeTauEpsilon;
   double _rateTauEpsilon;
 
-  // Hyper parameters for prior for tauEpsilon (for variable selection)
+  // Hyper parameters for prior for rho (for variable selection)
   // Prior is rho ~ Beta(a,b) with a sparsity inducing atom Bernoulli(atomRho)
   double _aRho;
   double _bRho;
   double _atomRho;
+
+  // Hyper parameters for prior for zeta (for longitudinal markers selection)
+  // Prior is zeta ~ Beta(a,b) with a sparsity inducing atom Bernoulli(atomZeta)
+  double _aZetaY;
+  double _bZetaY;
+  double _atomZetaY;
+
+
 
   //Hyper parameter for prior for sigma_y^2 (for normal response model)
   // Prior is sigma_y^2 ~ InvGamma(shapeSigmaSqY,scaleSigmaSqY)
@@ -1138,6 +1174,10 @@ public:
       //     _beta[m][j*nCategoriesY+k]=0;
       // }
     }
+
+    _zetaY.resize(nOutcomes);
+    _vY.resize(nOutcomes);
+
 
     _u.resize(nSubjects+nPredictSubjects,0.0);
     _lambda.resize(nSubjects);
@@ -2259,6 +2299,37 @@ public:
   }
 
 
+  /// \brief Get the variable selection zeta vector for longitudinal markers selection
+  const vector<double>& zetaY() const{
+    return _zetaY;
+  }
+
+  /// \brief Get the variable selection zeta vector for longitudinal markers selection
+  double zetaY(const unsigned int& j) const{
+    return _zetaY[j];
+  }
+
+  /// \brief Set the variable selection zeta vector for longitudinal markers selection
+  void zetaY(const unsigned int& j,const double& zetaVal){
+    _zetaY[j]=zetaVal;
+  }
+
+  /// \brief Get the variable selection v vector for longitudinal markers selection
+  const vector<unsigned int> vY() const{
+    return _vY;
+  }
+
+  /// \brief Get the variable selection v vector for longitudinal markers selection
+  unsigned int vY(const unsigned int& j) const{
+    return _vY[j];
+  }
+
+  /// \brief Set the variable selection rho vector for longitudinal markers selection
+  void vY(const unsigned int& j,const unsigned int& vYVal){
+    _vY[j]=vYVal;
+  }
+
+
   /// \brief Return the parameter sigmaSqY
   double sigmaSqY() const{
     return _sigmaSqY;
@@ -2878,6 +2949,12 @@ private:
 
   /// \brief Prior parameters for rho
   vector<unsigned int> _omega;
+
+  /// \brief Prior parameters for zeta in longitudinal markers selection
+  vector<double> _zetaY;
+
+  /// \brief Prior parameters for vY in longitudinal markers selection
+  vector<unsigned int> _vY;
 
   /// \brief Prior variance for Y model when response is Normal
   double _sigmaSqY;
