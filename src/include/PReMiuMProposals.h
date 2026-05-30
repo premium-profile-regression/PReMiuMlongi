@@ -3247,31 +3247,9 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
   vector<unsigned int> nTimes_m = dataset.nTimes_m();
   //double mu_b  = currentParams.hyperParams().muBeta();
   double sigma2beta = currentParams.hyperParams().sigmaBeta(); //variance
-
-
-  if(2<1){
-    ifstream inputFile;
-    string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui2_500.txt";
-    inputFile.open(fitFilename.c_str());
-    //S.setZero();
-
-    MatrixXd ui(nSubjects, 2);
-    for(unsigned int i=0;i<nSubjects;i++){
-      inputFile >>ui(i,0);
-      inputFile >>ui(i,1);
-    }
-    inputFile.close();
-  }
-
+  unsigned int nT = 0;
 
   for (unsigned int m=0;m<nOutcomes;m++){
-
-    unsigned int mm = 0;
-    unsigned int nT = 0;
-    while (mm<m){
-      nT += nTimes_m[mm];
-      mm++;
-    }
 
     for(unsigned int b=0;b<nFixedEffects[m];b++){//unsigned int b=0;b<(nFixedEffects[m] + nFixedEffects_mix[m]);b++
 
@@ -3293,12 +3271,15 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
             for(unsigned int bb=0;bb<nFixedEffects[m];bb++){
               if(bb!=b)
-                Yi(j) -= currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
+                Yi(j) -= currentParams.zetaY(m) * currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
             }
 
             for(unsigned int bb=0;bb<nFixedEffects_mix[m];bb++){
-              Yi(j) -= currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
+              Yi(j) -= currentParams.zetaY(m) * currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
             }
+
+            // for  selection of longitudinal markers
+            Yi(j) -= (1.0 - currentParams.zetaY(m))* dataset.mu0selectY(nT + tStart[nSubjects*m+i]-1+j);
 
             Xib(j) = dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,b);
 
@@ -3323,9 +3304,8 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
            //           << " dim ui "<< ui.rows()<< " "<< ui.cols()<<endl;
 
 
-          S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
-          S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
-
+          S += currentParams.zetaY(m)/currentParams.SigmaE(m)*Xib.transpose()*Yi;
+          S2 += pow(currentParams.zetaY(m),2)/currentParams.SigmaE(m)*Xib.transpose()*Xib;
         }
 
         S2(0,0) += 1.0/sigma2beta;
@@ -3343,21 +3323,13 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
         currentParams.beta(m,b,0,nCategoriesY,betaProp);
 
       }
+    nT += nTimes_m[m];
   }
 
-
+  nT = 0;
   for(unsigned int m=0;m<nOutcomes;m++){
 
-
     for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-
-        unsigned int mm = 0;
-        unsigned int nT = 0;
-        while (mm<m){
-          nT += nTimes_m[mm];
-          mm++;
-        }
-
 
         for(unsigned int c=0;c<=maxZ;c++){
 
@@ -3383,14 +3355,17 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
               for(unsigned int j=0;j<nmes;j++){
                 for(unsigned int bb=0;bb<nFixedEffects[m];bb++)
-                  Yi(j) -= currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
+                  Yi(j) -= currentParams.zetaY(m) * currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
               }
 
               for(unsigned int j=0;j<nmes;j++){
                 for(unsigned int bb=0;bb<nFixedEffects_mix[m];bb++){
                   if(bb!=b)
-                    Yi(j) -= currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
+                    Yi(j) -= currentParams.zetaY(m) * currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
                  }
+
+                // for  selection of longitudinal markers
+                Yi(j) -= (1.0 - currentParams.zetaY(m))* dataset.mu0selectY(nT + tStart[nSubjects*m+i]-1+j);
 
                 Xib(j) = dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,b);
 
@@ -3404,8 +3379,8 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
               Yi -= block*currentParams.RandomEffects(m,i);
               //Yi -= block*ui.row(i).transpose() ;
 
-              S += 1/currentParams.SigmaE(m)*Xib.transpose()*Yi;
-              S2 += 1/currentParams.SigmaE(m)*Xib.transpose()*Xib;
+              S += currentParams.zetaY(m)/currentParams.SigmaE(m)*Xib.transpose()*Yi;
+              S2 += pow(currentParams.zetaY(m),2)/currentParams.SigmaE(m)*Xib.transpose()*Xib;
             }
           }
 
@@ -3422,6 +3397,7 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
           currentParams.beta_mix(m,c,b,0, nCategoriesY, betaProp);
         }
       }
+    nT += nTimes_m[m];
     }
 
 
