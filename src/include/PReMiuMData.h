@@ -454,6 +454,15 @@ class pReMiuMData{
 			_outcomeType=outType;
 		}
 
+		const bool& varSelectY() const{
+		  return _varSelectY;
+		}
+
+		/// \brief Set the outcome model type
+		void varSelectY(const bool& outType){
+		  _varSelectY=outType;
+		}
+
 		/// \brief Return the kernel type //AR
 		const string& kernelType() const{
 		  return _kernelType;
@@ -519,6 +528,23 @@ class pReMiuMData{
 				throw std::range_error("y subscript i out of range");
 			}
 			return _continuousY[i];
+		}
+
+		/// \brief Return the output vector
+		const vector<double>& mu0selectY() const{
+		  return _mu0selectY;
+		}
+		/// \brief Return the output vector
+		vector<double>& mu0selectY() {
+		  return _mu0selectY;
+		}
+
+		/// \brief Return the output value for the ith subject
+		double mu0selectY(const unsigned int& i) const{
+		  if(i>_nTimes){//RJ was i>_nSubjects; now i>_nTimes
+		    throw std::range_error("y subscript i out of range");
+		  }
+		  return _mu0selectY[i];
 		}
 
 		//RJ handling functions for _times
@@ -958,6 +984,9 @@ class pReMiuMData{
 		vector<unsigned int> _nTimes_m; //If yModel=LME
 
 		/// \brief A string describing the model for y
+		bool _varSelectY;
+
+		/// \brief A string describing the model for y
 		string _outcomeType;
 
 		/// \brief A string describing the kernel //AR
@@ -972,6 +1001,7 @@ class pReMiuMData{
 
 		/// \brief A vector of the output variables
 		vector<double> _continuousY;
+		vector<double> _mu0selectY;
 		//RJ declare _times, _tStart, _tStop
 		vector<double> _times;
 		vector<double> _times_corr; //AR

@@ -117,6 +117,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
     pReMiuMSampler.model().dataset().kernelType(options.kernelType());//AR
     pReMiuMSampler.model().dataset().covariateType(options.covariateType());
     pReMiuMSampler.model().dataset().includeCAR(options.includeCAR());
+    pReMiuMSampler.model().dataset().varSelectY(options.varSelectY());
 
     pReMiuMSampler.importData(options.inFileName(),options.predictFileName(),options.neighbourFileName());
 

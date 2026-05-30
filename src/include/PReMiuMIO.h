@@ -363,7 +363,8 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
   vector<MatrixXd>& W_RE=dataset.W_RE();
   vector<MatrixXd>& W_LME=dataset.W_LME();
   vector<MatrixXd>& W_LME_mix=dataset.W_LME_mix(); // Cluster-specific fixed efects if yModel == LME
-
+  vector<double>& mu0selectY=dataset.mu0selectY();
+  bool varSelectY = dataset.varSelectY();
 
   vector<unsigned int>& nFixedEffects=dataset.nFixedEffects();
   vector<unsigned int>& nFixedEffects_mix=dataset.nFixedEffects_mix();
@@ -713,6 +714,16 @@ void importPReMiuMData(const string& fitFilename,const string& predictFilename, 
         for(unsigned int i=0;i<nTimes_m[m];i++){
           for(unsigned int k=0;k<nRandomEffects[m];k++){
             inputFile >> W_RE[m](i,k);
+          }
+        }
+      }
+      mu0selectY.assign(nTimes, 0.0);
+      if(varSelectY){
+        int dd=0;
+        for(unsigned int m=0; m<nOutcomes; m++){
+          for(unsigned int i=0; i<nTimes_m[m]; i++){
+            inputFile >> mu0selectY[dd];
+            dd++;
           }
         }
       }
@@ -2125,9 +2136,12 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
     }
 
     if(outcomeType.compare("LME")==0){
+      vector<unsigned int> vY(nOutcomes);
+      vY.assign(nOutcomes,0);
+      vector<double> zetaY(nOutcomes);
+      zetaY.assign(nOutcomes,1);
+
       if(varSelectY){
-        vector<unsigned int> vY(nOutcomes);
-        vector<double> zetaY(nOutcomes);
         for(unsigned int j=0;j<nOutcomes;j++){
           if((unifRand(rndGenerator)<0.01) && (hyperParams.atomZetaY()!=1)){
             // We are in the point mass at 0 case - variable is switched off
@@ -2143,6 +2157,11 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
           // Note in the case of the continuous variable selection indicators
           // gamma is deterministically equal to rho, and so is set in the method
           // for rho so we do nothing here.
+        }
+      }else{
+        for(unsigned int j=0;j<nOutcomes;j++){
+          params.vY(j,vY[j]);
+          params.zetaY(j,zetaY[j]);
         }
       }
     }

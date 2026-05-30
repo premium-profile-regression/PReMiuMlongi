@@ -26,7 +26,7 @@
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
 
 profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNames_clust=NULL, randomEffectsNames=NULL, outcome="outcome", outcomeT=NA, data, longData=NULL,
-                   output="output", hyper, predict, predictType="RaoBlackwell", nSweeps=1000,
+                   varSelectY_data = NULL, output="output", hyper, predict, predictType="RaoBlackwell", nSweeps=1000,
                    nBurn=1000, nProgress=500, nFilter=1, nClusInit, seed, yModel="Bernoulli",
                    xModel="Discrete", sampler="SliceDependent", alpha=-2, dPitmanYor=0, excludeY=FALSE, extraYVar=FALSE,
                    varSelectType="None", varSelectY=FALSE, entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs= NULL, continuousCovs= NULL,
@@ -59,9 +59,21 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   if (useNormInvWishPrior==TRUE && !varSelectType=="None") stop("Variable selection is not available for Normal-inverse-Wishart prior for Normal covariates.")
 
   if (varSelectY==TRUE && !yModel=="LME") stop("Variable selection on the outcome variables is only available for linear mixed models (yModel = LME).")
+  if (varSelectY==TRUE && is.null(varSelectY_data)) stop("varSelectY_data should be provided to perform selection on longitudinal markers (yModel = LME).")
+  if (varSelectY==FALSE && !is.null(varSelectY_data)) message("varSelectY_data is only used for performing selection on longitudinal markers (varSelectY = TRUE & yModel = LME).")
+
+
+  if(length(varSelectY_data)>0){
+    if(yModel == "LME"){
+      if (length(which(colnames(varSelectY_data)=='ID'))<1 || length(which(outcome %in% colnames(varSelectY_data)))<length(outcome)) {
+        stop("Please provide varSelectY_data as a data.frame with columns 'ID' and column names matching the 'outcome' argument.")
+      }
+    }
+  }
+
   ##//RJ sort data sets by IDs
   if(length(longData)>0){
-    if(yModel == " Longitudinal"){
+    if(yModel == "Longitudinal"){
       if (length(which(colnames(longData)=='ID'))<1 || length(which(colnames(longData)=='time'))<1 || length(which(colnames(longData)=='outcome'))<1) {
         stop("Please provide longData as a data.frame with columns 'ID', 'time' and 'outcome'.")
       }
@@ -116,7 +128,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   # create outcome if excludeY=TRUE and outcome not provided
   nOutcomes <- length(outcome)
 
-  if (varSelectY==TRUE && nOutcomes==1) stop("Variable selection on the outcome variables is only available for multivariate linear mixed models (more than one outcome).")
+  if (varSelectY==TRUE && nOutcomes==1) stop("Variable selection on the outcome variables is only available for multivariate linear mixed models (more than one outcome) with yModel = 'LME'.")
 
 
   #Verify all participants have at least one observation for each markers
@@ -686,6 +698,13 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
           if(length(randomEffectsNames[[m]])>0)
             wMat_RE<-data.frame("intercept"=rep(1,dim(randomEffects)[1]),randomEffects)#longData[,(2+nCovariates+nFixedEffects+nFixedEffects_mix):(1+nCovariates+nFixedEffects+nFixedEffects_mix+nRandomEffects)]
           write(t(wMat_RE[id_YnoNA[[m]],]), fileName,append=T, ncolumns=dim(wMat_RE)[2])
+        }
+        if(varSelectY){
+          for(j in 1:length(outcome)){
+            d4 <- varSelectY_data[,sapply(c(outcome[j]), function(x) which(names(varSelectY_data)==x))]
+            d4 <- d4[id_YnoNA[[j]]]
+            write(t(d4),fileName,append=T,ncolumns=1)
+          }
         }
       }
 

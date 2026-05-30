@@ -3566,12 +3566,17 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         }
         for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++){
           for(unsigned int b=0;b<nFixedEffects[m];b++)
-            yi(j)-=params.beta(m,b, 0, nCategoriesY)*dataset.W_LME(m, tStart[curr_i]-1+j,b);
+            yi(j)-=params.zetaY(m) * params.beta(m,b, 0, nCategoriesY)*dataset.W_LME(m, tStart[curr_i]-1+j,b);
         }
         for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++){
           for(unsigned int b=0;b<nFixedEffects_mix[m];b++)
-            yi(j)-=params.beta_mix(m, c,b,0,nCategoriesY)*dataset.W_LME_mix(m, tStart[curr_i]-1+j,b);
+            yi(j)-=params.zetaY(m) * params.beta_mix(m, c,b,0,nCategoriesY)*dataset.W_LME_mix(m, tStart[curr_i]-1+j,b);
         }
+
+        // substraction of (1-zeta)*mu0(t) for selection of longitudinal markers (varselectY==TRUE)
+        for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++)
+            yi(j)-=(1.0-params.zetaY(m)) * dataset.mu0selectY(sum_ind_m + tStart[curr_i]-1+j);
+
 
         //Random effects of subject i
         bool cond_RE=true;
@@ -3626,7 +3631,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
          //
          // dmvnorm +=  -0.5*yi.transpose()*Vinv*yi - 0.5*ni*log(2.0*pi<double>())
          //   - 0.5*logDetPrecMat;
-       }
+      }
        curr_i ++;
        nmes_m +=ni_m;
 

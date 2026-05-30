@@ -3868,6 +3868,155 @@ void metropolisHastingsForRhoOmega(mcmcChain<pReMiuMParams>& chain,
   }
 }
 
+// Metropolis-Hastings for joint uptdate of rho and omega
+void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
+                                   unsigned int& nTry,unsigned int& nAccept,
+                                   const mcmcModel<pReMiuMParams,
+                                                   pReMiuMOptions,
+                                                   pReMiuMData>& model,
+                                                   pReMiuMPropParams& propParams,
+                                                   baseGeneratorType& rndGenerator){
+
+  mcmcState<pReMiuMParams>& currentState = chain.currentState();
+  pReMiuMParams& currentParams = currentState.parameters();
+  pReMiuMHyperParams hyperParams = currentParams.hyperParams();
+
+  // Find the number of subjects
+  unsigned int nOutcomes = currentParams.nOutcomes();
+
+  // Define a uniform random number generator
+  randomUniform unifRand(0,1);
+  // Define a normal random number generator
+  randomNormal normRand(0,1);
+
+  double currentLogPost = 0;
+  currentLogPost = logCondPostRhoOmegaj(currentParams,model,0);
+  //currentLogPost = logCondPostZetaYk(currentParams,model); CHANGE
+
+  double proposedLogPost = currentLogPost;
+  vector<unsigned int> currentvY = currentParams.vY();
+  unsigned int proposedvY;
+  vector<double> currentZetaY = currentParams.zetaY();
+  double proposedZetaY;
+
+
+  for(unsigned int j=0;j<nOutcomes;j++){
+
+    currentLogPost = logCondPostRhoOmegaj(currentParams,model,j);
+    //currentLogPost = logCondPostZetaYk(currentParams,model,j); CHANGE
+
+    nTry++;
+
+    // Propose from the priors
+    double& stdDev = propParams.rhoStdDev(j);
+    //double& stdDev = propParams.zetaYStdDev(j); CHANGE
+
+    if(unifRand(rndGenerator)>hyperParams.atomZetaY()){
+      // Proposing an omega 0
+      if(currentvY[j]==0){
+        // Nothing to do as move to the same place
+        nAccept++;
+        continue;
+      }
+      proposedvY=0;
+      proposedZetaY=0.0;
+
+      currentParams.vY(j,proposedvY);
+      currentParams.zetaY(j,proposedZetaY);
+      proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
+      double logAcceptRatio = proposedLogPost - currentLogPost;
+      double runiftemp = unifRand(rndGenerator);
+      logAcceptRatio += logPdfBeta(currentZetaY[j],hyperParams.aZetaY(),hyperParams.bZetaY());
+
+      if(runiftemp<exp(logAcceptRatio)){
+        // Move accepted
+        currentLogPost=proposedLogPost;
+
+        nAccept++;
+
+      }else{
+        // Move rejected, reset parameters
+        currentParams.vY(j,currentvY[j]);
+        currentParams.zetaY(j,currentZetaY[j]);
+
+      }
+    }else{
+      if(currentvY[j]==1){
+        proposedZetaY  = truncNormalRand(rndGenerator,currentZetaY[j],stdDev,"B",0,1);
+        currentParams.zetaY(j,proposedZetaY);
+        proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
+        //proposedLogPost = logCondPostZetaYk(currentParams,model,j); CHANGE
+
+        double logAcceptRatio = proposedLogPost - currentLogPost;
+        logAcceptRatio += logPdfTruncatedNormal(currentZetaY[j],proposedZetaY,stdDev,"B",0,1);
+        logAcceptRatio -= logPdfTruncatedNormal(proposedZetaY,currentZetaY[j],stdDev,"B",0,1);
+        propParams.rhoAddTry(j);
+        //propParams.zetaYAddTry(j); CHANGE
+
+        double runiftemp = unifRand(rndGenerator);
+        if(runiftemp<exp(logAcceptRatio)){
+          // Move accepted
+          currentLogPost=proposedLogPost;
+
+
+          nAccept++;
+          propParams.rhoAddAccept(j);
+          // propParams.zetaYAddTry(j); CHANGE
+
+          // Also update the proposal standard deviation
+          if(propParams.nTryRho(j)%propParams.rhoUpdateFreq()==0){
+          //if(propParams.nTryZetaY(j)%propParams.zetaYUpdateFreq()==0){
+            stdDev += 0.1*(propParams.rhoLocalAcceptRate(j)-propParams.rhoAcceptTarget())/
+              pow((double)(propParams.nTryRho(j)/propParams.rhoUpdateFreq())+2.0,0.75);
+            propParams.rhoAnyUpdates(true);
+            if(stdDev>propParams.rhoStdDevUpper(j)||stdDev<propParams.rhoStdDevLower(j)){
+              propParams.rhoStdDevReset(j);
+            }
+            propParams.rhoLocalReset(j);
+          }
+
+        }else{
+          // Move rejected, reset parameters
+          currentParams.vY(j,currentvY[j]);
+          currentParams.zetaY(j,currentZetaY[j]);
+          // Also update the proposal standard deviation
+          if(propParams.nTryRho(j)%propParams.rhoUpdateFreq()==0){
+            stdDev += 0.1*(propParams.rhoLocalAcceptRate(j)-propParams.rhoAcceptTarget())/
+              pow((double)(propParams.nTryRho(j)/propParams.rhoUpdateFreq())+2.0,0.75);
+            propParams.rhoAnyUpdates(true);
+            if(stdDev>propParams.rhoStdDevUpper(j)||stdDev<propParams.rhoStdDevLower(j)){
+              propParams.rhoStdDevReset(j);
+            }
+            propParams.rhoLocalReset(j);
+          }
+        }
+      }else{
+        proposedZetaY = betaRand(rndGenerator,hyperParams.atomZetaY(),hyperParams.bZetaY());
+        proposedvY=1;
+        currentParams.vY(j,proposedvY);
+        currentParams.zetaY(j,proposedZetaY);
+        proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
+        //proposedLogPost = logCondPostZetaYk(currentParams,model,j);
+        double logAcceptRatio = proposedLogPost - currentLogPost;
+        logAcceptRatio -= logPdfBeta(proposedZetaY,hyperParams.atomZetaY(),hyperParams.bZetaY());
+
+        double runiftemp = unifRand(rndGenerator);
+        if(runiftemp<exp(logAcceptRatio)){
+          // Move accepted
+          currentLogPost=proposedLogPost;
+
+          nAccept++;
+
+        }else{
+          // Move rejected, reset parameters
+          currentParams.vY(j,currentvY[j]);
+          currentParams.zetaY(j,currentZetaY[j]);
+        }
+      }
+    }
+  }
+}
+
 // Gibbs for update of sigmaSqY (Normal response case)
 void gibbsForSigmaSqY(mcmcChain<pReMiuMParams>& chain,
                       unsigned int& nTry,unsigned int& nAccept,
