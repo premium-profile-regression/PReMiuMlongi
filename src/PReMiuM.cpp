@@ -244,6 +244,15 @@ RcppExport SEXP profRegr(SEXP inputString) {
         // Update variance error
         pReMiuMSampler.addProposal("gibbsForSigmaEpsilonLME",1.0,1,1,&gibbsForSigmaEpsilonLME);
       }
+
+      if(options.varSelectY()){
+        // Add the variable selection moves
+        unsigned int firstSweep;
+        firstSweep=1+(unsigned int)(options.nBurn()/10);
+        // Gibbs update for zeta
+        pReMiuMSampler.addProposal("metropolisHastingsForZetaY",1.0,1,firstSweep,&metropolisHastingsForZetaY);
+
+      }
     }
 
     // The Metropolis Hastings update for labels

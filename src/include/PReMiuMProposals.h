@@ -1572,6 +1572,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
   vector<unsigned int> nFixedEffects=dataset.nFixedEffects();
   vector<MatrixXd> RandomEffects = currentParams.RandomEffects();
   unsigned int nCategoriesY = dataset.nCategoriesY();
+  vector<unsigned int> nTimes_m = dataset.nTimes_m();
 
 
   //Sampling of the hyperprior Lambda: covRE~ IW(n,Lambda) and Lambda~W(delta+nRandomEffects+1,workTauLME_R0^-1)
@@ -1585,7 +1586,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
   int ind=0;//tstart
   int ind_y=0;//y and t
   for(unsigned int m=0;m<nOutcomes;m++){
-    int ntot = 0;
 
     MatrixXd bi(nSubjects, nRandomEffects[m]);
 
@@ -1614,7 +1614,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       S=S+bibi;
     }
 
-
     //Tau = wishartRand(rndGenerator,R,nSubjects+hyperParams.SigmaLME_kappa0());
     //Tau(0,0)=1;
     // MatrixXd covv = Tau.inverse();
@@ -1629,12 +1628,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
     MatrixXd  workTauLME_R02 = hyperParams.workTauLME_R0(m);
     //MatrixXd Rc0=workTauLME_R02.inverse()+S;
 
-    S.setZero();
-
-    for(unsigned int i=0;i<nSubjects;i++){
-      MatrixXd bibi = bi.row(i).transpose()*bi.row(i);
-      S=S+bibi;
-    }
     MatrixXd Rc=(workTauLME_R02.inverse()+S).inverse();
     Tau = wishartRand(rndGenerator,Rc,nSubjects+hyperParams.SigmaLME_kappa0(m));
     LLT<MatrixXd> lltOfA(Tau);
@@ -1650,18 +1643,17 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
       yi.resize(ni);
       yi.setZero();
-      ntot += ni;
 
       for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
 
         yi(j) = y[ind_y + tStart[ind]-1+j];//yi(j) = y[tStart[ind]-1+j];
 
         for(unsigned int b=0;b<nFixedEffects[m];b++){
-          yi(j)-=currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
+          yi(j)-= currentParams.zetaY(m) * currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
           //yi(j)-=2.45*dataset.W_LME(m,tStart[ind]-1+j,b);
         }
         for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-          yi(j)-=currentParams.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
+          yi(j)-= currentParams.zetaY(m) * currentParams.beta_mix(m,zi,b,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
           // if(j==0)
           //   Rcpp::Rcout << " betamix "<<currentParams.beta_mix(m,0,0,0,nCategoriesY) << " & " <<currentParams.beta_mix(m,1,1,0,nCategoriesY)
           //             << " cl2 " << currentParams.beta_mix(m,1,0,0,nCategoriesY) << " & "<< currentParams.beta_mix(m,1,1,0,nCategoriesY)<<endl;
@@ -1675,6 +1667,8 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
           // if(zi==1 & b==1)
           //   yi(j)-=0.13*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
         }
+        //for selection of longitudinal markers
+        yi(j)-= (1.0 - currentParams.zetaY(m)) * dataset.mu0selectY(dataset.mu0selectY(ind_y + tStart[ind]-1+j));
       }
 
 
@@ -1711,7 +1705,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
         currentParams.RandomEffects(m,i,ui);
 
         if(i==(nSubjects-1))
-          ind_y += ntot;
+          ind_y += nTimes_m[m];
         ind ++;
     }
   }
@@ -4448,7 +4442,7 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
   vector<unsigned int> nFixedEffects_mix = dataset.nFixedEffects_mix();
   unsigned int nCategoriesY = dataset.nCategoriesY();
   unsigned int nOutcomes = dataset.nOutcomes();
-
+  vector<unsigned int> nTimes_m = dataset.nTimes_m();
 
 
   unsigned int  nSubjects = dataset.nSubjects();
@@ -4459,28 +4453,12 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
   vector<int>       tStop = dataset.tStop();
 
 
-  if(2<1){
-    ifstream inputFile;
-    string fitFilename = "/Users/naisr/Documents/2022_MCF/code/Applications/Plongi_3C_AXE/Simu/ui2_500.txt";
-    inputFile.open(fitFilename.c_str());
-    //S.setZero();
-
-    MatrixXd ui(nSubjects, 2);
-    for(unsigned int i=0;i<nSubjects;i++){
-      inputFile >>ui(i,0);
-      inputFile >>ui(i,1);
-    }
-    inputFile.close();
-  }
-
-
-
   unsigned int ind_y=0;
   unsigned int ind=0;
 
   for(unsigned int m=0;m<nOutcomes;m++){
     double S2= 0.0;
-    unsigned int  ntot = 0;
+
     for(unsigned int i=0;i<nSubjects;i++){
 
       unsigned int nmes = (tStop[ind] - tStart[ind] + 1);
@@ -4488,7 +4466,6 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
       VectorXd   Yi(nmes);
       int zi   = currentParams.z(i);
 
-      ntot += nmes;
 
       for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
         Yi(j) = y[ind_y + tStart[ind]-1+j];
@@ -4496,16 +4473,15 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
 
       for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
         for(unsigned int b=0;b<nFixedEffects[m];b++){
-          Yi(j) -= currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
+          Yi(j) -= currentParams.zetaY(m) * currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
         }
-      }
 
-      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
         for(unsigned int b=0;b<nFixedEffects_mix[m];b++){
-          Yi(j) -= currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
+          Yi(j) -= currentParams.zetaY(m) * currentParams.beta_mix(m,zi,b, 0, nCategoriesY)*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
         }
-      }
 
+        Yi(j) -= (1.0 - currentParams.zetaY(m))* dataset.mu0selectY(ind_y + tStart[ind]-1+j);
+      }
 
 
       // for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
@@ -4526,14 +4502,14 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
 
       S2 += Yi.transpose()*Yi;
       if(i==(nSubjects-1))
-        ind_y += ntot;
+        ind_y += nTimes_m[m];
 
       ind++;
     }
 
 
     S2 /=2.0;
-    double shape_post = currentParams.hyperParams().eps_shape() + ntot/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
+    double shape_post = currentParams.hyperParams().eps_shape() + nTimes_m[m]/2.0;//currentParams.hyperParams().eps_shape() + (double)(ntot/2.0);
 
     //(double)((double ntot)/2.0)
     //double scale_post = 2*currentParams.hyperParams().eps_rate()/(2 + S2*currentParams.hyperParams().eps_rate());
@@ -5398,27 +5374,6 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
   }
   currentParams.workNXInCluster(nMembers);
   currentParams.workMaxZi(maxZ);
-
-
-
-  //for(unsigned int m=0;m<dataset.nOutcomes();m++){
-    // for(unsigned int b=0;b<nFixedEffects[m];b++)
-    // Rcpp::Rcout << m << " b : "<< b << " beta "<<currentParams.beta(m,b, 0, dataset.nCategoriesY())<<endl;
-    // Rcpp::Rcout << m << " covRE : "<<endl<<currentParams.covRE(m,0)<<endl;
-    // Rcpp::Rcout << m << " SigmaE : "<<currentParams.SigmaE(m)<<endl;
-    //
-    // for(unsigned int c=0;c<maxNClusters;c++){
-    //   for(unsigned int b=0;b<nFixedEffects_mix[m];b++)
-    //     Rcpp::Rcout << m <<  " c "<< c << " b : "<< b << " beta "<<currentParams.beta_mix(m, c,b,0,dataset.nCategoriesY())<<endl;
-    // }
-
-  //}
-
-
-
-
-
-
 
 }
 
