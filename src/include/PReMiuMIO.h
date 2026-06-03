@@ -56,6 +56,7 @@
 #include<PReMiuMOptions.h>
 #include<PReMiuMData.h>
 #include<PReMiuMModel.h>
+#include<PReMiuMProposals.h>
 
 using namespace Eigen;
 
@@ -2290,6 +2291,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
 
     const pReMiuMData& dataset = sampler.model().dataset();
     pReMiuMPropParams& proposalParams = sampler.proposalParams();
+    vector<unsigned int> nTimes_m=dataset.nTimes_m();
 
     vector<unsigned int> nCategories;
     if(covariateType.compare("Discrete")==0||covariateType.compare("Mixed")==0){
@@ -2419,6 +2421,8 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           outFiles.push_back(new ofstream(fileName.c_str()));
           fileName = fileStem + "_zetaProp.txt";
           outFiles.push_back(new ofstream(fileName.c_str()));
+          fileName = fileStem + "_nullMu0.txt";
+          outFiles.push_back(new ofstream(fileName.c_str()));
         }
       }
       if(varSelectType.compare("None")!=0){
@@ -2459,7 +2463,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
     int sigmaEpsilonInd=-1,epsilonPropInd=-1,omegaInd=-1,rhoInd=-1;
     int rhoOmegaPropInd=-1,gammaInd=-1,nullPhiInd=-1,nullMuInd=-1;
     int predictThetaRaoBlackwellInd=-1;
-    int TauCARInd=-1,uCARInd=-1, zetaYInd=-1, vYInd=-1, zetaYPropInd=-1;
+    int TauCARInd=-1,uCARInd=-1, zetaYInd=-1, vYInd=-1, zetaYVYPropInd=-1, nullmu0Ind=-1;
 
 
     int r=0;
@@ -2484,6 +2488,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
     if(fixedAlpha<=-1){
       alphaPropInd=r++;
     }
+
     if(includeResponse){
       if(outcomeType.compare("Longitudinal")!=0 && outcomeType.compare("LME")!=0)
         thetaInd=r++;
@@ -2531,12 +2536,14 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
         TauCARInd=r++;
         uCARInd=r++;
       }
-      if(varSelectY){
-        zetaYInd=r++;
-        zetaYPropInd=r++;
+      if(varSelectY && outcomeType.compare("LME")==0){
         vYInd=r++;
+        zetaYInd=r++;
+        zetaYVYPropInd=r++;
+        nullmu0Ind=r++;
       }
     }
+
     if(varSelectType.compare("None")!=0){
       omegaInd=r++;
       rhoInd=r++;
@@ -2595,7 +2602,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
         *(outFiles[nMembersInd]) << " " << sumMembers << endl;
       }
     }
-
 
     unsigned int maxNCategories=0;
     if(covariateType.compare("Discrete")==0){
@@ -2815,16 +2821,16 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
 
           for(unsigned int m=0;m<nOutcomes;m++){
             //for(unsigned int c=0;c< maxNClusters;c++){
-              for(unsigned int l=0;l<nRandomEffects[m];l++){
-                for(unsigned int l2=0;l2<=l;l2++){
-                  *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,l,l2);
-                  if( l2<(nRandomEffects[m]-1)){
-                    *(outFiles[CovRELMEInd]) << " ";
-                  }else{
-                    *(outFiles[CovRELMEInd]) << endl;
-                  }
+            for(unsigned int l=0;l<nRandomEffects[m];l++){
+              for(unsigned int l2=0;l2<=l;l2++){
+                *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,l,l2);
+                if( l2<(nRandomEffects[m]-1)){
+                  *(outFiles[CovRELMEInd]) << " ";
+                }else{
+                  *(outFiles[CovRELMEInd]) << endl;
                 }
               }
+            }
             //}
 
             *(outFiles[EpsilonLMEInd]) << params.SigmaE(m) << endl; //params.sigmakInd(c);
@@ -2848,7 +2854,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             for(unsigned int c=0;c< maxNClusters;c++){
               for(unsigned int j=0;j<nFixedEffects_mix[m];j++)
                 *(outFiles[betamixInd]) << params.beta_mix(m,c,j, 0, nCategoriesY)<< " "; //j*1 (Ycategory)
-             }
+            }
             *(outFiles[betamixInd]) << endl;
           }
         }
@@ -2994,57 +3000,10 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
       }
     }
 
-    if(varSelectY){
-      // Print variable selection related quantities
-      for(unsigned int j=0;j<nOutcomes;j++){
-        *(outFiles[vYInd]) << params.vY(j);
-        *(outFiles[zetaYInd]) << params.zetaY(j);
-        if(j<nOutcomes-1){
-          *(outFiles[omegaInd]) << " ";
-          *(outFiles[rhoInd]) << " ";
-
-        }else{
-          *(outFiles[omegaInd]) << endl;
-          *(outFiles[rhoInd]) << endl;
-        }
-        if(sweep==0){ // this was "==0", it might be worth double checking
-          //   if(covariateType.compare("Discrete")==0){
-          //     for(unsigned int p=0;p<maxNCategories;p++){
-          //       if(p<nCategories[j]){
-          //         *(outFiles[nullPhiInd]) << exp(params.logNullPhi(j,p));
-          //       }else{
-          //         *(outFiles[nullPhiInd]) << -999;
-          //       }
-          //
-          //       if(p<(maxNCategories-1)||j<(nCovariates-1)){
-          //         *(outFiles[nullPhiInd]) << " ";
-          //       }else{
-          //         *(outFiles[nullPhiInd]) << endl;
-          //       }
-          //     }
-          // }
-        }
-
-        // anyUpdates = proposalParams.rhoAnyUpdates();
-        // if(anyUpdates){
-        //   for(unsigned int j=0;j<nCovariates;j++){
-        //     *(outFiles[rhoOmegaPropInd]) << sampler.proposalParams().rhoAcceptRate(j) <<
-        //       " " << sampler.proposalParams().rhoStdDev(j);
-        //     if(j<(nCovariates-1)){
-        //       *(outFiles[rhoOmegaPropInd]) << " ";
-        //     }else{
-        //       *(outFiles[rhoOmegaPropInd]) << endl;
-        //     }
-        //   }
-        //   proposalParams.rhoAnyUpdates(false);
-        // }
-      }
-    }
-
-
     if(varSelectType.compare("None")!=0){
       // Print variable selection related quantities
       for(unsigned int j=0;j<nCovariates;j++){
+
         *(outFiles[omegaInd]) << params.omega(j);
         *(outFiles[rhoInd]) << params.rho(j);
         if(j<nCovariates-1){
@@ -3055,61 +3014,74 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           *(outFiles[omegaInd]) << endl;
           *(outFiles[rhoInd]) << endl;
         }
+
         if(sweep!=0){ // this was "==0", it might be worth double checking
-          if(covariateType.compare("Discrete")==0){
-            for(unsigned int p=0;p<maxNCategories;p++){
-              if(p<nCategories[j]){
-                *(outFiles[nullPhiInd]) << exp(params.logNullPhi(j,p));
-              }else{
-                *(outFiles[nullPhiInd]) << -999;
-              }
 
-              if(p<(maxNCategories-1)||j<(nCovariates-1)){
-                *(outFiles[nullPhiInd]) << " ";
-              }else{
-                *(outFiles[nullPhiInd]) << endl;
-              }
+          if(sweep<max(nBurn+nFilter, nBurn+nFilter+1)){
+            if(covariateType.compare("Discrete")==0){
 
-            }
-          }else if(covariateType.compare("Normal")==0){
-            *(outFiles[nullMuInd]) << params.nullMu(j);
-            if(j<nCovariates-1){
-              *(outFiles[nullMuInd]) << " ";
-            }else{
-              *(outFiles[nullMuInd]) << endl;
-            }
-
-          }else if(covariateType.compare("Mixed")==0){
-            if (j < nDiscreteCovs){
               for(unsigned int p=0;p<maxNCategories;p++){
+
+
                 if(p<nCategories[j]){
                   *(outFiles[nullPhiInd]) << exp(params.logNullPhi(j,p));
                 }else{
                   *(outFiles[nullPhiInd]) << -999;
                 }
-                if(p<(maxNCategories-1)||j<(nDiscreteCovs-1)){
+
+                if(p<(maxNCategories-1)||j<(nCovariates-1)){
                   *(outFiles[nullPhiInd]) << " ";
                 }else{
                   *(outFiles[nullPhiInd]) << endl;
                 }
+
               }
-            } else {
-              *(outFiles[nullMuInd]) << params.nullMu(j-nDiscreteCovs);
+            }else if(covariateType.compare("Normal")==0){
+
+              *(outFiles[nullMuInd]) << params.nullMu(j);
               if(j<nCovariates-1){
                 *(outFiles[nullMuInd]) << " ";
               }else{
                 *(outFiles[nullMuInd]) << endl;
               }
+
+
+            }else if(covariateType.compare("Mixed")==0){
+              if (j < nDiscreteCovs){
+
+                for(unsigned int p=0;p<maxNCategories;p++){
+                  if(p<nCategories[j]){
+                    *(outFiles[nullPhiInd]) << exp(params.logNullPhi(j,p));
+                  }else{
+                    *(outFiles[nullPhiInd]) << -999;
+                  }
+                  if(p<(maxNCategories-1)||j<(nDiscreteCovs-1)){
+                    *(outFiles[nullPhiInd]) << " ";
+                  }else{
+                    *(outFiles[nullPhiInd]) << endl;
+                  }
+
+                }
+              } else {
+
+                *(outFiles[nullMuInd]) << params.nullMu(j-nDiscreteCovs);
+                if(j<nCovariates-1){
+                  *(outFiles[nullMuInd]) << " ";
+                }else{
+                  *(outFiles[nullMuInd]) << endl;
+
+                }
+              }
             }
           }
-        }
-        if(varSelectType.compare("BinaryCluster")==0){
-          for(unsigned int c=0;c<maxNClusters;c++){
-            *(outFiles[gammaInd]) << params.gamma(c,j);
-            if(c<maxNClusters-1||j<nCovariates-1){
-              *(outFiles[gammaInd]) << " ";
-            }else{
-              *(outFiles[gammaInd]) << endl;
+          if(varSelectType.compare("BinaryCluster")==0){
+            for(unsigned int c=0;c<maxNClusters;c++){
+              *(outFiles[gammaInd]) << params.gamma(c,j);
+              if(c<maxNClusters-1||j<nCovariates-1){
+                *(outFiles[gammaInd]) << " ";
+              }else{
+                *(outFiles[gammaInd]) << endl;
+              }
             }
           }
         }
@@ -3127,7 +3099,61 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
           }
         }
         proposalParams.rhoAnyUpdates(false);
+      }
+    }
 
+
+
+    if(varSelectY  && outcomeType.compare("LME")==0){
+      // Print variable selection related quantities
+      int ind_mu = 0;
+      for(unsigned int j=0;j<nOutcomes;j++){
+
+        *(outFiles[vYInd]) << params.vY(j);
+        *(outFiles[zetaYInd]) << params.zetaY(j);
+        if(j<nOutcomes-1){
+          *(outFiles[vYInd]) << " ";
+          *(outFiles[zetaYInd]) << " ";
+
+        }else{
+          *(outFiles[vYInd]) << endl;
+          *(outFiles[zetaYInd]) << endl;
+        }
+
+        if(sweep<max(nBurn+nFilter, nBurn+nFilter+1)){ // this was "==0", it might be worth double checking
+
+          if(outcomeType.compare("LME")==0){
+            for(unsigned int p=0;p<nTimes_m[j];p++){
+              *(outFiles[nullmu0Ind]) << dataset.mu0selectY(ind_mu + p);
+
+              if(p<(nTimes_m[j])||j<(nOutcomes-1)){
+                *(outFiles[nullmu0Ind]) << " ";
+              }else{
+                *(outFiles[nullmu0Ind]) << endl;
+              }
+
+            }
+            ind_mu = ind_mu + nTimes_m[j];
+          }
+        }
+      }
+
+      anyUpdates = proposalParams.zetaYAnyUpdates();
+
+      if(anyUpdates){
+        for(unsigned int j=0;j<nOutcomes;j++){
+
+          *(outFiles[zetaYVYPropInd]) << sampler.proposalParams().zetaYAcceptRate(j) <<
+            " " << sampler.proposalParams().zetaYStdDev(j);
+
+          if(j<(nOutcomes-1)){
+            *(outFiles[zetaYVYPropInd]) << " ";
+          }else{
+            *(outFiles[zetaYVYPropInd]) << endl;
+
+          }
+          proposalParams.zetaYAnyUpdates(false);
+        }
       }
     }
   }

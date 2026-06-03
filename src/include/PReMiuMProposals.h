@@ -205,6 +205,28 @@ public:
     _rhoAnyUpdates=true;
 
 
+
+    _nTryZetaY.resize(nFixedEffects.size());
+    _nAcceptZetaY.resize(nFixedEffects.size());
+    _nLocalAcceptZetaY.resize(nFixedEffects.size());
+    _nResetZetaY.resize(nFixedEffects.size());
+    _zetaYStdDev.resize(nFixedEffects.size());
+    _zetaYStdDevLower.resize(nFixedEffects.size());
+    _zetaYStdDevUpper.resize(nFixedEffects.size());
+    for(unsigned int j=0;j<nFixedEffects.size();j++){
+      _zetaYStdDev[j]=0.5;
+      _zetaYStdDevLower[j]=0.0001;
+      _zetaYStdDevUpper[j]=9.9999;
+      _nTryZetaY[j]=0;
+      _nAcceptZetaY[j]=0;
+      _nLocalAcceptZetaY[j]=0;
+      _nResetZetaY[j]=0;
+    }
+    _zetaYAcceptTarget = 0.44;
+    _zetaYUpdateFreq = 10;
+    _zetaYAnyUpdates=true;
+
+
     _lambdaStdDev=1.0;
     _lambdaStdDevLower=0.1;
     _lambdaStdDevUpper=99.9;
@@ -900,6 +922,113 @@ public:
   }
 
 
+  vector<unsigned int> nTryZetaY() const{
+    return _nTryZetaY;
+  }
+
+  unsigned int nTryZetaY(const unsigned int& j) const{
+    return _nTryZetaY[j];
+  }
+
+  vector<unsigned int> nAcceptZetaY() const{
+    return _nAcceptZetaY;
+  }
+
+  double zetaYAcceptRate(const unsigned int& j) const{
+    if(_nTryZetaY[j]>0){
+      return (double)_nAcceptZetaY[j]/(double)_nTryZetaY[j];
+    }else{
+      return 0.0;
+    }
+  }
+
+  unsigned int zetaYUpdateFreq() const{
+    return _zetaYUpdateFreq;
+  }
+
+  vector<unsigned int> nLocalAcceptZetaY() const{
+    return _nLocalAcceptZetaY;
+  }
+
+
+  double zetaYLocalAcceptRate(const unsigned int& j) const{
+    return (double)_nLocalAcceptZetaY[j]/(double)_zetaYUpdateFreq;
+  }
+
+
+  double zetaYAcceptTarget() const{
+    return _zetaYAcceptTarget;
+  }
+
+  void zetaYAddTry(const unsigned int& j){
+    _nTryZetaY[j]++;
+  }
+
+  void zetaYAddAccept(const unsigned int& j){
+    _nAcceptZetaY[j]++;
+    _nLocalAcceptZetaY[j]++;
+  }
+
+  void zetaYLocalReset(const unsigned int& j){
+    _nLocalAcceptZetaY[j]=0;
+  }
+
+  vector<unsigned int> nResetZetaY() const{
+    return _nResetZetaY;
+  }
+
+  void zetaYStdDevReset(const unsigned int& j){
+    _zetaYStdDev[j] = 0.5;
+    _nResetZetaY[j]++;
+    _zetaYStdDevLower[j] = pow(10.0,-((double)_nResetZetaY[j]+4.0));
+    _zetaYStdDevUpper[j] = 10.0-pow(10.0,-((double)_nResetZetaY[j]+4.0));
+  }
+
+  vector<double>& zetaYStdDev(){
+    return _zetaYStdDev;
+  }
+
+  vector<double> zetaYStdDev() const{
+    return _zetaYStdDev;
+  }
+
+  double& zetaYStdDev(const unsigned int& j){
+    return _zetaYStdDev[j];
+  }
+
+  const double& zetaYStdDev(const unsigned int& j) const{
+    return _zetaYStdDev[j];
+  }
+
+  vector<double> zetaYStdDevLower() const{
+    return _zetaYStdDevLower;
+  }
+
+  double zetaYStdDevLower(const unsigned int& j) const{
+    return _zetaYStdDevLower[j];
+  }
+
+  vector<double> zetaYStdDevUpper() const{
+    return _zetaYStdDevUpper;
+  }
+
+  double zetaYStdDevUpper(const unsigned int& j) const{
+    return _zetaYStdDevUpper[j];
+  }
+
+  void zetaYStdDev(const unsigned int& j,const double& sd){
+    _zetaYStdDev[j]=sd;
+  }
+
+  bool zetaYAnyUpdates() const{
+    return _zetaYAnyUpdates;
+  }
+
+  void zetaYAnyUpdates(const bool& newStatus){
+    _zetaYAnyUpdates = newStatus;
+  }
+
+
   unsigned int nTryLambda() const{
     return _nTryLambda;
   }
@@ -1066,6 +1195,16 @@ public:
     _rhoAcceptTarget=propParams.rhoAcceptTarget();
     _rhoUpdateFreq=propParams.rhoUpdateFreq();
     _rhoAnyUpdates=propParams.rhoAnyUpdates();
+    _nTryZetaY=propParams.nTryZetaY();
+    _nAcceptZetaY=propParams.nAcceptZetaY();
+    _nLocalAcceptZetaY=propParams.nLocalAcceptZetaY();
+    _nResetZetaY=propParams.nResetZetaY();
+    _zetaYStdDev=propParams.zetaYStdDev();
+    _zetaYStdDevLower=propParams.zetaYStdDevLower();
+    _zetaYStdDevUpper=propParams.zetaYStdDevUpper();
+    _zetaYAcceptTarget=propParams.zetaYAcceptTarget();
+    _zetaYUpdateFreq=propParams.zetaYUpdateFreq();
+    _zetaYAnyUpdates=propParams.zetaYAnyUpdates();
     _nTryLambda=propParams.nTryLambda();
     _nAcceptLambda=propParams.nAcceptLambda();
     _nLocalAcceptLambda=propParams.nLocalAcceptLambda();
@@ -1156,6 +1295,16 @@ private:
   double _rhoAcceptTarget;
   unsigned int _rhoUpdateFreq;
   bool _rhoAnyUpdates;
+  vector<unsigned int> _nTryZetaY;
+  vector<unsigned int> _nAcceptZetaY;
+  vector<unsigned int> _nLocalAcceptZetaY;
+  vector<unsigned int> _nResetZetaY;
+  vector<double> _zetaYStdDev;
+  vector<double> _zetaYStdDevLower;
+  vector<double> _zetaYStdDevUpper;
+  double _zetaYAcceptTarget;
+  unsigned int _zetaYUpdateFreq;
+  bool _zetaYAnyUpdates;
   unsigned int _nTryLambda;
   unsigned int _nAcceptLambda;
   unsigned int _nLocalAcceptLambda;
@@ -2703,7 +2852,8 @@ void gibbsForMVNMuInActive(mcmcChain<pReMiuMParams>& chain,
   // Find the number of clusters
   unsigned int maxZ = currentParams.workMaxZi();
   unsigned int maxNClusters = currentParams.maxNClusters();
-  unsigned int nOutcomes = currentParams.nOutcomes();
+  unsigned int nOutcomes = model.dataset().nOutcomes();//currentParams.nOutcomes();
+
   nTry++;
   nAccept++;
   VectorXd meanVec(nOutcomes);
@@ -3852,16 +4002,16 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
   pReMiuMHyperParams hyperParams = currentParams.hyperParams();
 
   // Find the number of subjects
-  unsigned int nOutcomes = currentParams.nOutcomes();
+  unsigned int nOutcomes = model.dataset().nOutcomes();//currentParams.nOutcomes();
 
   // Define a uniform random number generator
   randomUniform unifRand(0,1);
   // Define a normal random number generator
   randomNormal normRand(0,1);
 
+
   double currentLogPost = 0;
-  currentLogPost = logCondPostRhoOmegaj(currentParams,model,0);
-  //currentLogPost = logCondPostZetaYk(currentParams,model); CHANGE
+  currentLogPost = logCondPostZetaYk(currentParams,model,0);
 
   double proposedLogPost = currentLogPost;
   vector<unsigned int> currentvY = currentParams.vY();
@@ -3869,19 +4019,17 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
   vector<double> currentZetaY = currentParams.zetaY();
   double proposedZetaY;
 
-
   for(unsigned int j=0;j<nOutcomes;j++){
 
-    currentLogPost = logCondPostRhoOmegaj(currentParams,model,j);
-    //currentLogPost = logCondPostZetaYk(currentParams,model,j); CHANGE
+    currentLogPost = logCondPostZetaYk(currentParams,model,j);
 
     nTry++;
 
     // Propose from the priors
-    double& stdDev = propParams.rhoStdDev(j);
-    //double& stdDev = propParams.zetaYStdDev(j); CHANGE
+    double& stdDev = propParams.zetaYStdDev(j);
+    double uu = unifRand(rndGenerator);
 
-    if(unifRand(rndGenerator)>hyperParams.atomZetaY()){
+    if(uu>hyperParams.atomZetaY()){
       // Proposing an omega 0
       if(currentvY[j]==0){
         // Nothing to do as move to the same place
@@ -3893,7 +4041,7 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
 
       currentParams.vY(j,proposedvY);
       currentParams.zetaY(j,proposedZetaY);
-      proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
+      proposedLogPost = logCondPostZetaYk(currentParams,model,j);
       double logAcceptRatio = proposedLogPost - currentLogPost;
       double runiftemp = unifRand(rndGenerator);
       logAcceptRatio += logPdfBeta(currentZetaY[j],hyperParams.aZetaY(),hyperParams.bZetaY());
@@ -3908,20 +4056,19 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
         // Move rejected, reset parameters
         currentParams.vY(j,currentvY[j]);
         currentParams.zetaY(j,currentZetaY[j]);
+        std::cout << j << " unif "<<uu << " vs " << hyperParams.atomZetaY()<< "vY "<<currentvY[j]<<" reject vY "<<currentvY[j] << " ZetaY "<<currentZetaY[j]<<endl;
 
       }
     }else{
       if(currentvY[j]==1){
         proposedZetaY  = truncNormalRand(rndGenerator,currentZetaY[j],stdDev,"B",0,1);
         currentParams.zetaY(j,proposedZetaY);
-        proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
-        //proposedLogPost = logCondPostZetaYk(currentParams,model,j); CHANGE
+        proposedLogPost = logCondPostZetaYk(currentParams,model,j);
 
         double logAcceptRatio = proposedLogPost - currentLogPost;
         logAcceptRatio += logPdfTruncatedNormal(currentZetaY[j],proposedZetaY,stdDev,"B",0,1);
         logAcceptRatio -= logPdfTruncatedNormal(proposedZetaY,currentZetaY[j],stdDev,"B",0,1);
-        propParams.rhoAddTry(j);
-        //propParams.zetaYAddTry(j); CHANGE
+        propParams.zetaYAddTry(j);
 
         double runiftemp = unifRand(rndGenerator);
         if(runiftemp<exp(logAcceptRatio)){
@@ -3930,19 +4077,18 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
 
 
           nAccept++;
-          propParams.rhoAddAccept(j);
-          // propParams.zetaYAddTry(j); CHANGE
+          propParams.zetaYAddAccept(j);
 
           // Also update the proposal standard deviation
-          if(propParams.nTryRho(j)%propParams.rhoUpdateFreq()==0){
-          //if(propParams.nTryZetaY(j)%propParams.zetaYUpdateFreq()==0){
-            stdDev += 0.1*(propParams.rhoLocalAcceptRate(j)-propParams.rhoAcceptTarget())/
-              pow((double)(propParams.nTryRho(j)/propParams.rhoUpdateFreq())+2.0,0.75);
-            propParams.rhoAnyUpdates(true);
-            if(stdDev>propParams.rhoStdDevUpper(j)||stdDev<propParams.rhoStdDevLower(j)){
-              propParams.rhoStdDevReset(j);
+          if(propParams.nTryZetaY(j)%propParams.zetaYUpdateFreq()==0){
+            //if(propParams.nTryZetaY(j)%propParams.zetaYUpdateFreq()==0){
+            stdDev += 0.1*(propParams.zetaYLocalAcceptRate(j)-propParams.zetaYAcceptTarget())/
+              pow((double)(propParams.nTryZetaY(j)/propParams.zetaYUpdateFreq())+2.0,0.75);
+            propParams.zetaYAnyUpdates(true);
+            if(stdDev>propParams.zetaYStdDevUpper(j)||stdDev<propParams.zetaYStdDevLower(j)){
+              propParams.zetaYStdDevReset(j);
             }
-            propParams.rhoLocalReset(j);
+            propParams.zetaYLocalReset(j);
           }
 
         }else{
@@ -3950,14 +4096,14 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
           currentParams.vY(j,currentvY[j]);
           currentParams.zetaY(j,currentZetaY[j]);
           // Also update the proposal standard deviation
-          if(propParams.nTryRho(j)%propParams.rhoUpdateFreq()==0){
-            stdDev += 0.1*(propParams.rhoLocalAcceptRate(j)-propParams.rhoAcceptTarget())/
-              pow((double)(propParams.nTryRho(j)/propParams.rhoUpdateFreq())+2.0,0.75);
-            propParams.rhoAnyUpdates(true);
-            if(stdDev>propParams.rhoStdDevUpper(j)||stdDev<propParams.rhoStdDevLower(j)){
-              propParams.rhoStdDevReset(j);
+          if(propParams.nTryZetaY(j)%propParams.zetaYUpdateFreq()==0){
+            stdDev += 0.1*(propParams.zetaYLocalAcceptRate(j)-propParams.zetaYAcceptTarget())/
+              pow((double)(propParams.nTryZetaY(j)/propParams.zetaYUpdateFreq())+2.0,0.75);
+            propParams.zetaYAnyUpdates(true);
+            if(stdDev>propParams.zetaYStdDevUpper(j)||stdDev<propParams.zetaYStdDevLower(j)){
+              propParams.zetaYStdDevReset(j);
             }
-            propParams.rhoLocalReset(j);
+            propParams.zetaYLocalReset(j);
           }
         }
       }else{
@@ -3965,8 +4111,8 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
         proposedvY=1;
         currentParams.vY(j,proposedvY);
         currentParams.zetaY(j,proposedZetaY);
-        proposedLogPost = logCondPostRhoOmegaj(currentParams,model,j);
-        //proposedLogPost = logCondPostZetaYk(currentParams,model,j);
+        proposedLogPost = logCondPostZetaYk(currentParams,model,j);
+
         double logAcceptRatio = proposedLogPost - currentLogPost;
         logAcceptRatio -= logPdfBeta(proposedZetaY,hyperParams.atomZetaY(),hyperParams.bZetaY());
 
@@ -3981,10 +4127,12 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
           // Move rejected, reset parameters
           currentParams.vY(j,currentvY[j]);
           currentParams.zetaY(j,currentZetaY[j]);
+
         }
       }
     }
   }
+
 }
 
 // Gibbs for update of sigmaSqY (Normal response case)

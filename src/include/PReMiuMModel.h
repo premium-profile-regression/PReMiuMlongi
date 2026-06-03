@@ -4253,6 +4253,50 @@ double logCondPostRhoOmegaj(const pReMiuMParams& params,
   return out;
 }
 
+
+// Log conditional posterior for zetaY and vY (only used in variable selection for longitudinal markers)
+double logCondPostZetaYk(const pReMiuMParams& params,
+                            const mcmcModel<pReMiuMParams,
+                                            pReMiuMOptions,
+                                            pReMiuMData>& model,
+                                            const unsigned int& j){
+
+
+  const pReMiuMData& dataset = model.dataset();
+  unsigned int nSubjects=dataset.nSubjects();
+  unsigned int nOutc=dataset.nOutcomes();
+
+  double (*logPYiGivenZiWi)(const pReMiuMParams&,const pReMiuMData&,
+          const vector<unsigned int>&,const int&,
+          const unsigned int&)=NULL;
+
+  logPYiGivenZiWi = &logPYiGivenZiWiLongitudinal_parametric;
+
+  const pReMiuMHyperParams& hyperParams = params.hyperParams();
+
+  double out=0.0;
+
+
+  // Add in contribution from likelihood (only in the case of continuous switches)
+  for(unsigned int i=0;i<nSubjects;i++){
+    int zi = params.z(i);
+    double temp = logPYiGivenZiWi(params,dataset,dataset.nFixedEffects(),zi,i);
+    out+= temp;
+  }
+
+  // We can add in the prior for zetaY and vY
+  // We keep the loop here because it saves evaluations in the continuous case
+  for(unsigned int j1=0;j1<nOutc;j1++){
+    out+=log(hyperParams.atomZetaY());
+    if (params.vY(j1)==1){
+      out+=logPdfBeta(params.zetaY(j1),hyperParams.aZetaY(),hyperParams.bZetaY());
+    }
+  }
+
+  return out;
+}
+
+
 double logCondPostThetaBeta(const pReMiuMParams& params,
                             const mcmcModel<pReMiuMParams,
                                             pReMiuMOptions,
