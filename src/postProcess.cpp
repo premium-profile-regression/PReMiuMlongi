@@ -52,7 +52,9 @@ SEXP calcDisSimMat(SEXP fileName, SEXP nSweeps, SEXP nBurn, SEXP nFilter,SEXP nS
     		}
      	}else{
     		if((1+k-firstLine)==1||(1+k-firstLine)%1000==0){
-				Rprintf("Stage 1:%d samples out of %d \n",(int) (1+k-firstLine),(int) (1+nLines-firstLine));
+    		  int n1 = (int)(1 + k - firstLine);
+    		  int n2 = (int)(1 + nLines - firstLine);
+				  Rprintf("Stage 1:%d samples out of %d \n",n1, n2);
 			}
 			for(unsigned long int i=0;i<nSj+nPSj;i++){
     			// Fill up the cluster data for this sweep
