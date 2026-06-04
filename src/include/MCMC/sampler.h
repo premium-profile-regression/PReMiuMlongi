@@ -237,7 +237,7 @@ template<class modelParamType,class optionType,class propParamType,class dataTyp
 			}else{
 				_seed = seedValue;
 			}
-			Rprintf("Random number seed: %i\n",_seed);
+			Rprintf("Random number seed: %u\n",_seed);
 			_rndGenerator.seed(_seed);
 		}
 
