@@ -83,7 +83,7 @@ void invert(MatrixXd& invSigma,MatrixXd& Sigma,const unsigned int dimBlock, doub
       E(i,i) = E(i,i) + noise;
     E = - invNoise * C * E.inverse();
     invSigma = E.replicate(nBlocks,nBlocks);
-    for(unsigned int i=0;i<dimSigma;i++)
+    for( int i=0;i<dimSigma;i++)
       invSigma(i,i) = invSigma(i,i) + invNoise;
   }else{
     invSigma = Sigma.inverse();
@@ -350,7 +350,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     }
 
     for(unsigned int i=1;i<grid.size();i++){
-      for(j=0;j<i;j++){
+      for(unsigned int j=0;j<i;j++){
         if(kernel.compare("SQexponential")==0){
           a=-(grid[i]-grid[j])*(grid[i]-grid[j])/eL1;
           Kuu(i,j)=eL0*std::exp(a);
