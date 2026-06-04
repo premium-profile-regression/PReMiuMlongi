@@ -49,3 +49,13 @@ jobs:
         with:
           upload-snapshots: true
 
+      - name: Show install log
+        if: failure()
+        run: find . -name "00install.out" -exec cat {} \; > install_log.txt 2>&1
+        shell: bash
+      - name: Upload install log
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: install-log
+          path: install_log.txt
