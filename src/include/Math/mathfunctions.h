@@ -74,16 +74,16 @@ void invert(MatrixXd& invSigma,MatrixXd& Sigma,const unsigned int dimBlock, doub
     int nBlocks = dimSigma/dimBlock;
     MatrixXd C;
     C = Sigma.block(0, 0, dimBlock, dimBlock);
-    for(int i=0;i<dimBlock;i++)
+    for(unsigned i=0;i<dimBlock;i++)
       C(i,i) = C(i,i) - noise;
     double invNoise = 1.0/noise;
     MatrixXd E;
     E = nBlocks*C;
-    for(int i=0;i<dimBlock;i++)
+    for(unsigned i=0;i<dimBlock;i++)
       E(i,i) = E(i,i) + noise;
     E = - invNoise * C * E.inverse();
     invSigma = E.replicate(nBlocks,nBlocks);
-    for(int i=0;i<dimSigma;i++)
+    for(unsigned i=0;i<dimSigma;i++)
       invSigma(i,i) = invSigma(i,i) + invNoise;
   }else{
     invSigma = Sigma.inverse();
