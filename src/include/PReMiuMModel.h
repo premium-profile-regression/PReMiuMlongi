@@ -3139,7 +3139,7 @@ double logPYiGivenZiWiLongitudinal(const pReMiuMParams& params, const pReMiuMDat
   int counter = 0;
   // set sizes based on cluster occupation
   for(unsigned int i=0;i<nSubjects;i++){
-    if(params.z(i) == c && ii!=i){
+    if(params.z(i) == static_cast<int>(c) && ii!=i){
       sizek = sizek + tStop[i] - tStart[i] + 1;
     }
   }
@@ -3148,8 +3148,8 @@ double logPYiGivenZiWiLongitudinal(const pReMiuMParams& params, const pReMiuMDat
   yk.resize(sizek);
   meanVec.resize(sizek);
   for(unsigned int i=0;i<nSubjects;i++){
-    if(params.z(i) == c && ii!=i){
-      for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+    if(params.z(i) == static_cast<int>(c) && ii!=i){
+      for( int j=0;j<tStop[i]-tStart[i]+1;j++){
         yk(counter+j) = y[tStart[i]-1+j];
         timesk[counter+j] = times[tStart[i]-1+j];
         meanVec(counter+j) = 0.0;
@@ -3183,7 +3183,7 @@ double logPYiGivenZiWiLongitudinal(const pReMiuMParams& params, const pReMiuMDat
       stable_sort(timesk.begin(), timesk.end());
 
       VectorXd yk_sorted = yk;
-      for(unsigned int j=0;j<sizek;j++)
+      for( int j=0;j<sizek;j++)
         yk_sorted(j)=yk(idx[j]);
       yk=yk_sorted;
 
@@ -3234,7 +3234,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
 
   // set sizes based on cluster occupation
   if(ii < nSubjects){
-    if(params.z(ii) == c){ // AR remove ii
+    if(params.z(ii) == static_cast<int>(c)){ // AR remove ii
       sizek = sizek - (tStop[ii] - tStart[ii] + 1); // +1 if add=1 params.z(ii) != c, -1 if add=0 params.z(ii) = c
     }else{                 // AR add ii
       sizek = sizek + tStop[ii] - tStart[ii] + 1; // +1 if add=1 params.z(ii) != c, -1 if add=0 params.z(ii) = c
@@ -3246,8 +3246,8 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
     timesk.resize(sizek);
 
     for(unsigned int i=0;i<nSubjects;i++){
-      if(params.z(i) == c && ii!=i){
-        for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+      if(params.z(i) == static_cast<int>(c) && ii!=i){
+        for( int j=0;j<tStop[i]-tStart[i]+1;j++){
           yk(counter+j) = y[tStart[i]-1+j];
           timesk[counter+j] = times[tStart[i]-1+j];
 
@@ -3259,7 +3259,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
           // }
         }
         counter = counter + tStop[i] - tStart[i] + 1;
-      }else if((params.z(i) == c) & (ii==i)){
+      }else if((params.z(i) == static_cast<int>(c)) & (ii==i)){
         ind_permut=counter; //index (in times and y) of first visit of subject to permut in M0
       }
     }
@@ -3278,18 +3278,18 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
       stable_sort(timesk.begin(), timesk.end());
 
       VectorXd yk_sorted = yk;
-      for(unsigned int j=0;j<sizek;j++)
+      for( int j=0;j<sizek;j++)
         yk_sorted(j)=yk(idx[j]);
       yk=yk_sorted;
 
     }else{
 
-      if(params.z(ii) != c ){ // Add one subject
+      if(params.z(ii) != static_cast<int>(c) ){ // Add one subject
 
         std::vector<double> times_check=timesk; // ordered with indiv to add at the end
         stable_sort(times_check.begin(), times_check.begin()+counter);
 
-        for(unsigned int j=0;j<tStop[ii]-tStart[ii]+1;j++){
+        for( int j=0;j<tStop[ii]-tStart[ii]+1;j++){
           yk(counter+j) = y[tStart[ii]-1+j];
           timesk[counter+j] = times[tStart[ii]-1+j];
           times_check[counter+j] = times[tStart[ii]-1+j];//check
@@ -3338,7 +3338,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
         sort(timesk.begin(), timesk.end());
 
         VectorXd yk_sorted = yk;
-        for(unsigned int j=0;j<sizek;j++)
+        for( int j=0;j<sizek;j++)
           yk_sorted(j)=yk(idx[j]);
         yk=yk_sorted;
 
@@ -3353,7 +3353,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
             timesk2[j]= timesk[j];
 
           // Remove one subject
-          for(unsigned int j=0;j<tStop[ii]-tStart[ii]+1;j++){
+          for( int j=0;j<tStop[ii]-tStart[ii]+1;j++){
             timesk2[counter+j] = times[tStart[ii]-1+j];
           }
 
@@ -3361,8 +3361,8 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
           timesk3.resize(sizek + tStop[ii]-tStart[ii]+1); // sizek+tStop[i]-tStart[i]+1 + indiv in middle
           counter=0;
           for(unsigned int i=0;i<nSubjects;i++){
-            if(params.z(i) == c ){
-              for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+            if(params.z(i) == static_cast<int>(c) ){
+              for( int j=0;j<tStop[i]-tStart[i]+1;j++){
                 timesk3[counter+j] = times[tStart[i]-1+j];
               }
               counter = counter + tStop[i] - tStart[i] + 1;
@@ -3383,8 +3383,8 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
           std::vector<double> idx_i; //indexes of timepoints of subject i in timesk3
           int ai=0;
           int iii;
-          for(int i=0;i<timesk3.size();i++){
-            if(idx[i+idx_i.size()] >= ind_permut && idx[i+idx_i.size()] < ind_permut+ tStop[ii]-tStart[ii]+1)
+          for(unsigned int i=0;i<timesk3.size();i++){
+            if(idx[i+idx_i.size()] >= (int) ind_permut && idx[i+idx_i.size()] < (int) ind_permut+ tStop[ii]-tStart[ii]+1)
               idx_i.push_back(i+idx_i.size());
             if(i< timesk3.size()-(tStop[ii]-tStart[ii]+1)){
               iii=i+idx_i.size();
@@ -3414,7 +3414,7 @@ double logPYiGivenZiWiLongitudinal_bis(const MatrixXd& Sigma_inv_ord, const doub
                       [&](int i1,int i2) { return (timesk[i1] < timesk[i2]); });
 
           VectorXd yk_sorted = yk;
-          for(unsigned int j=0;j<sizek;j++)
+          for( int j=0;j<sizek;j++)
             yk_sorted(j)=yk(idx2[j]);
           yk=yk_sorted;
 
@@ -3465,13 +3465,13 @@ double logPYiGivenZiWiLongitudinal_meanGP(const pReMiuMParams& params, const pRe
 
 
   for(unsigned int i=0; i<dataset.nSubjects(); i++){
-    if((params.z(i) == c &&  ii == dataset.nSubjects()) || ( i == ii ) ){
+    if((params.z(i) == static_cast<int>(c) &&  ii == dataset.nSubjects()) || ( i == ii ) ){
 
       ni =  (tStop[i] - tStart[i] + 1);
       yi.resize(ni);
       Vi_inv.setZero(ni,ni);
 
-      for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+      for( int j=0;j<tStop[i]-tStart[i]+1;j++){
         yi(j) = y[tStart[i]-1+j];
         yi(j) -= params.meanGP(c, times_corr[tStart[i]-1+j]);
 
@@ -3558,7 +3558,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
 
       ni_m =  (tStop[curr_i] - tStart[curr_i] + 1);
 
-      if((params.z(i) == c &&  ii == dataset.nSubjects()) || ( i == ii ) ){
+      if((params.z(i) == static_cast<int>(c) &&  ii == dataset.nSubjects()) || ( i == ii ) ){
 
         yi.resize(ni_m);
         for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++){
@@ -3574,7 +3574,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
         }
 
         // substraction of (1-zeta)*mu0(t) for selection of longitudinal markers (varselectY==TRUE)
-        for(unsigned int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++)
+        for( int j=0;j<tStop[curr_i]-tStart[curr_i]+1;j++)
             yi(j)-=(1.0-params.zetaY(m)) * dataset.mu0selectY(sum_ind_m + tStart[curr_i]-1+j);
 
 
@@ -4633,7 +4633,7 @@ double logPdfPostMultivariateNormal(const pReMiuMParams& params, const pReMiuMDa
   int counter = 0;
 
   for(unsigned int i=0;i<nSubjects;i++){
-    if(params.z(i) == c){
+    if(params.z(i) == static_cast<int>(c)){
       sizek +=   (tStop[i] - tStart[i] + 1);
     }
   }
@@ -4642,8 +4642,8 @@ double logPdfPostMultivariateNormal(const pReMiuMParams& params, const pReMiuMDa
   timesk.resize(sizek);
 
   for(unsigned int i=0;i<nSubjects;i++){
-    if(params.z(i) == c){
-      for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+    if(params.z(i) == static_cast<int>(c)){
+      for( int j=0;j<tStop[i]-tStart[i]+1;j++){
         yk(counter+j) = y[tStart[i]-1+j];
         timesk[counter+j] = times[tStart[i]-1+j];
 
@@ -4671,7 +4671,10 @@ double logPdfPostMultivariateNormal(const pReMiuMParams& params, const pReMiuMDa
   MatrixXd postV(nTimes_unique, nTimes_unique);
   MatrixXd priorCor_star(nTimes_unique, nTimes_unique);
   GP_cov(priorCor_star, params.L(c), times_unique,  1, kernelType,0);
-  postV = priorCor_star - priorCor.transpose() * invC.inverse() * priorCor;
+
+  Eigen::MatrixXd tmp = priorCor.transpose() * invC.inverse() * priorCor;
+  postV = priorCor_star - tmp;
+  //postV = priorCor_star - priorCor.transpose() * invC.inverse() * priorCor;
 
   LLT<MatrixXd> lltOfA(postV); // compute the Cholesky decomposition of A
   MatrixXd L = lltOfA.matrixL();
@@ -4680,7 +4683,7 @@ double logPdfPostMultivariateNormal(const pReMiuMParams& params, const pReMiuMDa
 
   double dmvnorm = 0;
   VectorXd GPmean(nTimes_unique);
-  for(int i = 0; i < nTimes_unique; ++i)
+  for(unsigned int i = 0; i < nTimes_unique; ++i)
     GPmean(i)=params.meanGP(c)[i];
 
   VectorXd diff = GPmean - postM;
@@ -4922,7 +4925,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
   // set sizes based on cluster occupation
   if(init == 0){
     for(unsigned int i=0;i<nSubjects;i++){
-      if(params.z(i) == c){
+      if(params.z(i) == static_cast<int>(c)){
         sizek +=   (tStop[i] - tStart[i] + 1);
       }
     }
@@ -4933,8 +4936,8 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
     timesk.resize(sizek);
 
     for(unsigned int i=0;i<nSubjects;i++){
-      if(params.z(i) == c){
-        for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+      if(params.z(i) == static_cast<int>(c)){
+        for( int j=0;j<tStop[i]-tStart[i]+1;j++){
           yk(counter+j) = y[tStart[i]-1+j];
           timesk[counter+j] = times[tStart[i]-1+j];
 
@@ -4959,7 +4962,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
     stable_sort(timesk.begin(), timesk.end());
 
     VectorXd yk_sorted = yk;
-    for(unsigned int j=0;j<sizek;j++)
+    for( int j=0;j<sizek;j++)
       yk_sorted(j)=yk(idx[j]);
     yk=yk_sorted;
 
@@ -5005,10 +5008,12 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
       MatrixXd postV(nTimes_unique, nTimes_unique);
       MatrixXd priorCor_star(nTimes_unique, nTimes_unique);
       GP_cov(priorCor_star, params.L(c), times_unique,  1, kernelType,0);
-      postV = priorCor_star - priorCor.transpose() * invC * priorCor;
+      Eigen::MatrixXd tmp = priorCor.transpose() * invC * priorCor;
+      postV = priorCor_star - tmp;
+      //postV = priorCor_star - priorCor.transpose() * invC * priorCor;
 
       VectorXd random_vector(nTimes_unique);
-      for(int i = 0; i < nTimes_unique; ++i){
+      for(unsigned int i = 0; i < nTimes_unique; ++i){
         random_vector(i) = normRand(rndGenerator);
       }
 
@@ -5018,7 +5023,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
       VectorXd eigenvalues(es.eigenvalues().size()) ;
 
       //bool sdp=true;
-      for(int i = 0; i < nTimes_unique; ++i){
+      for(unsigned int i = 0; i < nTimes_unique; ++i){
         eigenvalues(i) = es.eigenvalues()(i).real() ;
 
         if(es.eigenvalues()(i).real()<0){
@@ -5062,10 +5067,10 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
         Rcpp::Rcout << c <<" GPmean " << endl <<GPmean(0)<< endl;
         Rcpp::Rcout << c <<" L " << params.L(c,0)<<" L " << params.L(c,1) <<" L " << params.L(c,2)<<endl;
         Rcpp::Rcout << c <<" postM " << endl <<postM<< endl;
-        for(int i = 0; i < nTimes_unique; ++i){
+        for(unsigned int i = 0; i < nTimes_unique; ++i){
           Rcpp::Rcout << c <<" eigenvalue" <<es.eigenvalues()(i)<< endl<< endl;
         }
-        for(int i = 0; i < nTimes_unique; ++i){
+        for(unsigned int i = 0; i < nTimes_unique; ++i){
           Rcpp::Rcout << c <<" eigenvalue2" <<es.eigenvalues()(i)<< endl<< endl;
         }
       }
@@ -5077,7 +5082,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
 
     //bool sdp=true;
     VectorXd eigenvalues(es.eigenvalues().size());
-    for(int i = 0; i < nTimes_unique; ++i){
+    for(unsigned int i = 0; i < nTimes_unique; ++i){
       eigenvalues(i)=es.eigenvalues()(i).real();
       if(es.eigenvalues()(i).real()<0){
         //sdp=false;
@@ -5110,7 +5115,7 @@ VectorXd Sample_GPmean(pReMiuMParams& params, const pReMiuMData& dataset,
     //}
 
     VectorXd random_vector(nTimes_unique);
-    for(int i = 0; i < nTimes_unique; ++i)
+    for(unsigned int i = 0; i < nTimes_unique; ++i)
       random_vector(i) = normRand(rndGenerator);
 
     GPmean =  GPSigma * random_vector;
@@ -5146,7 +5151,7 @@ double logPdfPostMultivariateNormal(pReMiuMParams& params, const pReMiuMData& da
   int counter = 0;
 
   for(unsigned int i=0;i<nSubjects;i++){
-    if(params.z(i) == c){
+    if(params.z(i) == static_cast<int>(c)){
       sizek +=   (tStop[i] - tStart[i] + 1);
     }
   }
@@ -5155,8 +5160,8 @@ double logPdfPostMultivariateNormal(pReMiuMParams& params, const pReMiuMData& da
   timesk.resize(sizek);
 
   for(unsigned int i=0;i<nSubjects;i++){
-    if(params.z(i) == c){
-      for(unsigned int j=0;j<tStop[i]-tStart[i]+1;j++){
+    if(params.z(i) == static_cast<int>(c)){
+      for(int j=0;j<tStop[i]-tStart[i]+1;j++){
         yk(counter+j) = y[tStart[i]-1+j];
         timesk[counter+j] = times[tStart[i]-1+j];
 
@@ -5184,7 +5189,9 @@ double logPdfPostMultivariateNormal(pReMiuMParams& params, const pReMiuMData& da
   MatrixXd postV(nTimes_unique, nTimes_unique);
   MatrixXd priorCor_star(nTimes_unique, nTimes_unique);
   GP_cov(priorCor_star, params.L(c), times_unique,  1, kernelType,0);
-  postV = priorCor_star - priorCor.transpose() * invC.inverse() * priorCor;
+  Eigen::MatrixXd tmp = priorCor.transpose() * invC.inverse() * priorCor;
+  postV = priorCor_star - tmp;
+  //postV = priorCor_star - priorCor.transpose() * invC.inverse() * priorCor;
 
   LLT<MatrixXd> lltOfA(postV); // compute the Cholesky decomposition of A
   MatrixXd L = lltOfA.matrixL();
@@ -5193,7 +5200,7 @@ double logPdfPostMultivariateNormal(pReMiuMParams& params, const pReMiuMData& da
 
   double dmvnorm = 0;
   VectorXd GPmean(nTimes_unique);
-  for(int i = 0; i < nTimes_unique; ++i)
+  for(unsigned int i = 0; i < nTimes_unique; ++i)
     GPmean(i)=params.meanGP(c)[i];
 
   VectorXd diff = GPmean - postM;
