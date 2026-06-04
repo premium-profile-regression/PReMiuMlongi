@@ -74,16 +74,16 @@ void invert(MatrixXd& invSigma,MatrixXd& Sigma,const unsigned int dimBlock, doub
     int nBlocks = dimSigma/dimBlock;
     MatrixXd C;
     C = Sigma.block(0, 0, dimBlock, dimBlock);
-    for(unsigned i=0;i<dimBlock;i++)
+    for(unsigned int i=0;i<dimBlock;i++)
       C(i,i) = C(i,i) - noise;
     double invNoise = 1.0/noise;
     MatrixXd E;
     E = nBlocks*C;
-    for(unsigned i=0;i<dimBlock;i++)
+    for(unsigned int i=0;i<dimBlock;i++)
       E(i,i) = E(i,i) + noise;
     E = - invNoise * C * E.inverse();
     invSigma = E.replicate(nBlocks,nBlocks);
-    for(unsigned i=0;i<dimSigma;i++)
+    for(unsigned int i=0;i<dimSigma;i++)
       invSigma(i,i) = invSigma(i,i) + invNoise;
   }else{
     invSigma = Sigma.inverse();
@@ -318,7 +318,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
   }
 
   int trick=0;
-  if(*std::max_element(std::begin(grid), std::end(grid))==0 || grid.size() >= nTimes || nTimes < 100){
+  if(*std::max_element(std::begin(grid), std::end(grid)) == 0 || static_cast<int>(grid.size()) || nTimes < 100){
     LLT<MatrixXd> lltOfA(Mat); // compute the Cholesky decomposition of A
     MatrixXd L = lltOfA.matrixL();
     det=  2*L.diagonal().array().log().sum();
@@ -330,7 +330,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
   }
 
 
-  if(trick==1 && nTimes >= grid.size()){
+  if(trick==1 && nTimes >= static_cast<int>(grid.size())){
 
     MatrixXd Ktu;
     MatrixXd Kuu;
@@ -338,7 +338,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     Kuu.setZero(grid.size(),grid.size());
 
     for(i=0;i<nTimes;i++){
-      for(j=0;j<grid.size();j++){
+      for(unsigned int j=0;j<grid.size();j++){
         if(kernel.compare("SQexponential")==0){
           a=-(times[i]-grid[j])*(times[i]-grid[j])/eL1;
           Ktu(i,j)=eL0*std::exp(a);
@@ -349,7 +349,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
       }
     }
 
-    for(i=1;i<grid.size();i++){
+    for(unsigned int i=1;i<grid.size();i++){
       for(j=0;j<i;j++){
         if(kernel.compare("SQexponential")==0){
           a=-(grid[i]-grid[j])*(grid[i]-grid[j])/eL1;
@@ -362,11 +362,11 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     }
     Kuu = Kuu + Kuu.transpose();
 
-    for(int i=0;i<grid.size();i++){
+    for(unsigned int i=0;i<grid.size();i++){
       if(kernel.compare("SQexponential")==0){
         Kuu(i,i) = Kuu(i,i) + eL0;//+0.00;
       }else{
-        for(int i=0;i<grid.size();i++){
+        for(unsigned int i=0;i<grid.size();i++){
           a=eL0+eL1*(grid[i]-eL3)*(grid[i]-eL3);
           Kuu(i,i)=a*a ;//+ eL2;
         }
@@ -374,7 +374,7 @@ double Get_Sigma_inv_GP_cov(MatrixXd& Mat, std::vector<double> L, std::vector<do
     }
 
     if(Kuu.determinant()<0){
-      for(int i=0;i<grid.size();i++)
+      for(unsigned int i=0;i<grid.size();i++)
         Kuu(i,i) = Kuu(i,i)+ 0.01;
     }
 
