@@ -49,7 +49,3 @@ jobs:
         with:
           upload-snapshots: true
 
-      - name: Show install log
-        if: failure()
-        run: find . -name "00install.out" -exec cat {} \;
-        shell: bash
