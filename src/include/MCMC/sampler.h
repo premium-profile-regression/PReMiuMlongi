@@ -537,7 +537,7 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 
 	for(unsigned int sweep=1; sweep<=_nBurn+_nSweeps; sweep++){
 		if(sweep==1||sweep%_nProgress==0){
-		  Rprintf("Sweep: %i\n", sweep);
+		  Rprintf("Sweep: %u\n", sweep);
 		}
 
 		// Update the missing data (this will only do anything if the

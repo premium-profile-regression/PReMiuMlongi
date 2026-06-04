@@ -69,16 +69,16 @@ double ARSsampleCAR(pReMiuMParams params,
     //Check initialization is done properly
     if (ifault!=0){
 	Rprintf("Error in the Adaptive Rejection Sampler");
-	Rprintf("Error in ARS, cannot update uCAR for subject %d \n", iSub);
-        Rprintf("Error in subroutine initial, ifault equals %d \n",ifault);
+	Rprintf("Error in ARS, cannot update uCAR for subject %u \n",  iSub);
+        Rprintf("Error in subroutine initial, ifault equals %d \n", ifault);
         return 0;
     }else{
         double beta=0;
         sample_( iwv, rwv, &beta,  &ifault, params, model, iSub, evalhxhprimax,rndGenerator );
         if (ifault!=0){
 	Rprintf("Error in the Adaptive Rejection Sampler");
-	Rprintf("Error in ARS, cannot update uCAR for subject %d \n", iSub);
-            Rprintf("Error in subroutine sample, ifault equals %d \n",ifault);
+	Rprintf("Error in ARS, cannot update uCAR for subject %u \n", iSub);
+            Rprintf("Error in subroutine sample, ifault equals %d \n", ifault);
             return 0;
         }else{
         return beta;
@@ -131,7 +131,7 @@ double ARSsampleNu(pReMiuMParams params,
     if (ifault!=0){
 	Rprintf("Error in the Adaptive Rejection Sampler");
 	Rprintf("Error in ARS, cannot update nu (survival response)");
-        Rprintf("Error in subroutine initial, ifault equals %d \n",ifault);
+        Rprintf("Error in subroutine initial, ifault equals %d \n",  ifault);
         return 0;
     }else{
         double beta=0;
@@ -139,7 +139,7 @@ double ARSsampleNu(pReMiuMParams params,
         if (ifault!=0){
 	Rprintf("Error in the Adaptive Rejection Sampler");
 		Rprintf("Error in ARS, cannot update nu (survival response)");
-            Rprintf("Error in subroutine sample, ifault equals %d \n",ifault);
+            Rprintf("Error in subroutine sample, ifault equals %d \n", ifault);
             return 0;
         }else{
         return beta;
