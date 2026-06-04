@@ -51,12 +51,13 @@ jobs:
 
       - name: Show install log
         if: failure()
-        run: find . -name "00install.out" -exec cat {} \; > install_log.txt 2>&1
-        shell: bash
-      - name: Show install log
-        if: failure()
         run: |
-          find . -name "00install.out" 2>&1
-          find . -name "00install.out" -exec cat {} \; > install_log.txt 2>&1
-          echo "Done"
+          cat D:/a/PReMiuMlongi/PReMiuMlongi/check/PReMiuMlongi.Rcheck/00install.out > install_log.txt 2>&1 || echo "File not found" > install_log.txt
         shell: bash
+
+      - name: Upload install log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-log
+          path: install_log.txt
