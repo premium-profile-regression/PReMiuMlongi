@@ -3188,7 +3188,9 @@ double logPYiGivenZiWiLongitudinal(const pReMiuMParams& params, const pReMiuMDat
       yk=yk_sorted;
 
       logDetMat=Get_Sigma_inv_GP_cov(precMat,params.L(c),timesk,dataset.equalTimes(),dataset.times_unique(),kernelType);
-      dmvnorm = -0.5*yk.transpose()*precMat*yk - 0.5*sizek*log(2.0*pi<double>()) - 0.5*logDetMat;
+      double quad = (yk.transpose() * precMat * yk).eval()(0,0);
+      dmvnorm = -0.5 * quad - 0.5 * sizek * log(2.0 * pi<double>()) - 0.5 * logDetMat;
+      //dmvnorm = -0.5*yk.transpose()*precMat*yk - 0.5*sizek*log(2.0*pi<double>()) - 0.5*logDetMat;
     }
   }
   return dmvnorm;
@@ -3599,7 +3601,10 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
 
 
           MatrixXd Vi=MatrixXd::Identity(ni_m, ni_m) * params.SigmaE(m);
-          dmvnorm += -0.5*yi.transpose()*Vi.inverse()*yi - 0.5*ni_m*log(2.0*pi<double>()) - 0.5*ni_m*log(params.SigmaE(m));
+          MatrixXd Vi_inv = Vi.inverse();
+          double quad = yi.transpose() * Vi_inv * yi;
+          dmvnorm += -0.5 * quad - 0.5 * ni_m * log(2.0 * pi<double>()) - 0.5 * ni_m * log(params.SigmaE(m));
+          //dmvnorm += -0.5*yi.transpose()*Vi.inverse()*yi - 0.5*ni_m*log(2.0*pi<double>()) - 0.5*ni_m*log(params.SigmaE(m));
 
           // if((ii==5||ii==6)){
           //

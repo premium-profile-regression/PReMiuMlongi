@@ -1702,7 +1702,9 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
     }
 
     for(unsigned int c=0;c<maxNClusters;c++){
-      Rc[c]=(hyperParams.R0().inverse()+Rc[c]).inverse();
+      MatrixXd tmp = hyperParams.R0().inverse() + Rc[c];
+      Rc[c] = tmp.inverse();
+      //Rc[c]=(hyperParams.R0().inverse()+Rc[c]).inverse();
       MatrixXd Tau = wishartRand(rndGenerator,Rc[c],params.workNXInCluster(c)+hyperParams.kappa0());
       params.Tau(c,Tau);
     }
@@ -1841,7 +1843,9 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
     }
 
     for(unsigned int c=0;c<maxNClusters;c++){
-      Rc[c]=(hyperParams.R0().inverse()+Rc[c]).inverse();
+      MatrixXd tmp = hyperParams.R0().inverse() + Rc[c];
+      Rc[c] = tmp.inverse();
+      //Rc[c]=(hyperParams.R0().inverse()+Rc[c]).inverse();
       MatrixXd Tau = wishartRand(rndGenerator,Rc[c],params.workNXInCluster(c)+hyperParams.kappa0());
       params.Tau(c,Tau);
     }
@@ -2044,7 +2048,7 @@ void initialisePReMiuM(baseGeneratorType& rndGenerator,
           unsigned int ni =  (tStop[ind] - tStart[ind] + 1);
           yi.resize(ni);
 
-          for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
+          for( int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
             yi(j) = y[ind_y];//yi(j) = y[tStart[ind]-1+j];
 
             for(unsigned int b=0;b<nFixedEffects[m];b++){
@@ -3355,11 +3359,11 @@ string storeLogFileData(const pReMiuMOptions& options,
     }else{
       nL=4;
     }
-    for(int l=0; l<nL; l++)
+    for(unsigned int l=0; l<nL; l++)
       tmpStr << hyperParams.muL(l)  << " ";
     tmpStr << endl;
     tmpStr << "sigmaL: " ;
-    for(int l=0; l<nL; l++)
+    for(unsigned l=0; l<nL; l++)
       tmpStr <<  hyperParams.sigmaL(l) << " ";
     tmpStr << endl;
     if(options.estim_ratio()){

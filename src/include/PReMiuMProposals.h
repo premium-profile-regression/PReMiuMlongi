@@ -1688,7 +1688,9 @@ void gibbsForTauActive(mcmcChain<pReMiuMParams>& chain,
   }
 
   for(unsigned int c=0;c<=maxZ;c++){
-    Rc[c]=(hyperParams.R0().inverse()+Rc[c]).inverse();
+    MatrixXd tmp = hyperParams.R0().inverse() + Rc[c];
+    Rc[c] = tmp.inverse();
+    //Rc[c]=(hyperParams.R0().inverse()+Rc[c]).inverse();
     MatrixXd Tau = wishartRand(rndGenerator,Rc[c],currentParams.workNXInCluster(c)+hyperParams.kappa0());
     currentParams.Tau(c,Tau);
   }
@@ -1709,7 +1711,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
   pReMiuMHyperParams hyperParams = currentParams.hyperParams();
   const pReMiuMData& dataset = model.dataset();
   // Find the number of clusters
-  unsigned int maxZ = currentParams.workMaxZi();
+  //unsigned int maxZ = currentParams.workMaxZi();
   // Find the number of subjects
   unsigned int nSubjects = dataset.nSubjects();
   unsigned int nOutcomes = dataset.nOutcomes();
@@ -1793,7 +1795,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       yi.resize(ni);
       yi.setZero();
 
-      for(unsigned int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
+      for(int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
 
         yi(j) = y[ind_y + tStart[ind]-1+j];//yi(j) = y[tStart[ind]-1+j];
 
@@ -1833,14 +1835,21 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
       //double logDetPrecMat=  2*log(L.determinant());
       MatrixXd Vi_inv = L.inverse().transpose()*L.inverse();
 
-      VectorXd mu = currentParams.covRE(m)*block.transpose()*Vi_inv*yi;
+      MatrixXd tmp = currentParams.covRE(m) * block.transpose();
+      MatrixXd tmp2 = tmp * Vi_inv;
+      VectorXd mu = tmp2 * yi;
+      //VectorXd mu = currentParams.covRE(m)*block.transpose()*Vi_inv*yi;
       //VectorXd mu = Rfixed*block.transpose()*Vi_inv*yi;
       //B - B*Zi^T*Vi^{-1}* (Zi*B^T)
-      MatrixXd cov = currentParams.covRE(m) - currentParams.covRE(m)*block.transpose()*Vi_inv*block*currentParams.covRE(m);
+      MatrixXd tmp1 = currentParams.covRE(m) * block.transpose();
+      tmp2 = tmp * Vi_inv;
+      MatrixXd tmp3 = tmp2 * block;
+      MatrixXd cov = currentParams.covRE(m) - tmp3 * currentParams.covRE(m);
+      //MatrixXd cov = currentParams.covRE(m) - currentParams.covRE(m)*block.transpose()*Vi_inv*block*currentParams.covRE(m);
       //MatrixXd cov = Rfixed - Rfixed*block.transpose()*Vi_inv*block*Rfixed;
       ui = multivarNormalRand(rndGenerator,mu,cov);
 
-      if(std::isnan(ui(0)))
+      if(std::isnan(ui(0))){
         Rcpp::Rcout << i <<" yi "<<yi.transpose()<<endl
                   << " block "<<block<<endl
                   << " covRE "<<currentParams.covRE(m)<<endl
@@ -1851,7 +1860,8 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
                   << " SigmaE "<<currentParams.SigmaE(m)<<endl
                   << " beta "<<currentParams.beta(m,0,0,nCategoriesY)<<endl
                   <<  " zi "  << zi <<" betamix "<< currentParams.beta_mix(m,zi,0,0,nCategoriesY) << " "<< currentParams.beta_mix(m,zi,1,0,nCategoriesY)<<endl;
-        currentParams.RandomEffects(m,i,ui);
+      }
+      currentParams.RandomEffects(m,i,ui);
 
         if(i==(nSubjects-1))
           ind_y += nTimes_m[m];
@@ -3409,7 +3419,7 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
           VectorXd Xib(nmes); // Xi{\beta}
           VectorXd Yi(nmes); // XY{\beta}
 
-          for(unsigned int j=0;j<nmes;j++){
+          for( int j=0;j<nmes;j++){
 
             Yi(j) = y[nT + tStart[nSubjects*m+i]-1+j];
 
@@ -3488,21 +3498,21 @@ void GibbsForBeta(mcmcChain<pReMiuMParams>& chain,
 
             int zi   = currentParams.z(i);
 
-            if(zi==c){
+            if(zi==static_cast<int>(c)){
 
               int nmes = (tStop[nSubjects*m+i] - tStart[nSubjects*m+i] + 1);
               VectorXd Xib(nmes); // Xi{\beta}
               VectorXd Yi(nmes); // XY{\beta}
 
-              for(unsigned int j=0;j<nmes;j++)
+              for( int j=0;j<nmes;j++)
                 Yi(j) = y[nT + tStart[nSubjects*m+i]-1+j];
 
-              for(unsigned int j=0;j<nmes;j++){
+              for( int j=0;j<nmes;j++){
                 for(unsigned int bb=0;bb<nFixedEffects[m];bb++)
                   Yi(j) -= currentParams.zetaY(m) * currentParams.beta(m,bb,0,nCategoriesY)*dataset.W_LME(m,tStart[nSubjects*m+i]-1+j,bb);
               }
 
-              for(unsigned int j=0;j<nmes;j++){
+              for( int j=0;j<nmes;j++){
                 for(unsigned int bb=0;bb<nFixedEffects_mix[m];bb++){
                   if(bb!=b)
                     Yi(j) -= currentParams.zetaY(m) * currentParams.beta_mix(m,zi,bb,0,nCategoriesY)*dataset.W_LME_mix(m,tStart[nSubjects*m+i]-1+j,bb);
@@ -4614,11 +4624,11 @@ void gibbsForSigmaEpsilonLME(mcmcChain<pReMiuMParams>& chain,
       int zi   = currentParams.z(i);
 
 
-      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+      for( int j=0;j<tStop[ind]-tStart[ind]+1;j++){
         Yi(j) = y[ind_y + tStart[ind]-1+j];
       }
 
-      for(unsigned int j=0;j<tStop[ind]-tStart[ind]+1;j++){
+      for( int j=0;j<tStop[ind]-tStart[ind]+1;j++){
         for(unsigned int b=0;b<nFixedEffects[m];b++){
           Yi(j) -= currentParams.zetaY(m) * currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
         }
@@ -5240,7 +5250,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
               // set sizes based on cluster occupation
               for(unsigned int i2=0;i2<nSubjects;i2++){
-                if(currentParams.z(i2) == c){
+                if(currentParams.z(i2) == static_cast<int>(c)){
                   sizek[c] = sizek[c] + tStop[i2] - tStart[i2] + 1;
                 }
               }
@@ -5251,7 +5261,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
                 int counter = 0;
                 for(unsigned int i2=0;i2<nSubjects;i2++){
-                  if(currentParams.z(i2) == c){
+                  if(currentParams.z(i2) == static_cast<int>(c)){
                     for(unsigned int j=0;j<tStop[i2]-tStart[i2]+1;j++){
                       timesk[counter+j] = times[tStart[i2]-1+j];
                     }
@@ -5289,7 +5299,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
                 // set sizes based on cluster occupation
                 for(unsigned int i2=0;i2<nSubjects;i2++){
-                  if(currentParams.z(i2) == c){
+                  if(currentParams.z(i2) == static_cast<int>(c)){
                     sizek[c] +=  tStop[i2] - tStart[i2] + 1;
                   }
                 }
@@ -5300,7 +5310,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
               }else{//RJ marginal likelihood without i
 
-                if(origZi == c){
+                if(origZi == static_cast<int>(c)){
                   //if point currently in cluster:
                   //marginal(cluster with gene) = clusterMarginal[c]
                   numerator[c] = clusterMarginal[c]; // likelihood with i
@@ -5452,7 +5462,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
     currentParams.z(i,zi,covariateType);
 
     //AR Compute again sizek, yk and timeskfor z(i) and currentParams.z(i)
-    if(outcomeType.compare("Longitudinal")==0 && zi!=origZi && !model.options().sampleGPmean() ){//AR change !model.options().sampleGPmean()
+    if(outcomeType.compare("Longitudinal")==0 && zi!=(unsigned int)origZi && !model.options().sampleGPmean() ){//AR change !model.options().sampleGPmean()
 
       //RJ update clusterMarginals if a subject has swapped clusters
       clusterMarginal[zi] = numerator[zi];
@@ -5473,7 +5483,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
           int counter = 0;
 
           for(unsigned int i2=0;i2<nSubjects;i2++){
-            if(currentParams.z(i2) == c){
+            if(currentParams.z(i2) == static_cast<int>(c)){
               for(unsigned int j=0;j<tStop[i2]-tStart[i2]+1;j++){
                 timesk[counter+j] = times[tStart[i2]-1+j];
               }
@@ -5494,7 +5504,7 @@ void gibbsForZ(mcmcChain<pReMiuMParams>& chain,
 
         int counter = 0;
         for(unsigned int i2=0;i2<nSubjects;i2++){
-          if(currentParams.z(i2) == c){
+          if(currentParams.z(i2) == static_cast<int>(c)){
             for(unsigned int j=0;j<tStop[i2]-tStart[i2]+1;j++){
               timesk[counter+j] = times[tStart[i2]-1+j];
             }
