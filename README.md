@@ -14,11 +14,5 @@ You can install `PReMiuMlongi` from [GitHub](https://CRAN.R-project.org) with th
 if(!requireNamespace("remotes", quietly=TRUE)){
   install.packages(remotes)
 }
-if(!requireNamespace("premiumPlots", quietly=TRUE)){
-  remotes::install_github("simisc/premiumPlots")
-}
 remotes::install_github("premium-profile-regression/PReMiuMlongi")
 ```
-
-**NB:** the `premiumPlots` package which `PReMiuMlongi` depends on is only available from GitHub.
-
