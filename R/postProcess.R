@@ -32,7 +32,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
                    varSelectType="None", varSelectY=FALSE, entropy,reportBurnIn=FALSE, run=TRUE, discreteCovs= NULL, continuousCovs= NULL,
                    whichLabelSwitch="123", includeCAR=FALSE, neighboursFile="Neighbours.txt",
                    weibullFixedShape=TRUE, useNormInvWishPrior=FALSE, idvar = "ID",
-                   kernel="SQexponential", sampleGPmean= FALSE,  estim_ratio=F, time_grid=NULL, ngrid=0, timevar=NULL){
+                   kernel="SQexponential", sampleGPmean= FALSE,  estim_ratio=FALSE, time_grid=NULL, ngrid=0, timevar=NULL){
 
   # suppress scientific notation
   options(scipen=999)
@@ -3626,7 +3626,7 @@ setHyperparams<-function(shapeAlpha=NULL,rateAlpha=NULL,aPhi=NULL,mu0=NULL,Tau0=
                          aZetaY=NULL,bZetaY=NULL,atomZetaY=NULL, shapeSigmaSqY=NULL,
                          scaleSigmaSqY=NULL,rSlice=NULL,truncationEps=NULL,shapeTauCAR=NULL,rateTauCAR=NULL,shapeNu=NULL,scaleNu=NULL,initAlloc=NULL,initL=NULL,
                          muLSignal=0,sigmaLSignal=0,muLLengthscale=0,sigmaLLengthscale=0,muLNoise=0,sigmaLNoise=0,MVNmu0=NULL,MVNTau0=NULL,MVNR0=NULL,
-                         MVNkappa0=NULL,MVNnu0=NULL){
+                         MVNkappa0=NULL,MVNnu0=NULL,eps_shape=NULL,eps_scale=NULL){
   out<-list()
   if (!is.null(shapeAlpha)){
     out$shapeAlpha<-shapeAlpha
@@ -3758,6 +3758,12 @@ setHyperparams<-function(shapeAlpha=NULL,rateAlpha=NULL,aPhi=NULL,mu0=NULL,Tau0=
   }
   if (!is.null(MVNnu0)){
     out$MVNnu0<-MVNnu0
+  }
+  if (!is.null(eps_shape)){
+    out$eps_shape<-eps_shape
+  }
+  if (!is.null(eps_scale)){
+    out$eps_scale<-eps_scale
   }
   return(out)
 }

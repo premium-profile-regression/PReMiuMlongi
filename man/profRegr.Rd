@@ -13,6 +13,7 @@ profRegr(
   outcomeT = NA,
   data,
   longData = NULL,
+  varSelectY_data = NULL,
   output = "output",
   hyper,
   predict,
@@ -35,13 +36,14 @@ profRegr(
   entropy,
   reportBurnIn = FALSE,
   run = TRUE,
-  discreteCovs,
-  continuousCovs,
+  discreteCovs = NULL,
+  continuousCovs = NULL,
   whichLabelSwitch = "123",
   includeCAR = FALSE,
   neighboursFile = "Neighbours.txt",
   weibullFixedShape = TRUE,
   useNormInvWishPrior = FALSE,
+  idvar = "ID",
   kernel = "SQexponential",
   sampleGPmean = FALSE,
   estim_ratio = FALSE,
@@ -58,7 +60,8 @@ profRegr(
 \item{outcome}{A string (or vector of strings, for yModel=MVN) giving the column name(s) of the data argument that contain(s) the outcome. The outcome cannot have missing values - you could consider predicting the value of the outcome for those subjects for which it has not been observed. The name cannot include space characters.}
 \item{outcomeT}{A string of column of the data argument that contains the offset (for Poisson outcome) or the number of trials (for Binomial outcome) or censoring for Survival reponse (coded as 0 or 1). The name cannot include space characters.}
 \item{data}{A data frame which has as columns the outcome(s), the covariates, the fixed effects if any, and the offset (for Poisson outcome), the number of trials (for Binomial outcome), censoring (for Survival outcome) or subject ID (for Longitudinal outcome). The outcome cannot have missing values - you could consider predicting the value of the outcome for those subjects for which it has not been observed. For Survival response censoring must be coded as 0 if the event has not occurred (ie, there has been censoring) and 1 if the event has occurred (no censoring has taken place). The names of the columns cannot include space characters.}
-\item{longData}{For Longitudinal model: a data frame which has as columns subject IDs (corresponding to IDs in data), the time points, and the outcomes. Note: a zero-filled `outcome' column should still be provided in data.}
+\item{longData}{For Longitudinal/LME model: a data frame which has as columns subject IDs (corresponding to IDs in data), the time points, and the outcomes. Note: a zero-filled `outcome' column should still be provided in data.}
+\item{varSelectY_data}{For LME model with varSelectY=TRUE: a data frame where the first column contains the subject IDs (matching the IDs in the dataset), followed by one column per outcome, each containing the values of mu0_m(t) for every individual at each observed time point. Note: a zero-filled `outcome' column should still be provided in data.}
 \item{output}{Path to folder to save all output files. The covariates can have missing values, which must be coded as 'NA'. There cannot be missing values in the fixed effects - if there are, use an imputation method before using profile regression.}
 \item{hyper}{Object of type setHyperparams with hyperparameters specifications. This is optional, default values are provided for all hyperparameters. See ?setHyperparams for details.}
 \item{predict}{Data frame containing the predictive scenarios. This is only required if predictions are requested.
@@ -104,6 +107,7 @@ See ?calcPredictions for more details and examples.
 \item{weibullFixedShape}{This parameter controls whether the shape parameter of the Weibull distribution (for yModel=Survival only) is a global parameter (fixed) or cluster specific. It is equal to TRUE by default.}
 \item{useNormInvWishPrior}{By default this variable equals FALSE. When this variable equals TRUE, the conjugate Normal-inverse-Wishart prior is used rather
 than the independant normal and inverse Wishart priors. If this prior is used, variable selection cannot be used as it has not been implemented.}
+\item{idvar}{A character string specifying the name of the column containing the individual identifiers.}
 \item{kernel}{If yModel=Longitudinal, kernel function characterising the covariance of the Gaussian Process. By default, we use a square exponential function ("SQexponential"), but a quadratic kernel ("Quadratic") is also being implemented. See details below.}
 \item{sampleGPmean}{If yModel=Longitudinal, indicator if the mean underlying function with a Gaussian Process prior is sampled or marginalised over in the sampler. By default, sampleGPmean=FALSE and the function is marginalised over.}
 \item{randomEffectsNames}{If yModel=LME, a vector of strings of the random effect names as by the column names in the data argument. Each random effect must be of class 'numeric'. If a random effect is of class 'character', an error message will appear and the fixed effect will need to be recoded as numeric. The names of the random effects cannot include space characters and should also be included either in fixedEffectsNames or fixedEffectsNames_clust.}

@@ -19,8 +19,11 @@ plotRiskProfile_longi(
   riskLim = NULL,
   bycol = FALSE,
   profile_X = NULL,
-  timevar = NULL,
-  double_plot = FALSE)
+  time = NULL,
+  double_plot = FALSE,
+  form_fixedEffectNames = NULL,
+  form_fixedEffectNames_mix = NULL,
+  form_RE = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -38,11 +41,20 @@ Boolean. If TRUE, individual outcome trajectories are coloured by assigned clust
   \item{profile_X}{
 Profile of fixed effects if yModel="LME" (in development). By default, NULL.
 }
-  \item{timevar}{
+  \item{time}{
 A vector of time points to compute predictions if yModel="LME" (in development). By default, NULL.
 }
   \item{double_plot}{
 Bolean to make extra plots. See value. FALSE by default.
+}
+  \item{form_fixedEffectNames}{
+Formula for common fixed effects (if yModel=LME).
+}
+  \item{form_fixedEffectNames_mix}{
+Formula for cluster-specific fixed effects (if yModel=LME).
+}
+  \item{form_RE}{
+Formula for random effects (if yModel=LME).
 }
 }
 \details{

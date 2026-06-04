@@ -4056,7 +4056,6 @@ void metropolisHastingsForZetaY(mcmcChain<pReMiuMParams>& chain,
         // Move rejected, reset parameters
         currentParams.vY(j,currentvY[j]);
         currentParams.zetaY(j,currentZetaY[j]);
-        std::cout << j << " unif "<<uu << " vs " << hyperParams.atomZetaY()<< "vY "<<currentvY[j]<<" reject vY "<<currentvY[j] << " ZetaY "<<currentZetaY[j]<<endl;
 
       }
     }else{

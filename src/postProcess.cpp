@@ -52,7 +52,7 @@ SEXP calcDisSimMat(SEXP fileName, SEXP nSweeps, SEXP nBurn, SEXP nFilter,SEXP nS
     		}
      	}else{
     		if((1+k-firstLine)==1||(1+k-firstLine)%1000==0){
-				Rprintf("Stage 1:%i samples out of %i\n",1+k-firstLine,1+nLines-firstLine);
+				Rprintf("Stage 1:%lu samples out of %lu\n",(unsigned long) (1+k-firstLine),(unsigned long) (1+nLines-firstLine));
 			}
 			for(unsigned long int i=0;i<nSj+nPSj;i++){
     			// Fill up the cluster data for this sweep
@@ -95,7 +95,7 @@ SEXP calcDisSimMat(SEXP fileName, SEXP nSweeps, SEXP nBurn, SEXP nFilter,SEXP nS
         	}
         }else{
         	if((1+k-firstLine)==1||(1+k-firstLine)%1000==0){
-			Rprintf("Stage 2:%i samples out of %i\n",1+k-firstLine,1+nLines-firstLine);
+			Rprintf("Stage 2:%lu samples out of %lu\n", (unsigned long) (1+k-firstLine), (unsigned long) (1+nLines-firstLine));
     		}
         	for(unsigned long int i=0;i<nSj+nPSj;i++){
         		// Fill up the cluster data for this sweep
