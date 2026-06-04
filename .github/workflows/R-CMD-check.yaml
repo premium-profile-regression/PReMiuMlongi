@@ -55,7 +55,7 @@ jobs:
         shell: bash
       - name: Upload install log
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: install-log
           path: install_log.txt
