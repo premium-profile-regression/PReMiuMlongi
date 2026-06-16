@@ -556,9 +556,9 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 
 				// Only try this proposal with probability as defined
 				if(unifRand(_rndGenerator)<it->proposalWeight()){
+				  //file <<sweep<< " prop " << it->proposalName().c_str()<<endl;
 
 					// Update the chain state
-					  //std::cout <<sweep<< "prop " << it->proposalName().c_str()<<endl;
 				    it->updateParameters(_chain,_model,_rndGenerator);
 
 
@@ -570,8 +570,10 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 		 _chain.currentState().logPosterior(_model.logPosterior(_chain.currentState().parameters()));
 		// // Now write the output (this is controlled by the user defined function
 		 writeOutput(sweep);
+
 	}
 	 writeAcceptanceRates();
+
 	 //file.close();
 }
 

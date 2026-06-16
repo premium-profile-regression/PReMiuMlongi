@@ -36,7 +36,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
 
   # suppress scientific notation
   options(scipen=999)
-
   if (xModel=="Mixed"){
     covNames <- c(discreteCovs, continuousCovs)
     nDiscreteCovs <- length(discreteCovs)
@@ -570,7 +569,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
         predict[k,missingX]<- rep(-999,nMissingX)
       }
     }
-    print(covNames)
+
     #print(predict)
     write(t(as.matrix(predict[,c(covNames)])), paste(output,"_predict.txt",sep=""),append=T,ncolumns=length(covNames))
     if (length(intersect(outcome,names(predict)))>0) {
@@ -970,7 +969,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   #if (!missing(seed)) inputString<-paste(inputString," --seed=",seed,sep="")
 
   if (run) .Call('profRegr', inputString, PACKAGE = 'PReMiuMlongi')
-
+browser()
   # define directory path and fileStem
   outputSplit <- strsplit(output,split="/")
   fileStem <- tail(outputSplit[[1]],1)

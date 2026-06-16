@@ -1705,7 +1705,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
   nTry++;
   nAccept++;
-
   mcmcState<pReMiuMParams>& currentState = chain.currentState();
   pReMiuMParams& currentParams = currentState.parameters();
   pReMiuMHyperParams hyperParams = currentParams.hyperParams();
@@ -1733,7 +1732,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
   // In the following it is useful to have the rows of X as
   // Get individual random effects
-
   int ind=0;//tstart
   int ind_y=0;//y and t
   for(unsigned int m=0;m<nOutcomes;m++){
@@ -1786,7 +1784,6 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
 
     for(unsigned int i=0;i<nSubjects;i++){
-
       VectorXd yi;
       VectorXd ui(nRandomEffects[m]);
       unsigned int zi= currentParams.z(i);
@@ -1797,8 +1794,7 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
 
       for(int j=0;j<(tStop[ind]-tStart[ind]+1);j++){
 
-        yi(j) = y[ind_y + tStart[ind]-1+j];//yi(j) = y[tStart[ind]-1+j];
-
+          yi(j) = y[ind_y + tStart[ind]-1+j];//yi(j) = y[tStart[ind]-1+j];
         for(unsigned int b=0;b<nFixedEffects[m];b++){
           yi(j)-= currentParams.zetaY(m) * currentParams.beta(m,b,0,nCategoriesY)*dataset.W_LME(m,tStart[ind]-1+j,b);
           //yi(j)-=2.45*dataset.W_LME(m,tStart[ind]-1+j,b);
@@ -1819,9 +1815,8 @@ void gibbsForCovRELMEActive(mcmcChain<pReMiuMParams>& chain,
           //   yi(j)-=0.13*dataset.W_LME_mix(m,tStart[ind]-1+j,b);
         }
         //for selection of longitudinal markers
-        yi(j)-= (1.0 - currentParams.zetaY(m)) * dataset.mu0selectY(dataset.mu0selectY(ind_y + tStart[ind]-1+j));
+        yi(j)-= (1.0 - currentParams.zetaY(m)) * dataset.mu0selectY(ind_y + tStart[ind]-1+j);
       }
-
 
 
       MatrixXd block=dataset.W_RE(m,tStart[ind]-1, 0, ni, nRandomEffects[m]);
