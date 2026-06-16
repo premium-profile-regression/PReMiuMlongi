@@ -969,7 +969,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
   #if (!missing(seed)) inputString<-paste(inputString," --seed=",seed,sep="")
 
   if (run) .Call('profRegr', inputString, PACKAGE = 'PReMiuMlongi')
-browser()
+
   # define directory path and fileStem
   outputSplit <- strsplit(output,split="/")
   fileStem <- tail(outputSplit[[1]],1)
