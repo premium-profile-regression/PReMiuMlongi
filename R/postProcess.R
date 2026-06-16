@@ -280,6 +280,7 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       FEIndeces<-vector(mode="numeric")
       #all_fixedEffectsNames <- unique(fixedEffectsNames)
       m=1
+      #browser()
       if(yModel=="LME"){
         uniq_fixedEffects <- unique(unlist(fixedEffectsNames))
         first_line <- sapply(unique(longData$ID), function(x) which(longData$ID==x)[1])
@@ -294,7 +295,6 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
           }
         }
         fixedEffects<-data[,FEIndeces,drop=F]
-
 
       if(yModel=="LME"){
         if(length(which(!fixedEffectsNames[[m]]%in%timevar))>0){
@@ -346,7 +346,8 @@ profRegr<-function(formula=NULL,covNames, fixedEffectsNames=NULL, fixedEffectsNa
       for (i in 1:(max(nFixedEffects_mix))){
         if(!(fixedEffectsNames_clust[[m]][i]%in%timevar)){
           tmpIndex_mix<-which(colnames(data)==fixedEffectsNames_clust[[m]][i])
-          if (length(tmpIndex_mix)==0 && !is.element(fixedEffectsNames_clust[[m]][i],timevar)) stop("ERROR: cluster-specific fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression, nor to timevar for yModel=LME")
+          if (length(tmpIndex_mix)==0 && !is.element(fixedEffectsNames_clust[[m]][i],timevar))
+            stop("ERROR: cluster-specific fixed effects names in data.frame provided do not correspond to list of fixed effects for profile regression, nor to timevar for yModel=LME")
           FEIndeces_mix<-append(FEIndeces_mix,tmpIndex_mix)
         }
       }

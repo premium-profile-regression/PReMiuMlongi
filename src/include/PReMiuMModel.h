@@ -3544,6 +3544,7 @@ double logPYiGivenZiWiLongitudinal_parametric(const pReMiuMParams& params, const
   vector<int> tStop = dataset.tStop();
   unsigned int nOutcomes = dataset.nOutcomes();
   unsigned int nCategoriesY = params.nCategoriesY();
+
   //AR for meanGP
   VectorXd yi;
   MatrixXd Vi_inv;
