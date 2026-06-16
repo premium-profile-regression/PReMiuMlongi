@@ -2828,7 +2828,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             for(unsigned int l=0;l<nRandomEffects[m];l++){
               for(unsigned int l2=0;l2<=l;l2++){
                 *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,l,l2);
-                if( l2<(nRandomEffects[m]-1)){
+                if( m<(nOutcomes-1) || (l2<(nRandomEffects[m]-1) && (m=nOutcomes-1))){
                   *(outFiles[CovRELMEInd]) << " ";
                 }else{
                   *(outFiles[CovRELMEInd]) << endl;
