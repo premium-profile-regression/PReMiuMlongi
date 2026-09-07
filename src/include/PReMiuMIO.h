@@ -2565,7 +2565,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
       }
     }
 
-
     *(outFiles[nClustersInd]) << maxNClusters << endl;
 
     unsigned int sumMembers=0;
@@ -2648,7 +2647,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
       }
       *(outFiles[muInd]) << endl;
 
-
       // For the covariance matrices we write by covariate x covariate (for each cluster)
 
       for(unsigned int j1=0;j1<nCovariates;j1++){
@@ -2701,7 +2699,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
       }
       *(outFiles[muInd]) << endl;
 
-
       // For the covariance matrices we write by covariate x covariate (for each cluster)
 
       for(unsigned int j1=0;j1<nContinuousCovs;j1++){
@@ -2716,7 +2713,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
       }
       *(outFiles[SigmaInd]) << endl;
     }
-
 
     if(includeResponse){
       if(outcomeType.compare("Categorical")==0){
@@ -2758,6 +2754,7 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             }
           }
         }
+
         if(outcomeType.compare("Longitudinal")==0){
           //RJ Print parameter L for each cluster
           for(unsigned int c=0;c<maxNClusters;c++){
@@ -2828,18 +2825,16 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             for(unsigned int l=0;l<nRandomEffects[m];l++){
               for(unsigned int l2=0;l2<=l;l2++){
                 *(outFiles[CovRELMEInd]) << ""<< params.covRE(m,l,l2);
-                if( m<(nOutcomes-1) || (l2<(nRandomEffects[m]-1) && (m=nOutcomes-1))){
+                if( l2<(nRandomEffects[m]-1)){
                   *(outFiles[CovRELMEInd]) << " ";
                 }else{
                   *(outFiles[CovRELMEInd]) << endl;
                 }
               }
             }
-            //}
 
             *(outFiles[EpsilonLMEInd]) << params.SigmaE(m) << endl; //params.sigmakInd(c);
           }
-
 
           for(unsigned int m=0;m<nOutcomes;m++){
             for(unsigned int i=0;i<nSubjects;i++){
@@ -2848,11 +2843,15 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             *(outFiles[RandomEffectsLMEInd]) << endl;
           }
 
-          for(unsigned int m=0;m<nOutcomes;m++){
-            for(unsigned int j=0;j<nFixedEffects[m];j++)
-              *(outFiles[betaInd]) << params.beta(m,j,0,nCategoriesY)<< " ";
-            *(outFiles[betaInd]) << endl;
+          int maxFixedEffects = *std::max_element(nFixedEffects.begin(), nFixedEffects.end());
+          if(maxFixedEffects>0){
+            for(unsigned int m=0;m<nOutcomes;m++){
+              for(unsigned int j=0;j<nFixedEffects[m];j++)
+                *(outFiles[betaInd]) << params.beta(m,j,0,nCategoriesY)<< " ";
+              *(outFiles[betaInd]) << endl;
+            }
           }
+
 
           for(unsigned int m=0;m<nOutcomes;m++){
             for(unsigned int c=0;c< maxNClusters;c++){
@@ -2862,7 +2861,6 @@ void writePReMiuMOutput(mcmcSampler<pReMiuMParams,pReMiuMOptions, pReMiuMPropPar
             *(outFiles[betamixInd]) << endl;
           }
         }
-
         if (includeCAR){
           for(unsigned int i=0;i<nSubjects;i++){
             double uCARi = params.uCAR(i);

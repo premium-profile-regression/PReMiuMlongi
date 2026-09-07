@@ -566,14 +566,13 @@ void mcmcSampler<modelParamType,optionType,propParamType,dataType>::run(){
 				}
 			}
 		}
+
 		// // At the end of the sweep make sure the log posterior is up to date.
 		 _chain.currentState().logPosterior(_model.logPosterior(_chain.currentState().parameters()));
-		// // Now write the output (this is controlled by the user defined function
+		 // // Now write the output (this is controlled by the user defined function
 		 writeOutput(sweep);
-
 	}
 	 writeAcceptanceRates();
-
 	 //file.close();
 }
 

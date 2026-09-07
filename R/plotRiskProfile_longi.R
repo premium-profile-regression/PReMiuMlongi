@@ -46,13 +46,14 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       stop("Error: Names of profile_X do not correspond to fixedEffectsNames nor fixedEffectsNames_clust")
   }
 
-  if(yModel == "LME" && is.null(profile_X)){
-    stop("Error: profile_X should be defined as a dataframe including the same column names as fixedEffectsNames and fixedEffectsNames_clust, if yModel = LME.")
-  }else if(yModel == "LME" && length(which(!c(unique(unlist(fixedEffectsNames)),unique(unlist(fixedEffectsNames_clust)))%in%names(profile_X)))>0){
-    stop("Error: profile_X should be defined as a dataframe including the same column names as fixedEffectsNames and fixedEffectsNames_clust, if yModel = LME.")
+  aa = c(unique(unlist(fixedEffectsNames)),unique(unlist(fixedEffectsNames_clust)))
+
+  if((yModel == "LME" && is.null(profile_X)) || (yModel == "LME" &&     !all(aa[!aa%in%timevar]%in%names(profile_X)))){
+    stop("Error: profile_X should be defined as a dataframe including the same column names as fixedEffectsNames and fixedEffectsNames_clust, excluding the names in timevar, if yModel = LME.")
   }
-  if(yModel == "LME" && is.null(time))
-    stop("Error: time should be defined as a vector of times for longitudinal predictions, if yModel = LME.")
+  if(yModel == "LME" && is.null(time)){
+      time <- seq(min(riskProfObj$riskProfClusObj$clusObjRunInfoObj$longMat[[timevar]],na.emr=TRUE), max(riskProfObj$riskProfClusObj$clusObjRunInfoObj$longMat[[timevar]],na.rm=TRUE), length=41)
+  }
 
 
   if (nClusters==1) stop("Cannot produce plots because only one cluster has been found.")
@@ -877,7 +878,6 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
 
 
   if(yModel=='LME'){
-
     longMat$time <- longMat[,timevar[1]]
     times_all <- longMat$time
     palette <- rainbow(max(whichClusters))
@@ -897,6 +897,7 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
       #yData_c <- list()
       mu <- rep(0,length(tTimes))
       if(nFixedEffects[m]>0){
+        #browser()
         betaArray_m <-betaArray[,indi_mj+1:nFixedEffects[m], ]#per marker, per j
 
           if(nFixedEffects[m]==1){
@@ -906,7 +907,8 @@ plotRiskProfile_longi<-function(riskProfObj,outFile,showRelativeRisk=F,orderBy=N
             betamean <-  as.vector(colMeans(betaArray_m))
           }
         #betamean <- colMeans(betaArray_m[,,1])
-        profile <- model.matrix(form_fixedEffectNames[[m]], profile_X)
+        profile <- model.matrix( form_fixedEffectNames[[m]],  profile_X)
+
         mu <- mu + as.vector(betamean %*% t(profile))
 
         Zi <- model.matrix(form_RE[[m]], profile_X)

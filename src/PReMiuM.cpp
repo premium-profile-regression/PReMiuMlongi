@@ -383,6 +383,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
     // The following is only used if the sampler type is truncated
     unsigned int maxNClusters = pReMiuMSampler.chain().currentState().parameters().maxNClusters();
 
+
     /* ---------- Run the sampler --------- */
     // Note: in this function the output gets written
     pReMiuMSampler.run();
@@ -396,6 +397,7 @@ RcppExport SEXP profRegr(SEXP inputString) {
     pReMiuMSampler.closeOutputFiles();
     //pReMiuMSampler.chain().currentState().parameters().freeCovRE();
     //int err = 0;
+
     return Rcpp::wrap(0);
     // alternative output
     // return Rcpp::List::create(Rcpp::Named("yModel")=options.outcomeType());

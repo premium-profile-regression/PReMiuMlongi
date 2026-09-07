@@ -165,8 +165,8 @@ generateSampleDataFile<-function(clusterSummary){
 	    Yi     <- matrix(0,nT,nOutcomes)
 	    ui     <- matrix(0,nT,sum(nRE))
 	    ti     <- time_seq + runif(nT,0,0.5)
-	    data_i <- cbind(rep(i,nT), rep(class[i],nT), rep(X[i],nT), ti,X_LME[i]* ti)
-
+	    data_i <- cbind(rep(i,nT), rep(class[i],nT), rep(X_LME[i],nT), ti,X_LME[i]* ti)
+      #id, class,  X, t, Xt
 	    for(m in 1:nOutcomes){
 	      eps_i  <- rnorm(nT,0,sigma[m])
 	      uii    <- rmvnorm(1,rep(0,nRE[m]),cov[[m]])
@@ -198,6 +198,9 @@ generateSampleDataFile<-function(clusterSummary){
 
 	  }
     W_mixall <- W_mixall[-1,]
+    W_mixall <- data.frame(W_mixall)
+    names(W_mixall) <- c("id", "class", "X", "t", "Xt", paste0("out",1:nOutcomes), paste0("ui",1:sum(nRE)))
+    #id, class,  X, t, Xt
     W_mix<-W_mixall[,1:(4+ifelse(sum(nRE)>nOutcomes,1,0))]
     W_mix_names <-  c("ID","class","X","time")
     if(sum(nRE)>nOutcomes)
@@ -396,7 +399,7 @@ generateSampleDataFile<-function(clusterSummary){
 	    fixEffNames <- c(fixEffNames, "Xtime")
 	  fixEffNames_mix <- c("time")
 	  REffNames <- fixEffNames_mix
-	  timevar <- "time"
+	  timevar <- c("time")
 	}else{
 		outData<-data.frame(cbind(IDs,matrix(Y),X))
 	}
@@ -428,7 +431,8 @@ generateSampleDataFile<-function(clusterSummary){
 		out$inputLongData <- outLongData
 	}
 	if(outcomeType == 'LME'){
-	  outLongData<-W_mixall[,c(1,3:(4+ifelse(sum(nRE)>nOutcomes,1,0)),4+ifelse(sum(nRE)>nOutcomes,1,0)+1:nOutcomes)]
+	  outLongData<-W_mixall[,c(1,3:(4+ifelse(sum(nRE)>nOutcomes,1,0)),
+	                           4+ifelse(sum(nRE)>nOutcomes,1,0)+1:nOutcomes)]
 	  longNames<-c('ID',"X",'time')
 	  if(sum(nRE)>nOutcomes)
 	    longNames<-c(longNames,"Xtime")
